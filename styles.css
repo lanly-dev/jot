@@ -1,0 +1,1009 @@
+/* ==========================================================================
+   Jot - Cute & Colorful Note-Taking App Stylesheet
+   ========================================================================== */
+
+/* Design Tokens & Theme Variables */
+:root {
+    --bg-main: #fbf9f6;
+    --text-main: #2d2b2a;
+    --text-muted: #6e6a68;
+    --border-color: #ede7e1;
+    --card-shadow: 0 10px 30px rgba(45, 43, 42, 0.05);
+    --card-shadow-hover: 0 15px 35px rgba(45, 43, 42, 0.09);
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Quicksand', sans-serif;
+
+    /* Theme Colors (Main Accent & Playful Pastels) */
+    --color-primary: #ff758f;
+    --color-primary-hover: #ff5c7d;
+    --color-primary-light: #ffeef1;
+    --color-archive: #b5c7d3;
+    
+    /* Sticky Note Pastel Palette */
+    --pastel-pink: #ffd1dc;
+    --pastel-green: #d0f0c0;
+    --pastel-purple: #e6e6fa;
+    --pastel-yellow: #fef1b7;
+    --pastel-peach: #ffd8b1;
+    --pastel-blue: #bfe3f3;
+}
+
+/* Base Reset & Layout Setup */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-body);
+    color: var(--text-main);
+    background-color: var(--bg-main);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Background Cute Decorators */
+.bg-decor {
+    position: absolute;
+    border-radius: 50%;
+    z-index: -1;
+    filter: blur(80px);
+    opacity: 0.4;
+}
+
+.bg-decor-1 {
+    top: -10%;
+    left: -10%;
+    width: 40vw;
+    height: 40vw;
+    background-color: var(--pastel-pink);
+}
+
+.bg-decor-2 {
+    bottom: -10%;
+    right: -10%;
+    width: 45vw;
+    height: 45vw;
+    background-color: var(--pastel-blue);
+}
+
+.bg-decor-3 {
+    top: 40%;
+    right: 15%;
+    width: 25vw;
+    height: 25vw;
+    background-color: var(--pastel-yellow);
+    opacity: 0.3;
+}
+
+/* Typography Custom Styling */
+h1, h2, h3, h4 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #e6dfd6;
+    border-radius: 20px;
+    border: 3px solid var(--bg-main);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #d4ccc0;
+}
+
+/* Main Container Layout */
+.app-container {
+    max-width: 1300px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 1.5rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    gap: 2rem;
+}
+
+/* ==========================================================================
+   APP HEADER & STATS
+   ========================================================================== */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    background-color: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    border: 2px solid #ffffff;
+    padding: 1.25rem 2rem;
+    border-radius: 24px;
+    box-shadow: var(--card-shadow);
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.logo-mascot {
+    font-size: 2.5rem;
+    animation: wiggle 3s infinite ease-in-out;
+    display: inline-block;
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.logo-title {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: var(--text-main);
+    background: linear-gradient(135deg, var(--text-main) 30%, var(--color-primary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+}
+
+.logo-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Stats dashboard */
+.stats-dashboard {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.stat-pill {
+    background-color: #ffffff;
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    border-radius: 100px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.stat-pill:hover {
+    transform: translateY(-3px);
+}
+
+.stat-value {
+    color: var(--color-primary);
+    font-weight: 700;
+    font-family: var(--font-heading);
+}
+
+.stat-label {
+    color: var(--text-muted);
+}
+
+/* ==========================================================================
+   MAIN LAYOUT & GENERAL UI
+   ========================================================================== */
+.app-main {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 2rem;
+    align-items: start;
+    flex-grow: 1;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 16px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    outline: none;
+}
+
+.btn:active {
+    transform: scale(0.95);
+}
+
+.btn-primary {
+    background-color: var(--color-primary);
+    color: #ffffff;
+    box-shadow: 0 6px 20px rgba(255, 117, 143, 0.25);
+}
+
+.btn-primary:hover {
+    background-color: var(--color-primary-hover);
+    box-shadow: 0 8px 24px rgba(255, 117, 143, 0.35);
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background-color: #f1ede8;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background-color: #e8e3dc;
+    color: var(--text-main);
+}
+
+.btn-icon {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--text-muted);
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.btn-icon:hover {
+    color: var(--text-main);
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Inputs & Form Groups */
+.input-group {
+    margin-bottom: 1.25rem;
+    width: 100%;
+}
+
+.input-group input, 
+.input-group textarea {
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    padding: 0.85rem 1.15rem;
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    transition: all 0.25s ease;
+    outline: none;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.01);
+}
+
+.input-group input::placeholder,
+.input-group textarea::placeholder {
+    color: #a39d99;
+}
+
+.input-group input:focus,
+.input-group textarea:focus {
+    border-color: var(--color-primary);
+    background-color: #ffffff;
+    box-shadow: 0 0 0 4px rgba(255, 117, 143, 0.1);
+}
+
+.input-group textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+/* ==========================================================================
+   LEFT PANEL - NOTE EDITOR
+   ========================================================================== */
+.editor-section {
+    position: sticky;
+    top: 2rem;
+}
+
+.editor-card {
+    background-color: #ffffff;
+    border-radius: 28px;
+    border: 2px solid var(--border-color);
+    padding: 2.25rem 1.75rem 1.75rem 1.75rem;
+    position: relative;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.editor-card:hover {
+    border-color: #ffd1dc;
+}
+
+/* Cute sticky tape decoration */
+.tape-decorator {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-1deg);
+    width: 110px;
+    height: 28px;
+    background-color: rgba(254, 241, 183, 0.7); /* translucent pastel yellow tape */
+    backdrop-filter: blur(2px);
+    border-left: 3px dashed rgba(0, 0, 0, 0.05);
+    border-right: 3px dashed rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.02);
+}
+
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.editor-header h2 {
+    font-size: 1.45rem;
+    color: var(--text-main);
+    font-weight: 700;
+}
+
+/* Pin Toggle Button in Form */
+.pin-toggle-btn {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #a39d99;
+    background-color: #faf8f6;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.pin-toggle-btn:hover {
+    color: var(--text-main);
+    background-color: #f1ede8;
+    transform: rotate(15deg);
+}
+
+.pin-toggle-btn.pinned {
+    color: var(--color-primary);
+    background-color: var(--color-primary-light);
+    border-color: var(--color-primary);
+    transform: rotate(-15deg);
+    animation: bounce 0.4s ease;
+}
+
+.svg-pin {
+    transition: transform 0.2s ease;
+}
+
+.pin-toggle-btn.pinned .svg-pin {
+    fill: var(--color-primary);
+}
+
+/* Color Picker Styling */
+.color-picker-container {
+    margin-bottom: 1.5rem;
+}
+
+.color-picker-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.color-options {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.color-option-label {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--option-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.color-option-label input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.color-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--text-main);
+    opacity: 0;
+    transform: scale(0.2);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.color-option-label:hover {
+    transform: scale(1.15);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+}
+
+.color-option-label.current {
+    border-color: var(--text-main);
+    transform: scale(1.1);
+}
+
+.color-option-label.current .color-dot {
+    opacity: 0.85;
+    transform: scale(1);
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.form-actions button {
+    flex-grow: 1;
+}
+
+/* ==========================================================================
+   RIGHT PANEL - FILTER BAR & CONTROLS
+   ========================================================================== */
+.display-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.toolbar-card {
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    border-radius: 24px;
+    border: 2px solid #ffffff;
+    padding: 1.25rem 1.5rem;
+    box-shadow: var(--card-shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.toolbar-search-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+/* Search input wrapper */
+.search-input-wrapper {
+    position: relative;
+    flex-grow: 1;
+    min-width: 250px;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 1.15rem;
+    color: #a39d99;
+    pointer-events: none;
+}
+
+.search-input-wrapper input {
+    width: 100%;
+    background-color: #ffffff;
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    padding: 0.75rem 1.25rem 0.75rem 2.85rem;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-main);
+    outline: none;
+    transition: all 0.25s ease;
+}
+
+.search-input-wrapper input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 4px rgba(255, 117, 143, 0.1);
+}
+
+.clear-search-btn {
+    position: absolute;
+    right: 1rem;
+    border: none;
+    background: #e6dfd6;
+    color: var(--text-muted);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.clear-search-btn:hover {
+    background: var(--text-muted);
+    color: #ffffff;
+}
+
+/* View Toggle Buttons */
+.view-toggle-group {
+    display: flex;
+    background-color: #f1ede8;
+    padding: 0.35rem;
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+}
+
+.btn-toggle {
+    background: transparent;
+    border: none;
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    padding: 0.5rem 1.25rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-toggle:hover {
+    color: var(--text-main);
+}
+
+.btn-toggle.active {
+    background-color: #ffffff;
+    color: var(--text-main);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+}
+
+/* Dynamic Tags Filter list */
+.tags-filter-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    border-top: 1px dashed var(--border-color);
+    padding-top: 0.85rem;
+}
+
+.tags-filter-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.tags-list {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.tag-pill {
+    background-color: #ffffff;
+    border: 1px solid var(--border-color);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 0.35rem 0.85rem;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.tag-pill:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.tag-pill.active {
+    background-color: var(--color-primary-light);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    font-weight: 700;
+}
+
+/* ==========================================================================
+   NOTES GRID & NOTE CARDS
+   ========================================================================== */
+.notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.5rem;
+    width: 100%;
+}
+
+.note-card {
+    background-color: var(--note-color, var(--pastel-pink));
+    border-radius: 24px;
+    border: 2px solid var(--border-color);
+    padding: 1.75rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 220px;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15), box-shadow 0.3s ease;
+    animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+}
+
+.note-card:hover {
+    transform: translateY(-6px) rotate(0.5deg);
+    box-shadow: var(--card-shadow-hover);
+}
+
+/* Dynamic tilt to alternate cards for custom handmade feel */
+.note-card:nth-child(even):hover {
+    transform: translateY(-6px) rotate(-0.5deg);
+}
+
+/* Card Tape Element */
+.note-card::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%) rotate(1deg);
+    width: 75px;
+    height: 22px;
+    background-color: rgba(255, 255, 255, 0.4);
+    border-left: 2px dashed rgba(0, 0, 0, 0.03);
+    border-right: 2px dashed rgba(0, 0, 0, 0.03);
+    z-index: 1;
+}
+
+/* Pinned layout changes */
+.note-card.pinned-card {
+    border-color: #e5b3be;
+}
+
+.note-card.pinned-card .pin-badge {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+}
+
+.pin-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1.25rem;
+    color: var(--color-primary);
+    font-size: 1.35rem;
+    transform: scale(0.8) rotate(-15deg);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Note Card Content */
+.note-header {
+    margin-bottom: 0.75rem;
+    padding-right: 1.75rem; /* make room for pin */
+}
+
+.note-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-main);
+    word-break: break-word;
+}
+
+.note-body {
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: rgba(45, 43, 42, 0.85);
+    white-space: pre-wrap;
+    word-break: break-word;
+    flex-grow: 1;
+    margin-bottom: 1.25rem;
+}
+
+/* Note Tags Inside Card */
+.note-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+}
+
+.note-card-tag {
+    background-color: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(45, 43, 42, 0.06);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.note-card-tag:hover {
+    background-color: rgba(255, 255, 255, 0.95);
+    color: var(--text-main);
+}
+
+/* Card Actions Panel */
+.note-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    border-top: 1px dashed rgba(45, 43, 42, 0.08);
+    padding-top: 0.85rem;
+    margin-top: auto;
+}
+
+.note-actions .btn-icon {
+    width: 32px;
+    height: 32px;
+    background-color: rgba(255, 255, 255, 0.4);
+    color: var(--text-muted);
+    border: 1px solid rgba(45, 43, 42, 0.04);
+}
+
+.note-actions .btn-icon:hover {
+    background-color: #ffffff;
+    color: var(--text-main);
+    transform: scale(1.1);
+}
+
+.note-actions .btn-icon.action-delete:hover {
+    color: #ff4d6d;
+    border-color: rgba(255, 77, 109, 0.2);
+}
+
+.note-actions .btn-icon.action-edit:hover {
+    color: #ff9f1c;
+    border-color: rgba(255, 159, 28, 0.2);
+}
+
+.note-actions .btn-icon.action-archive:hover {
+    color: #2ec4b6;
+    border-color: rgba(46, 196, 182, 0.2);
+}
+
+/* ==========================================================================
+   EMPTY STATE & ANIMATIONS
+   ========================================================================== */
+.empty-state {
+    background-color: rgba(255, 255, 255, 0.5);
+    border: 2px dashed var(--border-color);
+    border-radius: 28px;
+    padding: 4rem 2rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.01);
+}
+
+.empty-mascot {
+    font-size: 3.5rem;
+    animation: bounce 2s infinite ease-in-out;
+}
+
+.empty-state h3 {
+    font-size: 1.35rem;
+    color: var(--text-main);
+}
+
+.empty-state p {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    max-width: 320px;
+    line-height: 1.5;
+}
+
+/* APP FOOTER */
+.app-footer {
+    text-align: center;
+    padding: 2rem 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-top: 1px dashed var(--border-color);
+    margin-top: 3rem;
+}
+
+/* KEYFRAMES FOR TRANSITIONS & DELIGHTFUL BOUNCES */
+@keyframes wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    15% { transform: rotate(-8deg); }
+    30% { transform: rotate(8deg); }
+    45% { transform: rotate(-4deg); }
+    60% { transform: rotate(4deg); }
+    75% { transform: rotate(0deg); }
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+@keyframes pop-in {
+    0% {
+        transform: scale(0.85) translateY(10px);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes poof-out {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+}
+
+.card-poof {
+    animation: poof-out 0.3s ease forwards !important;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN MEDIA QUERIES
+   ========================================================================== */
+@media (max-width: 992px) {
+    .app-main {
+        grid-template-columns: 1fr;
+    }
+    
+    .editor-section {
+        position: static;
+    }
+}
+
+@media (max-width: 600px) {
+    .app-container {
+        padding: 1.5rem 1rem 1rem 1rem;
+        gap: 1.5rem;
+    }
+    
+    .app-header {
+        padding: 1rem 1.25rem;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .stats-dashboard {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .stat-pill {
+        flex-grow: 1;
+        justify-content: center;
+        padding: 0.4rem 0.6rem;
+        font-size: 0.8rem;
+    }
+    
+    .editor-card {
+        padding: 1.75rem 1.25rem 1.25rem 1.25rem;
+    }
+}
+
+/* ==========================================================================
+   TOAST NOTIFICATION SYSTEM
+   ========================================================================== */
+.toast-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    pointer-events: none;
+}
+
+.toast-message {
+    background-color: #ffffff;
+    color: var(--text-main);
+    border: 2px solid var(--border-color);
+    padding: 0.85rem 1.5rem;
+    border-radius: 16px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    box-shadow: 0 10px 25px rgba(45, 43, 42, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    animation: toast-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    pointer-events: auto;
+    border-left: 6px solid var(--color-primary);
+}
+
+.toast-message.toast-warn {
+    border-left-color: #ff9f1c;
+}
+
+.toast-fade-out {
+    animation: toast-out 0.4s ease forwards;
+}
+
+@keyframes toast-in {
+    0% {
+        transform: translateY(20px) scale(0.9);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes toast-out {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-20px) scale(0.9);
+        opacity: 0;
+    }
+}
+

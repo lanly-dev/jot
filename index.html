@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jot | A Cute & Colorful Space for Your Thoughts ✏️</title>
+    <meta name="description" content="Organize your daily life with Jot, a modern, beautiful, and delightfully cute note-taking app. Pick colorful pastel palettes, pin your priorities, and watch your thoughts shine.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Main stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Sparkle background decoration elements -->
+    <div class="bg-decor bg-decor-1"></div>
+    <div class="bg-decor bg-decor-2"></div>
+    <div class="bg-decor bg-decor-3"></div>
+
+    <div class="app-container">
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="logo-area">
+                <span class="logo-mascot">✏️</span>
+                <div class="logo-text">
+                    <h1 class="logo-title">Jot</h1>
+                    <span class="logo-subtitle">your sweet thoughts</span>
+                </div>
+            </div>
+
+            <!-- Stats dashboard -->
+            <div class="stats-dashboard" id="stats-dashboard">
+                <div class="stat-pill" title="Active Notes">
+                    <span class="stat-icon">📝</span>
+                    <span class="stat-value" id="stat-total-notes">0</span>
+                    <span class="stat-label">Jots</span>
+                </div>
+                <div class="stat-pill" title="Pinned Notes">
+                    <span class="stat-icon">📌</span>
+                    <span class="stat-value" id="stat-pinned-notes">0</span>
+                    <span class="stat-label">Pinned</span>
+                </div>
+                <div class="stat-pill" title="Archived Notes">
+                    <span class="stat-icon">📦</span>
+                    <span class="stat-value" id="stat-archived-notes">0</span>
+                    <span class="stat-label">Archived</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN LAYOUT -->
+        <main class="app-main">
+            <!-- LEFT PANEL: Create / Edit Note Form -->
+            <section class="editor-section">
+                <div class="editor-card" id="editor-card">
+                    <div class="tape-decorator"></div>
+                    <div class="editor-header">
+                        <h2 id="editor-title-heading">Create a New Jot</h2>
+                        <button type="button" class="btn-icon pin-toggle-btn" id="editor-pin-btn" title="Pin Note to Top">
+                            <!-- Pushpin SVG -->
+                            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="svg-pin"><line x1="18" y1="8" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="6"></line><path d="M12 6H8a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-4"></path><line x1="12" y1="17" x2="12" y2="22"></line></svg>
+                        </button>
+                    </div>
+
+                    <form id="note-form" class="note-form">
+                        <!-- Hidden input for editing mode -->
+                        <input type="hidden" id="note-id" value="">
+
+                        <div class="input-group">
+                            <label for="note-title" class="sr-only">Note Title</label>
+                            <input type="text" id="note-title" placeholder="Title (e.g. Shopping List, Great Idea ✨)" maxlength="50" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="note-content" class="sr-only">Note Content</label>
+                            <textarea id="note-content" placeholder="Write your thoughts down here... Feel free to be creative!" rows="5" required></textarea>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="note-tags" class="sr-only">Tags</label>
+                            <input type="text" id="note-tags" placeholder="Tags (comma-separated, e.g. work, fun, dream)">
+                        </div>
+
+                        <!-- Color Selector -->
+                        <div class="color-picker-container">
+                            <span class="color-picker-label">Choose a card color:</span>
+                            <div class="color-options" id="color-options">
+                                <!-- Colored Radio Options will be styled as nice circles -->
+                                <label class="color-option-label current" style="--option-color: #ffd1dc;" title="Strawberry Soft Pink">
+                                    <input type="radio" name="note-color" value="#ffd1dc" checked>
+                                    <span class="color-dot"></span>
+                                </label>
+                                <label class="color-option-label" style="--option-color: #d0f0c0;" title="Mint Green">
+                                    <input type="radio" name="note-color" value="#d0f0c0">
+                                    <span class="color-dot"></span>
+                                </label>
+                                <label class="color-option-label" style="--option-color: #e6e6fa;" title="Lavender Light Purple">
+                                    <input type="radio" name="note-color" value="#e6e6fa">
+                                    <span class="color-dot"></span>
+                                </label>
+                                <label class="color-option-label" style="--option-color: #fef1b7;" title="Banana Pastel Yellow">
+                                    <input type="radio" name="note-color" value="#fef1b7">
+                                    <span class="color-dot"></span>
+                                </label>
+                                <label class="color-option-label" style="--option-color: #ffd8b1;" title="Peach Orange">
+                                    <input type="radio" name="note-color" value="#ffd8b1">
+                                    <span class="color-dot"></span>
+                                </label>
+                                <label class="color-option-label" style="--option-color: #bfe3f3;" title="Sky Soft Blue">
+                                    <input type="radio" name="note-color" value="#bfe3f3">
+                                    <span class="color-dot"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="btn-clear-form" style="display: none;">Cancel Edit</button>
+                            <button type="submit" class="btn btn-primary" id="btn-save-note">
+                                <span class="btn-text">Save Note</span>
+                                <span class="btn-sparkle">✨</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- RIGHT PANEL: Dashboard, Filter Toolbar & Notes Grid -->
+            <section class="display-section">
+                <!-- Search & Filters Toolbar -->
+                <div class="toolbar-card">
+                    <div class="toolbar-search-row">
+                        <!-- Search input -->
+                        <div class="search-input-wrapper">
+                            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            <input type="text" id="search-input" placeholder="Search your jots by title, content or tags...">
+                            <button type="button" class="clear-search-btn" id="clear-search-btn" title="Clear Search" style="display: none;">&times;</button>
+                        </div>
+
+                        <!-- View Toggle: Active vs. Archive -->
+                        <div class="view-toggle-group">
+                            <button type="button" class="btn-toggle active" id="btn-filter-active">Active</button>
+                            <button type="button" class="btn-toggle" id="btn-filter-archived">Archived</button>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic tags filter bar -->
+                    <div class="tags-filter-container" id="tags-filter-container">
+                        <span class="tags-filter-label">Filter by Tag:</span>
+                        <div class="tags-list" id="tags-list">
+                            <!-- Dynamically generated tags will go here -->
+                            <button class="tag-pill active" data-tag="all">All Tags</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State Message -->
+                <div class="empty-state" id="empty-state">
+                    <div class="empty-mascot">✨</div>
+                    <h3>Your Jot board is looking quiet...</h3>
+                    <p>Write your first sweet note in the panel on the left to start fill your board with color and joy!</p>
+                </div>
+
+                <!-- Notes Grid Container -->
+                <div class="notes-grid" id="notes-grid">
+                    <!-- Cards will be dynamically loaded here by app.js -->
+                </div>
+            </section>
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="app-footer">
+            <p>Jot &copy; 2026. Handcrafted with 💖 and pastel sparkles.</p>
+        </footer>
+    </div>
+
+    <!-- Main logic script -->
+    <script src="app.js"></script>
+</body>
+</html>

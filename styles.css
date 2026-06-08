@@ -577,6 +577,36 @@ h1, h2, h3, h4 {
     color: #ffffff;
 }
 
+.btn-layout-toggle {
+    background-color: #ffffff;
+    border: 2px solid var(--border-color);
+    color: var(--text-muted);
+    border-radius: 12px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-layout-toggle:hover {
+    border-color: var(--color-primary);
+    color: var(--text-main);
+    transform: translateY(-1px);
+}
+
+.btn-layout-toggle.active {
+    background-color: var(--color-primary-light);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
 /* View Toggle Buttons */
 .view-toggle-group {
     display: flex;
@@ -665,6 +695,12 @@ h1, h2, h3, h4 {
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 1.5rem;
     width: 100%;
+}
+
+.notes-grid.list-view {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
 .note-card {
@@ -812,6 +848,54 @@ h1, h2, h3, h4 {
 .note-actions .btn-icon.action-archive:hover {
     color: #2ec4b6;
     border-color: rgba(46, 196, 182, 0.2);
+}
+
+/* List-view mode transforms sticky cards into compact rows */
+.notes-grid.list-view .note-card {
+    min-height: auto;
+    padding: 1.2rem 1.3rem;
+    border-radius: 18px;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.notes-grid.list-view .note-card::before {
+    display: none;
+}
+
+.notes-grid.list-view .note-card:hover,
+.notes-grid.list-view .note-card:nth-child(even):hover {
+    transform: translateY(-2px);
+}
+
+.notes-grid.list-view .note-header {
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+}
+
+.notes-grid.list-view .note-title {
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.notes-grid.list-view .note-body {
+    display: none;
+}
+
+.notes-grid.list-view .note-card-tags {
+    display: none;
+}
+
+.notes-grid.list-view .note-actions {
+    margin-left: auto;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+    flex-shrink: 0;
 }
 
 /* ==========================================================================

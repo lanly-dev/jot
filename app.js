@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentFilterTag = 'all'
   let currentSearchQuery = ''
   let currentView = 'active' // 'active' or 'archived'
+  let currentLayoutView = localStorage.getItem('jot_layout_view') || 'thumbnail' // 'thumbnail' or 'list'
   let isFormPinned = false // whether the note-in-creation is pinned
 
   // DEFAULT SAMPLES (Loaded only on first visit to make it feel rich and welcoming!)
@@ -62,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const btnFilterActive = document.getElementById('btn-filter-active')
   const btnFilterArchived = document.getElementById('btn-filter-archived')
+  const btnLayoutToggle = document.getElementById('btn-layout-toggle')
   const tagsListContainer = document.getElementById('tags-list')
   
   const notesGrid = document.getElementById('notes-grid')
@@ -76,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function init() {
     setupEventListeners()
     fetchNotes()
+    updateLayoutToggleButton()
   }
 
   async function fetchNotes() {
@@ -185,6 +188,14 @@ document.addEventListener('DOMContentLoaded', () => {
       currentView = 'archived'
       btnFilterArchived.classList.add('active')
       btnFilterActive.classList.remove('active')
+      render()
+    })
+
+    // Thumbnail/List layout toggle
+    btnLayoutToggle.addEventListener('click', () => {
+      currentLayoutView = currentLayoutView === 'thumbnail' ? 'list' : 'thumbnail'
+      localStorage.setItem('jot_layout_view', currentLayoutView)
+      updateLayoutToggleButton()
       render()
     })
 
@@ -495,6 +506,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // MAIN RENDER CONTROLLER
   function render() {
+    notesGrid.classList.toggle('list-view', currentLayoutView === 'list')
+
     // 1. Update stats dashboard
     updateStatsDashboard()
 
@@ -553,12 +566,27 @@ document.addEventListener('DOMContentLoaded', () => {
         emptyPara.textContent = 'Write your first sweet note in the panel on the left to start filling your board with color and joy!'
       }
     } else {
-      notesGrid.style.display = 'grid'
+      notesGrid.style.display = currentLayoutView === 'list' ? 'flex' : 'grid'
       emptyState.style.display = 'none'
       
       // Render card templates
       notesGrid.innerHTML = filteredNotes.map(note => renderNoteCardHTML(note)).join('')
     }
+  }
+
+  // Keep layout toggle label and style in sync with current mode
+  function updateLayoutToggleButton() {
+    if (!btnLayoutToggle) return
+
+    const isListView = currentLayoutView === 'list'
+    const nextViewLabel = isListView ? 'thumbnail' : 'list'
+    const listIcon = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>`
+    const gridIcon = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>`
+
+    btnLayoutToggle.classList.toggle('active', isListView)
+    btnLayoutToggle.innerHTML = `${isListView ? gridIcon : listIcon}<span class="sr-only">Switch to ${nextViewLabel} view</span>`
+    btnLayoutToggle.title = `Switch to ${nextViewLabel} view`
+    btnLayoutToggle.setAttribute('aria-label', `Switch to ${nextViewLabel} view`)
   }
 
   // HTML CARD RENDER TEMPLATE

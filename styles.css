@@ -295,7 +295,8 @@ h1, h2, h3, h4 {
 }
 
 .input-group input, 
-.input-group textarea {
+.input-group textarea,
+.input-group select {
     width: 100%;
     background-color: rgba(255, 255, 255, 0.8);
     border: 2px solid var(--border-color);
@@ -316,7 +317,8 @@ h1, h2, h3, h4 {
 }
 
 .input-group input:focus,
-.input-group textarea:focus {
+.input-group textarea:focus,
+.input-group select:focus {
     border-color: var(--color-primary);
     background-color: #ffffff;
     box-shadow: 0 0 0 4px rgba(255, 117, 143, 0.1);
@@ -325,6 +327,74 @@ h1, h2, h3, h4 {
 .input-group textarea {
     resize: vertical;
     min-height: 120px;
+}
+
+.note-type-hint {
+    margin: -0.55rem 0 1rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.conditional-config {
+    margin-bottom: 1rem;
+}
+
+.conditional-config label {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+}
+
+.spreadsheet-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 0.6rem;
+}
+
+.spreadsheet-controls label {
+    margin: 0;
+}
+
+.spreadsheet-controls input {
+    width: 68px;
+    background-color: #ffffff;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    padding: 0.3rem 0.45rem;
+    font-family: var(--font-body);
+    font-weight: 600;
+}
+
+.spreadsheet-grid {
+    overflow-x: auto;
+    border: 2px solid var(--border-color);
+    border-radius: 14px;
+    background: #ffffff;
+    padding: 0.45rem;
+}
+
+.spreadsheet-grid table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.spreadsheet-grid td {
+    border: 1px solid #efe9e4;
+}
+
+.spreadsheet-grid input {
+    border: none;
+    width: 100%;
+    min-width: 80px;
+    padding: 0.45rem;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    background: transparent;
+    outline: none;
 }
 
 /* ==========================================================================
@@ -695,12 +765,102 @@ h1, h2, h3, h4 {
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 1.5rem;
     width: 100%;
+    position: relative;
 }
 
 .notes-grid.list-view {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+}
+
+.note-focus-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(25, 22, 20, 0.35);
+    backdrop-filter: blur(3px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 25;
+}
+
+.note-focus-backdrop.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+body.note-focus-open {
+    overflow: hidden;
+}
+
+.note-preview-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -48%);
+    width: min(900px, calc(100vw - 2rem));
+    max-height: calc(100vh - 2.5rem);
+    background: #ffffff;
+    border: 2px solid var(--border-color);
+    border-radius: 24px;
+    box-shadow: 0 24px 55px rgba(45, 43, 42, 0.3);
+    z-index: 35;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.note-preview-panel.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translate(-50%, -50%);
+}
+
+.note-preview-close {
+    align-self: flex-end;
+    margin: 0.8rem 0.9rem 0 0;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: #faf8f6;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.note-preview-content {
+    overflow: auto;
+    padding: 0 1.4rem 1.4rem;
+}
+
+.note-preview-article {
+    background-color: var(--note-color, var(--pastel-pink));
+    border: 2px solid var(--border-color);
+    border-radius: 18px;
+    padding: 1.3rem;
+}
+
+.note-preview-title {
+    font-size: 1.45rem;
+    line-height: 1.2;
+    margin: 0 0 0.3rem;
+    word-break: break-word;
+}
+
+.note-preview-meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-bottom: 0.7rem;
 }
 
 .note-card {
@@ -721,6 +881,33 @@ h1, h2, h3, h4 {
 .note-card:hover {
     transform: translateY(-6px) rotate(0.5deg);
     box-shadow: var(--card-shadow-hover);
+}
+
+.notes-grid.has-focused-note .note-card {
+    opacity: 0.25;
+    transform: scale(0.98);
+    filter: blur(1px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease, filter 0.2s ease;
+}
+
+.notes-grid.has-focused-note .note-card.focused-card {
+    opacity: 1;
+    filter: none;
+    pointer-events: auto;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    z-index: 35;
+    width: min(860px, calc(100vw - 2rem));
+    max-height: calc(100vh - 3rem);
+    overflow: auto;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 24px 55px rgba(45, 43, 42, 0.3);
+}
+
+.notes-grid.list-view.has-focused-note .note-card.focused-card {
+    transform: translate(-50%, -50%);
 }
 
 /* Dynamic tilt to alternate cards for custom handmade feel */
@@ -769,6 +956,31 @@ h1, h2, h3, h4 {
     padding-right: 1.75rem; /* make room for pin */
 }
 
+.note-type-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.35px;
+    padding: 0.18rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba(45, 43, 42, 0.12);
+    background: rgba(255, 255, 255, 0.65);
+    margin-bottom: 0.35rem;
+}
+
+.note-type-badge.type-dev {
+    color: #6d4aa2;
+}
+
+.note-type-badge.type-reminder {
+    color: #1b8f7f;
+}
+
+.note-type-badge.type-spreadsheet {
+    color: #8b6a1d;
+}
+
 .note-title {
     font-size: 1.2rem;
     font-weight: 700;
@@ -784,6 +996,70 @@ h1, h2, h3, h4 {
     word-break: break-word;
     flex-grow: 1;
     margin-bottom: 1.25rem;
+}
+
+.note-body-markdown {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: rgba(45, 43, 42, 0.88);
+    margin-bottom: 1rem;
+}
+
+.note-body-markdown h2,
+.note-body-markdown h3,
+.note-body-markdown h4 {
+    margin: 0.25rem 0;
+    font-size: 1rem;
+}
+
+.note-body-markdown code {
+    background: rgba(255, 255, 255, 0.65);
+    border-radius: 6px;
+    padding: 0.05rem 0.3rem;
+    font-size: 0.8rem;
+}
+
+.note-body-markdown pre {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(45, 43, 42, 0.08);
+    border-radius: 10px;
+    padding: 0.55rem;
+    overflow-x: auto;
+    margin: 0.35rem 0;
+}
+
+.reminder-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(45, 43, 42, 0.08);
+    border-radius: 8px;
+    padding: 0.22rem 0.5rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 0.65rem;
+}
+
+.spreadsheet-preview {
+    overflow-x: auto;
+    margin-bottom: 0.95rem;
+    border: 1px solid rgba(45, 43, 42, 0.08);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.spreadsheet-preview table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.spreadsheet-preview td {
+    border: 1px solid rgba(45, 43, 42, 0.08);
+    font-size: 0.78rem;
+    padding: 0.3rem 0.45rem;
+    min-width: 50px;
 }
 
 /* Note Tags Inside Card */
@@ -884,6 +1160,26 @@ h1, h2, h3, h4 {
 
 .notes-grid.list-view .note-body {
     display: none;
+}
+
+.notes-grid.list-view .note-body-markdown,
+.notes-grid.list-view .spreadsheet-preview,
+.notes-grid.list-view .reminder-chip,
+.notes-grid.list-view .note-type-badge {
+    display: none;
+}
+
+.notes-grid.list-view.has-focused-note .note-card.focused-card .note-body,
+.notes-grid.list-view.has-focused-note .note-card.focused-card .note-body-markdown,
+.notes-grid.list-view.has-focused-note .note-card.focused-card .spreadsheet-preview,
+.notes-grid.list-view.has-focused-note .note-card.focused-card .reminder-chip,
+.notes-grid.list-view.has-focused-note .note-card.focused-card .note-type-badge,
+.notes-grid.list-view.has-focused-note .note-card.focused-card .note-card-tags {
+    display: block;
+}
+
+.notes-grid.list-view.has-focused-note .note-card.focused-card .note-card-tags {
+    display: flex;
 }
 
 .notes-grid.list-view .note-card-tags {

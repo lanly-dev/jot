@@ -21,6 +21,19 @@ app.use(express.static(path.join(__dirname)))
 const DATA_DIR = path.join(__dirname, 'data')
 const DATA_FILE = path.join(DATA_DIR, 'notes.json')
 
+function normalizeNoteType(type) {
+  const allowedTypes = ['standard', 'dev', 'reminder', 'spreadsheet']
+  return allowedTypes.includes(type) ? type : 'standard'
+}
+
+function normalizeSpreadsheetData(spreadsheetData) {
+  if (!Array.isArray(spreadsheetData)) return null
+  return spreadsheetData.slice(0, 12).map(row => {
+    if (!Array.isArray(row)) return []
+    return row.slice(0, 8).map(cell => String(cell || ''))
+  })
+}
+
 // Default sample notes seed
 const SAMPLE_NOTES = [
   {
@@ -31,6 +44,9 @@ const SAMPLE_NOTES = [
     tags: ['welcome', 'tips', 'sweet'],
     pinned: true,
     archived: false,
+    type: 'standard',
+    reminderAt: null,
+    spreadsheetData: null,
     createdAt: new Date(Date.now() - 60000).toISOString()
   },
   {
@@ -41,6 +57,9 @@ const SAMPLE_NOTES = [
     tags: ['fun', 'food', 'weekend'],
     pinned: false,
     archived: false,
+    type: 'standard',
+    reminderAt: null,
+    spreadsheetData: null,
     createdAt: new Date(Date.now() - 120000).toISOString()
   },
   {
@@ -51,6 +70,9 @@ const SAMPLE_NOTES = [
     tags: ['dream', 'story'],
     pinned: false,
     archived: false,
+    type: 'standard',
+    reminderAt: null,
+    spreadsheetData: null,
     createdAt: new Date(Date.now() - 180000).toISOString()
   }
 ]
@@ -109,6 +131,9 @@ app.post('/api/notes', (req, res) => {
     tags: Array.isArray(req.body.tags) ? req.body.tags : [],
     pinned: !!req.body.pinned,
     archived: !!req.body.archived,
+    type: normalizeNoteType(req.body.type),
+    reminderAt: req.body.reminderAt || null,
+    spreadsheetData: normalizeSpreadsheetData(req.body.spreadsheetData),
     createdAt: req.body.createdAt || new Date().toISOString()
   }
 
@@ -137,6 +162,11 @@ app.put('/api/notes/:id', (req, res) => {
     tags: Array.isArray(req.body.tags) ? req.body.tags : notes[noteIndex].tags,
     pinned: req.body.pinned !== undefined ? !!req.body.pinned : notes[noteIndex].pinned,
     archived: req.body.archived !== undefined ? !!req.body.archived : notes[noteIndex].archived,
+    type: req.body.type !== undefined ? normalizeNoteType(req.body.type) : (notes[noteIndex].type || 'standard'),
+    reminderAt: req.body.reminderAt !== undefined ? (req.body.reminderAt || null) : (notes[noteIndex].reminderAt || null),
+    spreadsheetData: req.body.spreadsheetData !== undefined
+      ? normalizeSpreadsheetData(req.body.spreadsheetData)
+      : (notes[noteIndex].spreadsheetData || null),
   }
 
   notes[noteIndex] = updatedNote

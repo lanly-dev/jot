@@ -10,6 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentView = 'active' // 'active' or 'archived'
   let currentLayoutView = localStorage.getItem('jot_layout_view') || 'thumbnail' // 'thumbnail' or 'list'
   let isFormPinned = false // whether the note-in-creation is pinned
+  let focusedNoteId = null
+  let spreadsheetDraft = []
+  const reminderTimers = new Map()
 
   // DEFAULT SAMPLES (Loaded only on first visit to make it feel rich and welcoming!)
   const SAMPLE_NOTES = [
@@ -51,6 +54,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const noteTitleInput = document.getElementById('note-title')
   const noteContentInput = document.getElementById('note-content')
   const noteTagsInput = document.getElementById('note-tags')
+  const noteTypeSelect = document.getElementById('note-type')
+  const noteReminderAtInput = document.getElementById('note-reminder-at')
+  const reminderConfig = document.getElementById('reminder-config')
+  const devNoteHint = document.getElementById('devnote-hint')
+  const spreadsheetConfig = document.getElementById('spreadsheet-config')
+  const spreadsheetGrid = document.getElementById('spreadsheet-grid')
+  const sheetRowsInput = document.getElementById('sheet-rows')
+  const sheetColsInput = document.getElementById('sheet-cols')
   const editorCard = document.getElementById('editor-card')
   const editorTitleHeading = document.getElementById('editor-title-heading')
   const editorPinBtn = document.getElementById('editor-pin-btn')
@@ -68,6 +79,10 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const notesGrid = document.getElementById('notes-grid')
   const emptyState = document.getElementById('empty-state')
+  const noteFocusBackdrop = document.getElementById('note-focus-backdrop')
+  const notePreviewPanel = document.getElementById('note-preview-panel')
+  const notePreviewContent = document.getElementById('note-preview-content')
+  const notePreviewClose = document.getElementById('note-preview-close')
   
   // Stats dashboard selectors
   const statTotalNotes = document.getElementById('stat-total-notes')
@@ -76,25 +91,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // INITIALIZATION
   function init() {
+    initSpreadsheetDraft(3, 3)
     setupEventListeners()
     fetchNotes()
     updateLayoutToggleButton()
+    updateTypeSpecificFields()
   }
 
   async function fetchNotes() {
     try {
       const res = await fetch('/api/notes')
       if (!res.ok) throw new Error('Failed to fetch notes')
-      notes = await res.json()
+      const fetchedNotes = await res.json()
+      notes = Array.isArray(fetchedNotes)
+        ? fetchedNotes.map(note => normalizeNote(note))
+        : []
       saveNotesToStorage() // update offline backup
     } catch (err) {
       console.error('Error fetching notes from cloud:', err)
       // Fallback to local storage
       const savedNotes = localStorage.getItem('jot_notes')
       if (savedNotes) {
-        notes = JSON.parse(savedNotes)
+        const parsedNotes = JSON.parse(savedNotes)
+        notes = Array.isArray(parsedNotes)
+          ? parsedNotes.map(note => normalizeNote(note))
+          : []
       } else {
-        notes = [...SAMPLE_NOTES]
+        notes = [...SAMPLE_NOTES].map(note => normalizeNote(note))
         saveNotesToStorage()
       }
       showToast('Running in local offline mode ⚠️', 'warn')
@@ -199,6 +222,30 @@ document.addEventListener('DOMContentLoaded', () => {
       render()
     })
 
+    // Note type and type-specific editors
+    noteTypeSelect.addEventListener('change', () => {
+      updateTypeSpecificFields()
+    })
+
+    const resizeSheet = () => {
+      const rows = clampNumber(sheetRowsInput.value, 1, 12, 3)
+      const cols = clampNumber(sheetColsInput.value, 1, 8, 3)
+      resizeSpreadsheetDraft(rows, cols)
+      renderSpreadsheetGrid()
+    }
+
+    sheetRowsInput.addEventListener('input', resizeSheet)
+    sheetColsInput.addEventListener('input', resizeSheet)
+
+    spreadsheetGrid.addEventListener('input', (e) => {
+      const cell = e.target.closest('input[data-row][data-col]')
+      if (!cell) return
+      const row = Number(cell.getAttribute('data-row'))
+      const col = Number(cell.getAttribute('data-col'))
+      if (!spreadsheetDraft[row]) return
+      spreadsheetDraft[row][col] = cell.value
+    })
+
     // Tag filter list click delegation
     tagsListContainer.addEventListener('click', (e) => {
       const clickedTag = e.target.closest('.tag-pill')
@@ -214,6 +261,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Card Action Delegations (Pin, Edit, Archive, Delete, Tag-Filter Click inside Card)
     notesGrid.addEventListener('click', handleCardActions)
+
+    // Focus mode exit handlers
+    noteFocusBackdrop.addEventListener('click', closeFocusedNote)
+    notePreviewClose.addEventListener('click', closeFocusedNote)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeFocusedNote()
+      }
+    })
   }
 
   // CREATE OR UPDATE NOTE FORM HANDLER
@@ -224,6 +280,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const title = noteTitleInput.value.trim()
     const content = noteContentInput.value.trim()
     const tagsString = noteTagsInput.value.trim()
+    const noteType = noteTypeSelect.value
+    const reminderAt = noteType === 'reminder' ? noteReminderAtInput.value || null : null
+    const spreadsheetData = noteType === 'spreadsheet' ? spreadsheetDraft.map(row => row.map(cell => cell.trim())) : null
+
+    ensureNotificationPermissionIfNeeded(noteType)
     
     const colorRadio = document.querySelector('input[name="note-color"]:checked')
     const color = colorRadio ? colorRadio.value : '#ffd1dc'
@@ -234,7 +295,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (id) {
       // EDITING EXISTING NOTE
-      const updatedFields = { title, content, color, tags, pinned: isFormPinned }
+      const updatedFields = {
+        title,
+        content,
+        color,
+        tags,
+        pinned: isFormPinned,
+        type: noteType,
+        reminderAt,
+        spreadsheetData
+      }
       
       try {
         const res = await fetch(`/api/notes/${id}`, {
@@ -244,11 +314,11 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         if (!res.ok) throw new Error('Cloud update failed')
         const updatedNote = await res.json()
-        notes = notes.map(n => n.id === id ? updatedNote : n)
+        notes = notes.map(n => n.id === id ? normalizeNote(updatedNote, updatedFields) : n)
         showToast('Jot updated! ✏️')
       } catch (err) {
         console.error(err)
-        notes = notes.map(n => n.id === id ? { ...n, ...updatedFields } : n)
+        notes = notes.map(n => n.id === id ? normalizeNote({ ...n, ...updatedFields }) : n)
         showToast('Updated locally ⚠️', 'warn')
       }
     } else {
@@ -259,6 +329,9 @@ document.addEventListener('DOMContentLoaded', () => {
         color,
         tags,
         pinned: isFormPinned,
+        type: noteType,
+        reminderAt,
+        spreadsheetData,
         archived: false,
         createdAt: new Date().toISOString()
       }
@@ -271,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         if (!res.ok) throw new Error('Cloud save failed')
         const savedNote = await res.json()
-        notes.unshift(savedNote)
+        notes.unshift(normalizeNote(savedNote, newNote))
         showToast('Jot saved successfully! ✨')
       } catch (err) {
         console.error(err)
@@ -279,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ...newNote,
           id: 'note-' + Date.now()
         }
-        notes.unshift(localNote)
+        notes.unshift(normalizeNote(localNote))
         showToast('Saved locally ⚠️', 'warn')
       }
     }
@@ -287,6 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
     saveNotesToStorage()
     resetForm()
     render()
+    scheduleReminderNotifications()
 
     window.scrollTo({ top: notesGrid.offsetTop - 100, behavior: 'smooth' })
   }
@@ -296,7 +370,25 @@ document.addEventListener('DOMContentLoaded', () => {
     noteIdInput.value = note.id
     noteTitleInput.value = note.title
     noteContentInput.value = note.content
-    noteTagsInput.value = note.tags.join(', ')
+    noteTagsInput.value = Array.isArray(note.tags) ? note.tags.join(', ') : ''
+    noteTypeSelect.value = note.type || 'standard'
+    noteReminderAtInput.value = note.reminderAt ? note.reminderAt.slice(0, 16) : ''
+
+    const sheetData = Array.isArray(note.spreadsheetData) && note.spreadsheetData.length > 0
+      ? note.spreadsheetData
+      : [['', '', ''], ['', '', ''], ['', '', '']]
+    const rows = Math.min(Math.max(sheetData.length, 1), 12)
+    const cols = Math.min(Math.max((sheetData[0] || []).length, 1), 8)
+    sheetRowsInput.value = rows
+    sheetColsInput.value = cols
+    initSpreadsheetDraft(rows, cols)
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        spreadsheetDraft[r][c] = (sheetData[r] && sheetData[r][c]) ? String(sheetData[r][c]) : ''
+      }
+    }
+    updateTypeSpecificFields()
+    renderSpreadsheetGrid()
     
     // Select color radio in form
     const radioToSelect = document.querySelector(`input[name="note-color"][value="${note.color}"]`)
@@ -331,6 +423,13 @@ document.addEventListener('DOMContentLoaded', () => {
   function resetForm() {
     noteIdInput.value = ''
     noteForm.reset()
+    noteTypeSelect.value = 'standard'
+    noteReminderAtInput.value = ''
+    sheetRowsInput.value = 3
+    sheetColsInput.value = 3
+    initSpreadsheetDraft(3, 3)
+    updateTypeSpecificFields()
+    renderSpreadsheetGrid()
     
     // Reset color selector to first pink choice
     const pinkRadio = document.querySelector('input[name="note-color"][value="#ffd1dc"]')
@@ -364,11 +463,22 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       if (!res.ok) throw new Error('Cloud sync failed')
       const updatedNote = await res.json()
-      notes = notes.map(n => n.id === id ? updatedNote : n)
+      notes = notes.map(n => n.id === id ? normalizeNote(updatedNote, fields) : n)
       saveNotesToStorage()
     } catch (err) {
       console.error('Silent update sync failed:', err)
       saveNotesToStorage()
+    }
+  }
+
+  function normalizeNote(note, fallback = {}) {
+    const merged = { ...fallback, ...(note || {}) }
+    return {
+      ...merged,
+      type: merged.type || 'standard',
+      reminderAt: merged.reminderAt || null,
+      spreadsheetData: Array.isArray(merged.spreadsheetData) ? merged.spreadsheetData : null,
+      tags: Array.isArray(merged.tags) ? merged.tags : []
     }
   }
 
@@ -406,6 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 3. EDIT ACTION
     if (target.closest('.action-edit')) {
+      closeFocusedNote()
       populateFormForEditing(note)
       return
     }
@@ -442,6 +553,9 @@ document.addEventListener('DOMContentLoaded', () => {
       render()
       return
     }
+
+    // 6. CLICK CARD TO FOCUS/EXPAND
+    openFocusedNote(noteId)
   }
 
   // RE-GENERATE DYNAMIC TAG LIST BAR
@@ -451,7 +565,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const allTags = []
     
     relevantNotes.forEach(note => {
-      note.tags.forEach(tag => {
+      const tags = Array.isArray(note.tags) ? note.tags : []
+      tags.forEach(tag => {
         if (!allTags.includes(tag)) {
           allTags.push(tag)
         }
@@ -523,10 +638,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const matchesTag = currentFilterTag === 'all' || note.tags.includes(currentFilterTag)
       
       // Search Query
+      const titleText = String(note.title || '').toLowerCase()
+      const contentText = String(note.content || '').toLowerCase()
       const matchesSearch = !currentSearchQuery || 
-        note.title.toLowerCase().includes(currentSearchQuery) || 
-        note.content.toLowerCase().includes(currentSearchQuery) ||
-        note.tags.some(tag => tag.toLowerCase().includes(currentSearchQuery))
+        titleText.includes(currentSearchQuery) || 
+        contentText.includes(currentSearchQuery) ||
+        (Array.isArray(note.tags) ? note.tags : []).some(tag => tag.toLowerCase().includes(currentSearchQuery))
 
       return matchesView && matchesTag && matchesSearch
     })
@@ -537,6 +654,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!a.pinned && b.pinned) return 1
       return new Date(b.createdAt) - new Date(a.createdAt)
     })
+
+    // If focused note is no longer visible due to filters/search/view, exit focus mode.
+    if (focusedNoteId && !filteredNotes.some(note => note.id === focusedNoteId)) {
+      focusedNoteId = null
+    }
 
     // 5. Handle empty state display
     if (filteredNotes.length === 0) {
@@ -572,6 +694,78 @@ document.addEventListener('DOMContentLoaded', () => {
       // Render card templates
       notesGrid.innerHTML = filteredNotes.map(note => renderNoteCardHTML(note)).join('')
     }
+
+    applyFocusedNoteState()
+    scheduleReminderNotifications()
+  }
+
+  function openFocusedNote(noteId) {
+    focusedNoteId = focusedNoteId === noteId ? null : noteId
+    applyFocusedNoteState()
+  }
+
+  function closeFocusedNote() {
+    if (!focusedNoteId) return
+    focusedNoteId = null
+    applyFocusedNoteState()
+  }
+
+  function applyFocusedNoteState() {
+    const focusedNote = notes.find(note => note.id === focusedNoteId)
+    const hasFocusedNote = !!focusedNote
+
+    noteFocusBackdrop.classList.toggle('active', hasFocusedNote)
+    notePreviewPanel.classList.toggle('active', hasFocusedNote)
+    notePreviewPanel.setAttribute('aria-hidden', hasFocusedNote ? 'false' : 'true')
+    document.body.classList.toggle('note-focus-open', hasFocusedNote)
+
+    if (hasFocusedNote) {
+      notePreviewContent.innerHTML = renderFocusedNotePanelHTML(focusedNote)
+    } else {
+      notePreviewContent.innerHTML = ''
+    }
+  }
+
+  function renderFocusedNotePanelHTML(note) {
+    const noteType = note.type || 'standard'
+    const safeTags = Array.isArray(note.tags) ? note.tags : []
+    const typeLabelMap = {
+      standard: 'Standard',
+      dev: 'Dev',
+      reminder: 'Reminder',
+      spreadsheet: 'Sheet'
+    }
+
+    const escapedTitle = escapeHTML(note.title)
+    const escapedContent = escapeHTML(note.content)
+    const tagsMarkup = safeTags.map(tag => `<span class="note-card-tag" data-tag="${tag}">#${tag}</span>`).join('')
+    const reminderText = noteType === 'reminder' && note.reminderAt
+      ? `<div class="reminder-chip">⏰ ${escapeHTML(formatReminder(note.reminderAt))}</div>`
+      : ''
+    const markdownMarkup = noteType === 'dev'
+      ? `<div class="note-body-markdown">${renderMarkdown(note.content || '')}</div>`
+      : ''
+    const spreadsheetMarkup = noteType === 'spreadsheet'
+      ? renderSpreadsheetPreview(note.spreadsheetData)
+      : ''
+    const standardBodyMarkup = noteType === 'standard' || noteType === 'reminder'
+      ? `<p class="note-body">${escapedContent}</p>`
+      : ''
+
+    return `
+      <article class="note-preview-article" style="--note-color: ${note.color};">
+        <div class="note-header">
+          <span class="note-type-badge type-${noteType}">${typeLabelMap[noteType] || 'Standard'}</span>
+          <h2 class="note-preview-title">${escapedTitle}</h2>
+          <p class="note-preview-meta">${escapeHTML(formatDate(note.createdAt))}</p>
+        </div>
+        ${reminderText}
+        ${standardBodyMarkup}
+        ${markdownMarkup}
+        ${spreadsheetMarkup}
+        <div class="note-card-tags">${tagsMarkup}</div>
+      </article>
+    `
   }
 
   // Keep layout toggle label and style in sync with current mode
@@ -589,12 +783,160 @@ document.addEventListener('DOMContentLoaded', () => {
     btnLayoutToggle.setAttribute('aria-label', `Switch to ${nextViewLabel} view`)
   }
 
+  function clampNumber(value, min, max, fallback) {
+    const num = Number(value)
+    if (Number.isNaN(num)) return fallback
+    return Math.min(Math.max(num, min), max)
+  }
+
+  function initSpreadsheetDraft(rows, cols) {
+    spreadsheetDraft = Array.from({ length: rows }, () =>
+      Array.from({ length: cols }, () => '')
+    )
+  }
+
+  function resizeSpreadsheetDraft(rows, cols) {
+    const next = Array.from({ length: rows }, (_, r) =>
+      Array.from({ length: cols }, (_, c) => (spreadsheetDraft[r] && spreadsheetDraft[r][c]) ? spreadsheetDraft[r][c] : '')
+    )
+    spreadsheetDraft = next
+    sheetRowsInput.value = rows
+    sheetColsInput.value = cols
+  }
+
+  function renderSpreadsheetGrid() {
+    const rows = clampNumber(sheetRowsInput.value, 1, 12, 3)
+    const cols = clampNumber(sheetColsInput.value, 1, 8, 3)
+
+    let html = '<table><tbody>'
+    for (let r = 0; r < rows; r++) {
+      html += '<tr>'
+      for (let c = 0; c < cols; c++) {
+        const cellValue = (spreadsheetDraft[r] && spreadsheetDraft[r][c]) ? escapeHTML(spreadsheetDraft[r][c]) : ''
+        html += `<td><input type="text" data-row="${r}" data-col="${c}" value="${cellValue}" placeholder="Cell"></td>`
+      }
+      html += '</tr>'
+    }
+    html += '</tbody></table>'
+    spreadsheetGrid.innerHTML = html
+  }
+
+  function updateTypeSpecificFields() {
+    const type = noteTypeSelect.value
+    devNoteHint.style.display = type === 'dev' ? 'block' : 'none'
+    reminderConfig.style.display = type === 'reminder' ? 'block' : 'none'
+    spreadsheetConfig.style.display = type === 'spreadsheet' ? 'block' : 'none'
+
+    if (type === 'spreadsheet') {
+      noteContentInput.required = false
+      noteContentInput.placeholder = 'Optional summary for this table...'
+      renderSpreadsheetGrid()
+    } else if (type === 'dev') {
+      noteContentInput.required = true
+      noteContentInput.placeholder = 'Write markdown like # Heading, **bold**, `code`, and lists...'
+    } else {
+      noteContentInput.required = true
+      noteContentInput.placeholder = 'Write your thoughts down here... Feel free to be creative!'
+    }
+  }
+
+  function clearReminderTimers() {
+    reminderTimers.forEach(timerId => clearTimeout(timerId))
+    reminderTimers.clear()
+  }
+
+  function scheduleReminderNotifications() {
+    clearReminderTimers()
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+
+    notes
+      .filter(n => !n.archived && (n.type === 'reminder') && n.reminderAt)
+      .forEach(note => {
+        const msUntilReminder = new Date(note.reminderAt).getTime() - Date.now()
+        if (msUntilReminder <= 0 || Number.isNaN(msUntilReminder)) return
+
+        const timerId = setTimeout(() => {
+          showReminderNotification(note)
+          reminderTimers.delete(note.id)
+        }, msUntilReminder)
+
+        reminderTimers.set(note.id, timerId)
+      })
+  }
+
+  function showReminderNotification(note) {
+    try {
+      const body = note.content && note.content.trim().length > 0
+        ? note.content
+        : 'You have a reminder note due now.'
+      new Notification(`Reminder: ${note.title || 'Untitled Note'}`, { body })
+      showToast(`Reminder: ${note.title || 'Untitled Note'} ⏰`, 'success')
+    } catch (err) {
+      console.error('Reminder notification failed:', err)
+    }
+  }
+
+  function ensureNotificationPermissionIfNeeded(noteType) {
+    if (noteType !== 'reminder' || typeof Notification === 'undefined') return
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {})
+    }
+  }
+
+  function renderMarkdown(markdownText) {
+    if (!markdownText) return ''
+
+    let html = escapeHTML(markdownText)
+    html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    html = html.replace(/^### (.*)$/gm, '<h4>$1</h4>')
+    html = html.replace(/^## (.*)$/gm, '<h3>$1</h3>')
+    html = html.replace(/^# (.*)$/gm, '<h2>$1</h2>')
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>')
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
+    html = html.replace(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    html = html.replace(/^- (.*)$/gm, '<li>$1</li>')
+    html = html.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+    html = html.replace(/\n/g, '<br>')
+    return html
+  }
+
+  function renderSpreadsheetPreview(spreadsheetData) {
+    if (!Array.isArray(spreadsheetData) || spreadsheetData.length === 0) return ''
+
+    const previewRows = spreadsheetData.slice(0, 5)
+    const rowsMarkup = previewRows.map(row => {
+      const cells = Array.isArray(row) ? row : []
+      return `<tr>${cells.slice(0, 6).map(cell => `<td>${escapeHTML(String(cell || ''))}</td>`).join('')}</tr>`
+    }).join('')
+
+    return `<div class="spreadsheet-preview"><table><tbody>${rowsMarkup}</tbody></table></div>`
+  }
+
+  function formatReminder(reminderAt) {
+    if (!reminderAt) return ''
+    const reminderDate = new Date(reminderAt)
+    if (Number.isNaN(reminderDate.getTime())) return ''
+    return reminderDate.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  }
+
   // HTML CARD RENDER TEMPLATE
   function renderNoteCardHTML(note) {
+    const noteType = note.type || 'standard'
+
     // Tag badges markup
-    const tagsMarkup = note.tags.map(tag => 
+    const safeTags = Array.isArray(note.tags) ? note.tags : []
+    const tagsMarkup = safeTags.map(tag => 
       `<span class="note-card-tag" data-tag="${tag}">#${tag}</span>`
     ).join('')
+
+    const typeLabelMap = {
+      standard: 'Standard',
+      dev: 'Dev',
+      reminder: 'Reminder',
+      spreadsheet: 'Sheet'
+    }
+    const typeBadgeMarkup = `<span class="note-type-badge type-${noteType}">${typeLabelMap[noteType] || 'Standard'}</span>`
 
     // Pin badge conditional class and marker
     const pinBadgeMarkup = note.pinned 
@@ -617,16 +959,32 @@ document.addEventListener('DOMContentLoaded', () => {
     // Title and Content escaping to avoid XSS injections while maintaining layout spacing
     const escapedTitle = escapeHTML(note.title)
     const escapedContent = escapeHTML(note.content)
+    const markdownMarkup = noteType === 'dev'
+      ? `<div class="note-body-markdown">${renderMarkdown(note.content || '')}</div>`
+      : ''
+    const spreadsheetMarkup = noteType === 'spreadsheet'
+      ? renderSpreadsheetPreview(note.spreadsheetData)
+      : ''
+    const reminderText = noteType === 'reminder' && note.reminderAt
+      ? `<div class="reminder-chip">⏰ ${escapeHTML(formatReminder(note.reminderAt))}</div>`
+      : ''
+    const standardBodyMarkup = noteType === 'standard' || noteType === 'reminder'
+      ? `<p class="note-body">${escapedContent}</p>`
+      : ''
 
     return `
       <article class="note-card ${note.pinned ? 'pinned-card' : ''}" data-id="${note.id}" style="--note-color: ${note.color};">
         ${pinBadgeMarkup}
         
         <div class="note-header">
+          ${typeBadgeMarkup}
           <h3 class="note-title">${escapedTitle}</h3>
         </div>
-        
-        <p class="note-body">${escapedContent}</p>
+
+        ${reminderText}
+        ${standardBodyMarkup}
+        ${markdownMarkup}
+        ${spreadsheetMarkup}
         
         <div class="note-card-tags">
           ${tagsMarkup}
@@ -661,7 +1019,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ESCAPE HTML STRINGS TO PREVENT XSS
   function escapeHTML(str) {
-    return str
+    return String(str || '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')

@@ -89,6 +89,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const statPinnedNotes = document.getElementById('stat-pinned-notes')
   const statArchivedNotes = document.getElementById('stat-archived-notes')
 
+  // Note Creator UI elements
+  const creatorCollapsed = document.getElementById('creator-collapsed')
+  const creatorExpanded = document.getElementById('creator-expanded')
+  const btnExpandCreator = document.getElementById('btn-expand-creator')
+  const btnCloseCreator = document.getElementById('btn-close-creator')
+
   // INITIALIZATION
   function init() {
     initSpreadsheetDraft(3, 3)
@@ -270,6 +276,51 @@ document.addEventListener('DOMContentLoaded', () => {
         closeFocusedNote()
       }
     })
+
+    // Google Keep-Style Note Creator Listeners
+    if (btnExpandCreator) {
+      btnExpandCreator.addEventListener('click', (e) => {
+        e.stopPropagation()
+        if (editorCard.classList.contains('active')) {
+          if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') {
+            resetForm()
+          } else {
+            noteForm.requestSubmit()
+          }
+        } else {
+          expandCreator()
+        }
+      })
+    }
+
+    if (btnCloseCreator) {
+      btnCloseCreator.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') {
+          resetForm()
+        } else {
+          noteForm.requestSubmit()
+        }
+      })
+    }
+
+    // Expand on focus
+    noteTitleInput.addEventListener('focus', expandCreator)
+    noteContentInput.addEventListener('focus', expandCreator)
+
+    // Collapse on click outside
+    document.addEventListener('click', (e) => {
+      if (editorCard && !editorCard.contains(e.target) && !e.target.closest('#btn-expand-creator')) {
+        if (editorCard.classList.contains('active')) {
+          if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') {
+            resetForm()
+          } else {
+            noteForm.requestSubmit()
+          }
+        }
+      }
+    })
   }
 
   // CREATE OR UPDATE NOTE FORM HANDLER
@@ -419,8 +470,39 @@ document.addEventListener('DOMContentLoaded', () => {
     noteTitleInput.focus()
   }
 
+  // Note Creator UI Behaviors
+  function expandCreator() {
+    if (editorCard.classList.contains('active')) return
+    editorCard.classList.add('active')
+    
+    // Toggle visibility of collapsed vs expanded states
+    if (creatorCollapsed) creatorCollapsed.style.display = 'none'
+    if (creatorExpanded) creatorExpanded.style.display = 'block'
+    
+    // If the user has typed in search, prepopulate the note content with it
+    if (searchInput && searchInput.value.trim() !== '') {
+      noteContentInput.value = searchInput.value
+      searchInput.value = ''
+      currentSearchQuery = ''
+      if (clearSearchBtn) clearSearchBtn.style.display = 'none'
+      render()
+    }
+    
+    noteTitleInput.focus()
+  }
+
+  function collapseCreator() {
+    if (!editorCard.classList.contains('active')) return
+    editorCard.classList.remove('active')
+    
+    // Toggle visibility of collapsed vs expanded states
+    if (creatorCollapsed) creatorCollapsed.style.display = 'flex'
+    if (creatorExpanded) creatorExpanded.style.display = 'none'
+  }
+
   // RESET FORM TO CREATE STATE
   function resetForm() {
+    collapseCreator()
     noteIdInput.value = ''
     noteForm.reset()
     noteTypeSelect.value = 'standard'

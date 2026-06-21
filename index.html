@@ -19,172 +19,154 @@
     <div class="bg-decor bg-decor-3"></div>
 
     <div class="app-container">
-        <!-- HEADER -->
-        <header class="app-header">
-            <div class="logo-area">
-                <span class="logo-mascot">✏️</span>
-                <div class="logo-text">
-                    <h1 class="logo-title">Jot</h1>
-                    <span class="logo-subtitle">your sweet thoughts</span>
-                </div>
-            </div>
-
-            <!-- Stats dashboard -->
-            <div class="stats-dashboard" id="stats-dashboard">
-                <div class="stat-pill" title="Active Notes">
-                    <span class="stat-icon">📝</span>
-                    <span class="stat-value" id="stat-total-notes">0</span>
-                    <span class="stat-label">Jots</span>
-                </div>
-                <div class="stat-pill" title="Pinned Notes">
-                    <span class="stat-icon">📌</span>
-                    <span class="stat-value" id="stat-pinned-notes">0</span>
-                    <span class="stat-label">Pinned</span>
-                </div>
-                <div class="stat-pill" title="Archived Notes">
-                    <span class="stat-icon">📦</span>
-                    <span class="stat-value" id="stat-archived-notes">0</span>
-                    <span class="stat-label">Archived</span>
-                </div>
-            </div>
-        </header>
-
         <!-- MAIN LAYOUT -->
         <main class="app-main">
-            <!-- LEFT PANEL: Create / Edit Note Form -->
-            <section class="editor-section">
-                <div class="editor-card" id="editor-card">
-                    <div class="tape-decorator"></div>
-                    <div class="editor-header">
-                        <h2 id="editor-title-heading">Create a New Jot</h2>
-                        <button type="button" class="btn-icon pin-toggle-btn" id="editor-pin-btn" title="Pin Note to Top">
-                            <!-- Pushpin SVG -->
-                            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="svg-pin"><line x1="18" y1="8" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="6"></line><path d="M12 6H8a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-4"></path><line x1="12" y1="17" x2="12" y2="22"></line></svg>
-                        </button>
-                    </div>
-
-                    <form id="note-form" class="note-form">
-                        <!-- Hidden input for editing mode -->
-                        <input type="hidden" id="note-id" value="">
-
-                        <div class="input-group">
-                            <label for="note-title" class="sr-only">Note Title</label>
-                            <input type="text" id="note-title" placeholder="Title (e.g. Shopping List, Great Idea ✨)" maxlength="50" required>
-                        </div>
-
-                        <div class="input-group">
-                            <label for="note-content" class="sr-only">Note Content</label>
-                            <textarea id="note-content" placeholder="Write your thoughts down here... Feel free to be creative!" rows="5" required></textarea>
-                        </div>
-
-                        <div class="input-group">
-                            <label for="note-tags" class="sr-only">Tags</label>
-                            <input type="text" id="note-tags" placeholder="Tags (comma-separated, e.g. work, fun, dream)">
-                        </div>
-
-                        <div class="input-group">
-                            <label for="note-type" class="sr-only">Note Type</label>
-                            <select id="note-type" aria-label="Note Type">
-                                <option value="standard">Standard Note</option>
-                                <option value="dev">Dev Note (Markdown)</option>
-                                <option value="reminder">Reminder Note</option>
-                                <option value="spreadsheet">Spreadsheet Note</option>
-                            </select>
-                        </div>
-
-                        <p class="note-type-hint" id="devnote-hint" style="display: none;">Dev Note supports markdown formatting like headings, lists, links, code blocks, and inline code.</p>
-
-                        <div class="input-group conditional-config" id="reminder-config" style="display: none;">
-                            <label for="note-reminder-at">Reminder Time</label>
-                            <input type="datetime-local" id="note-reminder-at">
-                        </div>
-
-                        <div class="conditional-config" id="spreadsheet-config" style="display: none;">
-                            <div class="spreadsheet-controls">
-                                <label for="sheet-rows">Rows</label>
-                                <input type="number" id="sheet-rows" min="1" max="12" value="3">
-                                <label for="sheet-cols">Cols</label>
-                                <input type="number" id="sheet-cols" min="1" max="8" value="3">
-                            </div>
-                            <div class="spreadsheet-grid" id="spreadsheet-grid" aria-label="Spreadsheet input grid"></div>
-                        </div>
-
-                        <!-- Color Selector -->
-                        <div class="color-picker-container">
-                            <span class="color-picker-label">Choose a card color:</span>
-                            <div class="color-options" id="color-options">
-                                <!-- Colored Radio Options will be styled as nice circles -->
-                                <label class="color-option-label current" style="--option-color: #ffd1dc;" title="Strawberry Soft Pink">
-                                    <input type="radio" name="note-color" value="#ffd1dc" checked>
-                                    <span class="color-dot"></span>
-                                </label>
-                                <label class="color-option-label" style="--option-color: #d0f0c0;" title="Mint Green">
-                                    <input type="radio" name="note-color" value="#d0f0c0">
-                                    <span class="color-dot"></span>
-                                </label>
-                                <label class="color-option-label" style="--option-color: #e6e6fa;" title="Lavender Light Purple">
-                                    <input type="radio" name="note-color" value="#e6e6fa">
-                                    <span class="color-dot"></span>
-                                </label>
-                                <label class="color-option-label" style="--option-color: #fef1b7;" title="Banana Pastel Yellow">
-                                    <input type="radio" name="note-color" value="#fef1b7">
-                                    <span class="color-dot"></span>
-                                </label>
-                                <label class="color-option-label" style="--option-color: #ffd8b1;" title="Peach Orange">
-                                    <input type="radio" name="note-color" value="#ffd8b1">
-                                    <span class="color-dot"></span>
-                                </label>
-                                <label class="color-option-label" style="--option-color: #bfe3f3;" title="Sky Soft Blue">
-                                    <input type="radio" name="note-color" value="#bfe3f3">
-                                    <span class="color-dot"></span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Form Actions -->
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-secondary" id="btn-clear-form" style="display: none;">Cancel Edit</button>
-                            <button type="submit" class="btn btn-primary" id="btn-save-note">
-                                <span class="btn-text">Save Note</span>
-                                <span class="btn-sparkle">✨</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </section>
-
-            <!-- RIGHT PANEL: Dashboard, Filter Toolbar & Notes Grid -->
             <section class="display-section">
-                <!-- Search & Filters Toolbar -->
-                <div class="toolbar-card">
-                    <div class="toolbar-search-row">
-                        <!-- Search input -->
-                        <div class="search-input-wrapper">
-                            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                            <input type="text" id="search-input" placeholder="Search your jots by title, content or tags...">
-                            <button type="button" class="clear-search-btn" id="clear-search-btn" title="Clear Search" style="display: none;">&times;</button>
+                <!-- Single Unified Jot Bar (Creator, Search & Controls) -->
+                <div class="note-creator-wrapper">
+                    <div class="note-creator" id="editor-card">
+                        <!-- COLLAPSED STATE -->
+                        <div class="creator-collapsed" id="creator-collapsed">
+                            <!-- Line 1: Search and Trigger -->
+                            <div class="creator-collapsed-line1">
+                                <span class="search-icon-inside">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                </span>
+                                <input type="text" id="search-input" placeholder="Search jots or write a note... ✨" autocomplete="off">
+                                <button type="button" class="clear-search-btn" id="clear-search-btn" title="Clear Search" style="display: none;">&times;</button>
+                                
+                                <!-- Expand Trigger Button -->
+                                <button type="button" class="btn-icon" id="btn-expand-creator" title="Write a Note">✏️</button>
+                            </div>
+
+                            <!-- Line 2: Controls & Stats -->
+                            <div class="creator-collapsed-line2">
+                                <!-- View Toggle: Active vs. Archive -->
+                                <div class="view-toggle-group">
+                                    <button type="button" class="btn-toggle active" id="btn-filter-active">Active</button>
+                                    <button type="button" class="btn-toggle" id="btn-filter-archived">Archived</button>
+                                </div>
+
+                                <!-- Layout view switcher -->
+                                <button type="button" class="btn-layout-toggle" id="btn-layout-toggle" title="Switch layout" aria-label="Switch layout">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                                </button>
+
+                                <!-- Stats Badge -->
+                                <div class="header-stats-collapsed">
+                                    <span title="Total Notes">📝 <span id="stat-total-notes">0</span></span>
+                                    <span title="Pinned Notes">📌 <span id="stat-pinned-notes">0</span></span>
+                                    <span title="Archived Notes" style="display: none;">📦 <span id="stat-archived-notes">0</span></span>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Layout view switcher: thumbnail vs list -->
-                        <button type="button" class="btn-layout-toggle" id="btn-layout-toggle" title="Switch to list view" aria-label="Switch to list view">
-                            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                            <span class="sr-only">Switch to list view</span>
-                        </button>
+                        <!-- EXPANDED STATE (Form) -->
+                        <div class="creator-expanded" id="creator-expanded" style="display: none; padding: 1.5rem;">
+                            <div class="tape-decorator" style="display: none;"></div>
+                            <div class="editor-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h2 id="editor-title-heading" style="font-size: 1.15rem; font-weight: 700;">Create a New Jot</h2>
+                            </div>
+                            <form id="note-form" class="note-form">
+                                <!-- Hidden input for editing mode -->
+                                <input type="hidden" id="note-id" value="">
 
-                        <!-- View Toggle: Active vs. Archive -->
-                        <div class="view-toggle-group">
-                            <button type="button" class="btn-toggle active" id="btn-filter-active">Active</button>
-                            <button type="button" class="btn-toggle" id="btn-filter-archived">Archived</button>
+                                <div class="title-pin-row" style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem;">
+                                    <input type="text" id="note-title" placeholder="Title (e.g. Shopping List, Great Idea ✨)" maxlength="50" required style="flex-grow: 1;">
+                                    <button type="button" class="btn-icon pin-toggle-btn" id="editor-pin-btn" title="Pin Note to Top">
+                                        <!-- Pushpin SVG -->
+                                        <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="svg-pin"><line x1="18" y1="8" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="6"></line><path d="M12 6H8a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-4"></path><line x1="12" y1="17" x2="12" y2="22"></line></svg>
+                                    </button>
+                                </div>
+
+                                <div class="input-group">
+                                    <label for="note-content" class="sr-only">Note Content</label>
+                                    <textarea id="note-content" placeholder="Write your thoughts down here... Feel free to be creative!" rows="3" required></textarea>
+                                </div>
+
+                                <div class="input-group">
+                                    <label for="note-tags" class="sr-only">Tags</label>
+                                    <input type="text" id="note-tags" placeholder="Tags (comma-separated, e.g. work, fun, dream)">
+                                </div>
+
+                                <div class="input-group">
+                                    <label for="note-type" class="sr-only">Note Type</label>
+                                    <select id="note-type" aria-label="Note Type">
+                                        <option value="standard">Standard Note</option>
+                                        <option value="dev">Dev Note (Markdown)</option>
+                                        <option value="reminder">Reminder Note</option>
+                                        <option value="spreadsheet">Spreadsheet Note</option>
+                                    </select>
+                                </div>
+
+                                <p class="note-type-hint" id="devnote-hint" style="display: none;">Dev Note supports markdown formatting like headings, lists, links, code blocks, and inline code.</p>
+
+                                <div class="input-group conditional-config" id="reminder-config" style="display: none;">
+                                    <label for="note-reminder-at">Reminder Time</label>
+                                    <input type="datetime-local" id="note-reminder-at">
+                                </div>
+
+                                <div class="conditional-config" id="spreadsheet-config" style="display: none;">
+                                    <div class="spreadsheet-controls">
+                                        <label for="sheet-rows">Rows</label>
+                                        <input type="number" id="sheet-rows" min="1" max="12" value="3">
+                                        <label for="sheet-cols">Cols</label>
+                                        <input type="number" id="sheet-cols" min="1" max="8" value="3">
+                                    </div>
+                                    <div class="spreadsheet-grid" id="spreadsheet-grid" aria-label="Spreadsheet input grid"></div>
+                                </div>
+
+                                <!-- Color Selector -->
+                                <div class="color-picker-container">
+                                    <span class="color-picker-label">Choose a card color:</span>
+                                    <div class="color-options" id="color-options">
+                                        <!-- Colored Radio Options will be styled as nice circles -->
+                                        <label class="color-option-label current" style="--option-color: #ffd1dc;" title="Strawberry Soft Pink">
+                                            <input type="radio" name="note-color" value="#ffd1dc" checked>
+                                            <span class="color-dot"></span>
+                                        </label>
+                                        <label class="color-option-label" style="--option-color: #d0f0c0;" title="Mint Green">
+                                            <input type="radio" name="note-color" value="#d0f0c0">
+                                            <span class="color-dot"></span>
+                                        </label>
+                                        <label class="color-option-label" style="--option-color: #e6e6fa;" title="Lavender Light Purple">
+                                            <input type="radio" name="note-color" value="#e6e6fa">
+                                            <span class="color-dot"></span>
+                                        </label>
+                                        <label class="color-option-label" style="--option-color: #fef1b7;" title="Banana Pastel Yellow">
+                                            <input type="radio" name="note-color" value="#fef1b7">
+                                            <span class="color-dot"></span>
+                                        </label>
+                                        <label class="color-option-label" style="--option-color: #ffd8b1;" title="Peach Orange">
+                                            <input type="radio" name="note-color" value="#ffd8b1">
+                                            <span class="color-dot"></span>
+                                        </label>
+                                        <label class="color-option-label" style="--option-color: #bfe3f3;" title="Sky Soft Blue">
+                                            <input type="radio" name="note-color" value="#bfe3f3">
+                                            <span class="color-dot"></span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Form Actions -->
+                                <div class="form-actions">
+                                    <button type="button" class="btn btn-secondary" id="btn-clear-form" style="display: none;">Cancel Edit</button>
+                                    <button type="button" class="btn btn-secondary" id="btn-close-creator" style="display: inline-flex;">Close</button>
+                                    <button type="submit" class="btn btn-primary" id="btn-save-note">
+                                        <span class="btn-text">Save Note</span>
+                                        <span class="btn-sparkle">✨</span>
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Dynamic tags filter bar -->
-                    <div class="tags-filter-container" id="tags-filter-container">
-                        <span class="tags-filter-label">Filter by Tag:</span>
-                        <div class="tags-list" id="tags-list">
-                            <!-- Dynamically generated tags will go here -->
-                            <button class="tag-pill active" data-tag="all">All Tags</button>
-                        </div>
+                <!-- Dynamic tags filter bar -->
+                <div class="tags-filter-container" id="tags-filter-container">
+                    <span class="tags-filter-label">Filter by Tag:</span>
+                    <div class="tags-list" id="tags-list">
+                        <button class="tag-pill active" data-tag="all">All Tags</button>
                     </div>
                 </div>
 

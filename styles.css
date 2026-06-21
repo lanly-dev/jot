@@ -135,10 +135,9 @@ h1, h2, h3, h4 {
    ========================================================================== */
 .app-header {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 1.5rem;
+    gap: 1rem;
     background-color: rgba(255, 255, 255, 0.6);
     backdrop-filter: blur(10px);
     border: 2px solid #ffffff;
@@ -147,39 +146,7 @@ h1, h2, h3, h4 {
     box-shadow: var(--card-shadow);
 }
 
-.logo-area {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
 
-.logo-mascot {
-    font-size: 2.5rem;
-    animation: wiggle 3s infinite ease-in-out;
-    display: inline-block;
-}
-
-.logo-text {
-    display: flex;
-    flex-direction: column;
-}
-
-.logo-title {
-    font-size: 2.25rem;
-    font-weight: 800;
-    color: var(--text-main);
-    background: linear-gradient(135deg, var(--text-main) 30%, var(--color-primary) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: -0.5px;
-}
-
-.logo-subtitle {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    font-weight: 600;
-    letter-spacing: 0.5px;
-}
 
 /* Stats dashboard */
 .stats-dashboard {
@@ -219,11 +186,12 @@ h1, h2, h3, h4 {
    MAIN LAYOUT & GENERAL UI
    ========================================================================== */
 .app-main {
-    display: grid;
-    grid-template-columns: 380px 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 2rem;
-    align-items: start;
+    align-items: center;
     flex-grow: 1;
+    width: 100%;
 }
 
 /* Buttons */
@@ -567,6 +535,8 @@ h1, h2, h3, h4 {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    width: 100%;
+    max-width: 1000px;
 }
 
 .toolbar-card {
@@ -1308,6 +1278,12 @@ body.note-focus-open {
         flex-direction: column;
         align-items: flex-start;
     }
+
+    .header-search-wrapper {
+        width: 100%;
+        max-width: 100%;
+        margin: 0.5rem 0;
+    }
     
     .stats-dashboard {
         width: 100%;
@@ -1386,4 +1362,139 @@ body.note-focus-open {
         opacity: 0;
     }
 }
+
+/* ==========================================================================
+   SINGLE UNIFIED TOP BAR & NOTE CREATOR
+   ========================================================================== */
+.note-creator-wrapper {
+    width: 100%;
+    max-width: 680px;
+    margin: 0 auto;
+    transition: max-width 0.3s ease;
+}
+
+/* Base style for the creator card */
+#editor-card {
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    border-radius: 24px;
+    border: 2px solid var(--border-color);
+    padding: 0.85rem 1.5rem;
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    position: relative;
+    width: 100%;
+    margin-bottom: 1.5rem;
+}
+
+#editor-card:hover {
+    border-color: #ffd1dc;
+    box-shadow: var(--card-shadow-hover);
+}
+
+/* When expanded and active */
+#editor-card.active {
+    background-color: #ffffff;
+    border-radius: 28px;
+    padding: 1.75rem;
+    box-shadow: 0 15px 40px rgba(45, 43, 42, 0.08);
+}
+
+/* Collapsed state styling */
+.creator-collapsed {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    width: 100%;
+}
+
+.creator-collapsed-line1 {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    position: relative;
+}
+
+.search-icon-inside {
+    color: #a39d99;
+    margin-right: 0.75rem;
+    display: flex;
+    align-items: center;
+}
+
+#search-input {
+    flex-grow: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-main);
+}
+
+#search-input::placeholder {
+    color: #a39d99;
+}
+
+/* Clear search button styling */
+.creator-collapsed-line1 .clear-search-btn {
+    border: none;
+    background: #e6dfd6;
+    color: var(--text-muted);
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-right: 0.75rem;
+    font-size: 0.85rem;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.creator-collapsed-line1 .clear-search-btn:hover {
+    background: var(--text-muted);
+    color: #ffffff;
+}
+
+/* Line 2 controls */
+.creator-collapsed-line2 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    border-top: 1px dashed var(--border-color);
+    padding-top: 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+/* Stats in collapsed state */
+.header-stats-collapsed {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.header-stats-collapsed span {
+    background-color: #f1ede8;
+    padding: 0.35rem 0.75rem;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.2s ease;
+}
+
+.header-stats-collapsed span:hover {
+    background-color: #e8e3dc;
+    color: var(--text-main);
+}
+
+
 

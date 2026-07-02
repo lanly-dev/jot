@@ -272,9 +272,9 @@ document.addEventListener('DOMContentLoaded', () => {
     noteFocusBackdrop.addEventListener('click', closeFocusedNote)
     notePreviewClose.addEventListener('click', closeFocusedNote)
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape') 
         closeFocusedNote()
-      }
+      
     })
 
     // Google Keep-Style Note Creator Listeners
@@ -282,23 +282,23 @@ document.addEventListener('DOMContentLoaded', () => {
       btnExpandCreator.addEventListener('click', (e) => {
         e.stopPropagation()
         if (editorCard.classList.contains('active')) {
-          if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') {
+          if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') 
             resetForm()
-          } else {
+           else 
             noteForm.requestSubmit()
-          }
-        } else {
+          
+        } else 
           expandCreator()
-        }
+        
       })
     }
 
     if (creatorCollapsed) {
       creatorCollapsed.addEventListener('click', (e) => {
         if (e.target.closest('#btn-expand-creator')) return
-        if (!editorCard.classList.contains('active')) {
+        if (!editorCard.classList.contains('active')) 
           expandCreator()
-        }
+        
       })
     }
 
@@ -306,11 +306,11 @@ document.addEventListener('DOMContentLoaded', () => {
       btnCloseCreator.addEventListener('click', (e) => {
         e.preventDefault()
         e.stopPropagation()
-        if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') {
+        if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') 
           resetForm()
-        } else {
+         else 
           noteForm.requestSubmit()
-        }
+        
       })
     }
 
@@ -322,11 +322,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', (e) => {
       if (editorCard && !editorCard.contains(e.target) && !e.target.closest('#btn-expand-creator')) {
         if (editorCard.classList.contains('active')) {
-          if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') {
+          if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') 
             resetForm()
-          } else {
+           else 
             noteForm.requestSubmit()
-          }
+          
         }
       }
     })
@@ -443,9 +443,9 @@ document.addEventListener('DOMContentLoaded', () => {
     sheetColsInput.value = cols
     initSpreadsheetDraft(rows, cols)
     for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
+      for (let c = 0; c < cols; c++) 
         spreadsheetDraft[r][c] = (sheetData[r] && sheetData[r][c]) ? String(sheetData[r][c]) : ''
-      }
+      
     }
     updateTypeSpecificFields()
     renderSpreadsheetGrid()
@@ -591,9 +591,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const nextArchived = !note.archived
       const nextPinned = nextArchived ? false : note.pinned
       note.archived = nextArchived
-      if (nextArchived) {
+      if (nextArchived) 
         note.pinned = false
-      }
+      
       render()
       updateNoteOnServerSilent(note.id, { archived: nextArchived, pinned: nextPinned })
       return
@@ -612,9 +612,9 @@ document.addEventListener('DOMContentLoaded', () => {
       
       setTimeout(async () => {
         notes = notes.filter(n => n.id !== noteId)
-        if (noteIdInput.value === noteId) {
+        if (noteIdInput.value === noteId) 
           resetForm()
-        }
+        
         render()
         
         try {
@@ -652,9 +652,9 @@ document.addEventListener('DOMContentLoaded', () => {
     relevantNotes.forEach(note => {
       const tags = Array.isArray(note.tags) ? note.tags : []
       tags.forEach(tag => {
-        if (!allTags.includes(tag)) {
+        if (!allTags.includes(tag)) 
           allTags.push(tag)
-        }
+        
       })
     })
 
@@ -695,11 +695,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!startTimestamp) startTimestamp = timestamp
       const progress = Math.min((timestamp - startTimestamp) / duration, 1)
       obj.innerHTML = Math.floor(progress * (end - start) + start)
-      if (progress < 1) {
+      if (progress < 1) 
         window.requestAnimationFrame(step)
-      } else {
+       else 
         obj.innerHTML = end
-      }
+      
     }
     window.requestAnimationFrame(step)
   }
@@ -741,9 +741,9 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     // If focused note is no longer visible due to filters/search/view, exit focus mode.
-    if (focusedNoteId && !filteredNotes.some(note => note.id === focusedNoteId)) {
+    if (focusedNoteId && !filteredNotes.some(note => note.id === focusedNoteId)) 
       focusedNoteId = null
-    }
+    
 
     // 5. Handle empty state display
     if (filteredNotes.length === 0) {
@@ -804,11 +804,11 @@ document.addEventListener('DOMContentLoaded', () => {
     notePreviewPanel.setAttribute('aria-hidden', hasFocusedNote ? 'false' : 'true')
     document.body.classList.toggle('note-focus-open', hasFocusedNote)
 
-    if (hasFocusedNote) {
+    if (hasFocusedNote) 
       notePreviewContent.innerHTML = renderFocusedNotePanelHTML(focusedNote)
-    } else {
+     else 
       notePreviewContent.innerHTML = ''
-    }
+    
   }
 
   function renderFocusedNotePanelHTML(note) {
@@ -963,9 +963,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function ensureNotificationPermissionIfNeeded(noteType) {
     if (noteType !== 'reminder' || typeof Notification === 'undefined') return
-    if (Notification.permission === 'default') {
+    if (Notification.permission === 'default') 
       Notification.requestPermission().catch(() => {})
-    }
+    
   }
 
   function renderMarkdown(markdownText) {

@@ -693,12 +693,7 @@ h4 {
   flex-wrap: wrap;
   border-top: 1px dashed var(--border-color);
   padding-top: 0.85rem;
-}
-
-.tags-filter-label {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-muted);
+  justify-content: center;
 }
 
 .tags-list {

@@ -4,12 +4,21 @@
   "description": "Cute & Colorful Note-Taking App backend",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon --ignore data/ server.js",
+    "efix": "eslint . --fix"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2"
   },
-  "author": "",
-  "license": "ISC"
+  "author": "lanly-dev",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "connect-livereload": "^0.6.1",
+    "eslint": "^10.6.0",
+    "globals": "^17.7.0",
+    "livereload": "^0.10.3",
+    "nodemon": "^3.1.14"
+  }
 }

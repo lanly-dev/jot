@@ -14,6 +14,27 @@ const PORT = process.env.PORT || 3000
 app.use(cors())
 app.use(express.json())
 
+// Live reload for development
+if (process.env.NODE_ENV !== 'production') {
+  const livereload = require('livereload')
+  const connectLiveReload = require('connect-livereload')
+
+  const liveReloadServer = livereload.createServer({
+    exts: ['html', 'css', 'js'],
+    exclusions: [/data\//, /node_modules\//]
+  })
+  liveReloadServer.watch(__dirname)
+
+  // Auto-refresh the browser after nodemon restarts the server
+  liveReloadServer.server.once('connection', () => {
+    setTimeout(() => {
+      liveReloadServer.refresh('/')
+    }, 100)
+  })
+
+  app.use(connectLiveReload())
+}
+
 // Serve static frontend files from the root directory
 app.use(express.static(path.join(__dirname)))
 
@@ -79,9 +100,9 @@ const SAMPLE_NOTES = [
 
 // Helper to ensure database file exists
 function initializeDatabase() {
-  if (!fs.existsSync(DATA_DIR)) {
+  if (!fs.existsSync(DATA_DIR))
     fs.mkdirSync(DATA_DIR, { recursive: true })
-  }
+
   if (!fs.existsSync(DATA_FILE)) {
     fs.writeFileSync(DATA_FILE, JSON.stringify(SAMPLE_NOTES, null, 2), 'utf-8')
     console.log('Database initialized with sample notes! 🌸')
@@ -149,9 +170,9 @@ app.put('/api/notes/:id', (req, res) => {
   let notes = readNotes()
   const noteIndex = notes.findIndex(n => n.id === id)
 
-  if (noteIndex === -1) {
+  if (noteIndex === -1)
     return res.status(404).json({ error: 'Note not found 😿' })
-  }
+
 
   // Merge new updates
   const updatedNote = {
@@ -166,7 +187,7 @@ app.put('/api/notes/:id', (req, res) => {
     reminderAt: req.body.reminderAt !== undefined ? (req.body.reminderAt || null) : (notes[noteIndex].reminderAt || null),
     spreadsheetData: req.body.spreadsheetData !== undefined
       ? normalizeSpreadsheetData(req.body.spreadsheetData)
-      : (notes[noteIndex].spreadsheetData || null),
+      : (notes[noteIndex].spreadsheetData || null)
   }
 
   notes[noteIndex] = updatedNote
@@ -181,9 +202,9 @@ app.delete('/api/notes/:id', (req, res) => {
   let notes = readNotes()
   const noteExists = notes.some(n => n.id === id)
 
-  if (!noteExists) {
+  if (!noteExists)
     return res.status(404).json({ error: 'Note not found 😿' })
-  }
+
 
   notes = notes.filter(n => n.id !== id)
   writeNotes(notes)

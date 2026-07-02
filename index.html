@@ -47,11 +47,6 @@
 
             <!-- Line 2: Controls & Stats -->
             <div class="search-bar-line2">
-              <!-- View Toggle: Active vs. Archive -->
-              <div class="view-toggle-group">
-                <button type="button" class="btn-toggle active" id="btn-filter-active">Active</button>
-                <button type="button" class="btn-toggle" id="btn-filter-archived">Archived</button>
-              </div>
 
               <!-- Layout view switcher -->
               <button type="button" class="btn-layout-toggle" id="btn-layout-toggle" title="Switch layout"
@@ -211,9 +206,13 @@
           </div>
         </div>
 
+        <!-- View Toggle: Active vs. Archive -->
+        <div class="view-toggle-group">
+          <button type="button" class="btn-toggle active" id="btn-filter-active">Active</button>
+          <button type="button" class="btn-toggle" id="btn-filter-archived">Archived</button>
+        </div>
         <!-- Dynamic tags filter bar -->
         <div class="tags-filter-container" id="tags-filter-container">
-          <span class="tags-filter-label">Filter by Tag:</span>
           <div class="tags-list" id="tags-list">
             <button class="tag-pill active" data-tag="all">All Tags</button>
           </div>

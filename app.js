@@ -293,6 +293,15 @@ document.addEventListener('DOMContentLoaded', () => {
       })
     }
 
+    if (creatorCollapsed) {
+      creatorCollapsed.addEventListener('click', (e) => {
+        if (e.target.closest('#btn-expand-creator')) return
+        if (!editorCard.classList.contains('active')) {
+          expandCreator()
+        }
+      })
+    }
+
     if (btnCloseCreator) {
       btnCloseCreator.addEventListener('click', (e) => {
         e.preventDefault()
@@ -465,6 +474,9 @@ document.addEventListener('DOMContentLoaded', () => {
     btnClearForm.style.display = 'inline-flex'
     btnSaveNote.querySelector('.btn-text').textContent = 'Save Changes'
     
+    // Expand creator card so input elements are visible/focusable
+    expandCreator()
+
     // Smooth scroll to editor form so user can see it instantly
     window.scrollTo({ top: editorCard.offsetTop - 50, behavior: 'smooth' })
     noteTitleInput.focus()
@@ -478,15 +490,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Toggle visibility of collapsed vs expanded states
     if (creatorCollapsed) creatorCollapsed.style.display = 'none'
     if (creatorExpanded) creatorExpanded.style.display = 'block'
-    
-    // If the user has typed in search, prepopulate the note content with it
-    if (searchInput && searchInput.value.trim() !== '') {
-      noteContentInput.value = searchInput.value
-      searchInput.value = ''
-      currentSearchQuery = ''
-      if (clearSearchBtn) clearSearchBtn.style.display = 'none'
-      render()
-    }
     
     noteTitleInput.focus()
   }

@@ -755,7 +755,6 @@ document.addEventListener('DOMContentLoaded', () => {
       iconEl.innerHTML = isListView ? listIcon : gridIcon
     }
 
-    btnLayoutToggle.classList.toggle('active', isListView)
     btnLayoutToggle.title = `${isListView ? 'List' : 'Thumbnail'} view`
     btnLayoutToggle.setAttribute('aria-label', `Switch to ${nextViewLabel} view`)
   }

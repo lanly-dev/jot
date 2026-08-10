@@ -185,25 +185,27 @@
               <span class="status-text">Archived</span>
             </label>
           </div>
-          <div class="display-control-group" aria-label="Layout view mode">
-            <button type="button" class="btn-layout-toggle" id="btn-layout-toggle" title="Switch to list view"
-              aria-label="Switch to list view">
-              <span class="layout-icon">
-                <!-- Grid icon representing thumbnail (card) view -->
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
-                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <rect x="3" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="3" width="7" height="7"></rect>
-                  <rect x="3" y="14" width="7" height="7"></rect>
-                  <rect x="14" y="14" width="7" height="7"></rect>
-                </svg>
-              </span>
-            </button>
-          </div>
-          <div class="header-stats-collapsed">
-            <span title="Total Notes">📝 <span id="stat-total-notes">0</span></span>
-            <span title="Pinned Notes">📌 <span id="stat-pinned-notes">0</span></span>
-            <span title="Archived Notes" style="display: none;">📦 <span id="stat-archived-notes">0</span></span>
+          <div style="display: flex; gap: 1rem;">
+            <div class="header-stats-collapsed">
+              <span title="Total Notes">📝 <span id="stat-total-notes">0</span></span>
+              <span title="Pinned Notes">📌 <span id="stat-pinned-notes">0</span></span>
+              <span title="Archived Notes" style="display: none;">📦 <span id="stat-archived-notes">0</span></span>
+            </div>
+            <div class="display-control-group" aria-label="Layout view mode">
+              <button type="button" class="btn-layout-toggle" id="btn-layout-toggle" title="Switch to list view"
+                aria-label="Switch to list view">
+                <span class="layout-icon">
+                  <!-- Grid icon representing thumbnail (card) view -->
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                  </svg>
+                </span>
+              </button>
+            </div>
           </div>
         </div>
 

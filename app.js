@@ -723,17 +723,40 @@ document.addEventListener('DOMContentLoaded', () => {
     `
   }
 
-  // Keep layout toggle label and style in sync with current mode
+  // Keep layout toggle icon and style in sync with current mode
   function updateLayoutToggleButton() {
     if (!btnLayoutToggle) return
 
     const isListView = currentLayoutView === 'list'
-    const currentViewLabel = isListView ? 'List' : 'Thumbnail'
     const nextViewLabel = isListView ? 'thumbnail' : 'list'
 
+    // Icons represent the current view mode (grid = thumbnail, rows = list)
+    const gridIcon = `
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+      </svg>`
+    const listIcon = `
+      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="8" y1="6" x2="21" y2="6"></line>
+        <line x1="8" y1="12" x2="21" y2="12"></line>
+        <line x1="8" y1="18" x2="21" y2="18"></line>
+        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+      </svg>`
+
+    const iconEl = btnLayoutToggle.querySelector('.layout-icon')
+    if (iconEl) {
+      iconEl.innerHTML = isListView ? listIcon : gridIcon
+    }
+
     btnLayoutToggle.classList.toggle('active', isListView)
-    btnLayoutToggle.textContent = currentViewLabel
-    btnLayoutToggle.title = `Switch to ${nextViewLabel} view`
+    btnLayoutToggle.title = `${isListView ? 'List' : 'Thumbnail'} view`
     btnLayoutToggle.setAttribute('aria-label', `Switch to ${nextViewLabel} view`)
   }
 

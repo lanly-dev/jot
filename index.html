@@ -157,10 +157,32 @@
         </div>
 
         <div class="display-controls" aria-label="Display controls">
-          <div class="display-control-group" aria-label="Note status filter">
-            <span class="display-control-label">Status</span>
-            <button type="button" class="btn-toggle active" id="btn-filter-active">Active</button>
-            <button type="button" class="btn-toggle" id="btn-filter-archived">Archived</button>
+          <div class="display-control-group status-filter-group" aria-label="Note status filter" role="radiogroup">
+            <span class="display-control-label" id="status-filter-label">Status</span>
+            <label class="status-option active" for="status-active">
+              <input type="radio" name="note-status" id="status-active" value="active" checked aria-labelledby="status-active status-filter-label">
+              <span class="status-icon">
+                <!-- Activity / Pulse icon representing Active notes -->
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+              </span>
+              <span class="status-text">Active</span>
+            </label>
+            <label class="status-option" for="status-archived">
+              <input type="radio" name="note-status" id="status-archived" value="archived" aria-labelledby="status-archived status-filter-label">
+              <span class="status-icon">
+                <!-- Archive box icon representing Archived notes -->
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="21 8 21 21 3 21 3 8"></polyline>
+                  <rect x="1" y="3" width="22" height="5"></rect>
+                  <line x1="10" y1="12" x2="14" y2="12"></line>
+                </svg>
+              </span>
+              <span class="status-text">Archived</span>
+            </label>
           </div>
           <div class="display-control-group" aria-label="Layout view mode">
             <span class="display-control-label">View</span>

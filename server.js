@@ -101,7 +101,7 @@ const SAMPLE_NOTES = [
 // Helper to ensure database file exists
 function initializeDatabase() {
   if (!fs.existsSync(DATA_DIR))
-    fs.mkdirSync(DATA_DIR, { recursive: true })
+  {fs.mkdirSync(DATA_DIR, { recursive: true })}
 
   if (!fs.existsSync(DATA_FILE)) {
     fs.writeFileSync(DATA_FILE, JSON.stringify(SAMPLE_NOTES, null, 2), 'utf-8')
@@ -171,7 +171,7 @@ app.put('/api/notes/:id', (req, res) => {
   const noteIndex = notes.findIndex(n => n.id === id)
 
   if (noteIndex === -1)
-    return res.status(404).json({ error: 'Note not found 😿' })
+  {return res.status(404).json({ error: 'Note not found 😿' })}
 
 
   // Merge new updates
@@ -203,7 +203,7 @@ app.delete('/api/notes/:id', (req, res) => {
   const noteExists = notes.some(n => n.id === id)
 
   if (!noteExists)
-    return res.status(404).json({ error: 'Note not found 😿' })
+  {return res.status(404).json({ error: 'Note not found 😿' })}
 
 
   notes = notes.filter(n => n.id !== id)

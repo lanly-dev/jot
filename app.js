@@ -66,8 +66,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnSaveNote = document.getElementById('btn-save-note')
   const colorOptionsContainer = document.getElementById('color-options')
 
-  const btnFilterActive = document.getElementById('btn-filter-active')
-  const btnFilterArchived = document.getElementById('btn-filter-archived')
+  const btnFilterActive = document.getElementById('status-active')
+  const btnFilterArchived = document.getElementById('status-archived')
   const btnLayoutToggle = document.getElementById('btn-layout-toggle')
 
   const notesGrid = document.getElementById('notes-grid')
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const notePreviewPanel = document.getElementById('note-preview-panel')
   const notePreviewContent = document.getElementById('note-preview-content')
   const notePreviewClose = document.getElementById('note-preview-close')
-  
+
   // Stats dashboard selectors
   const statTotalNotes = document.getElementById('stat-total-notes')
   const statPinnedNotes = document.getElementById('stat-pinned-notes')
@@ -138,12 +138,12 @@ document.addEventListener('DOMContentLoaded', () => {
       container.className = 'toast-container'
       document.body.appendChild(container)
     }
-    
+
     const toast = document.createElement('div')
     toast.className = `toast-message toast-${type}`
     toast.innerHTML = `<span>${message}</span>`
     container.appendChild(toast)
-    
+
     setTimeout(() => {
       toast.classList.add('toast-fade-out')
       setTimeout(() => {
@@ -182,18 +182,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     })
 
-    // Active vs. Archived View filter toggles
-    btnFilterActive.addEventListener('click', () => {
+    // Active vs. Archived View filter toggles (radio style with icons)
+    btnFilterActive.addEventListener('change', () => {
       currentView = 'active'
-      btnFilterActive.classList.add('active')
-      btnFilterArchived.classList.remove('active')
+      btnFilterActive.closest('.status-option').classList.add('active')
+      btnFilterArchived.closest('.status-option').classList.remove('active')
       render()
     })
 
-    btnFilterArchived.addEventListener('click', () => {
+    btnFilterArchived.addEventListener('change', () => {
       currentView = 'archived'
-      btnFilterArchived.classList.add('active')
-      btnFilterActive.classList.remove('active')
+      btnFilterArchived.closest('.status-option').classList.add('active')
+      btnFilterActive.closest('.status-option').classList.remove('active')
       render()
     })
 
@@ -236,9 +236,8 @@ document.addEventListener('DOMContentLoaded', () => {
     noteFocusBackdrop.addEventListener('click', closeFocusedNote)
     notePreviewClose.addEventListener('click', closeFocusedNote)
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') 
-        closeFocusedNote()
-      
+      if (e.key === 'Escape') { closeFocusedNote() }
+
     })
 
     // Google Keep-Style Note Creator Listeners
@@ -246,23 +245,19 @@ document.addEventListener('DOMContentLoaded', () => {
       btnExpandCreator.addEventListener('click', (e) => {
         e.stopPropagation()
         if (editorCard.classList.contains('active')) {
-          if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') 
-            resetForm()
-           else 
-            noteForm.requestSubmit()
-          
-        } else 
-          expandCreator()
-        
+          if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') { resetForm() }
+          else { noteForm.requestSubmit() }
+
+        } else { expandCreator() }
+
       })
     }
 
     if (creatorCollapsed) {
       creatorCollapsed.addEventListener('click', (e) => {
         if (e.target.closest('#btn-expand-creator')) return
-        if (!editorCard.classList.contains('active')) 
-          expandCreator()
-        
+        if (!editorCard.classList.contains('active')) { expandCreator() }
+
       })
     }
 
@@ -270,11 +265,9 @@ document.addEventListener('DOMContentLoaded', () => {
       btnCloseCreator.addEventListener('click', (e) => {
         e.preventDefault()
         e.stopPropagation()
-        if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') 
-          resetForm()
-         else 
-          noteForm.requestSubmit()
-        
+        if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') { resetForm() }
+        else { noteForm.requestSubmit() }
+
       })
     }
 
@@ -286,11 +279,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', (e) => {
       if (editorCard && !editorCard.contains(e.target) && !e.target.closest('#btn-expand-creator')) {
         if (editorCard.classList.contains('active')) {
-          if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') 
-            resetForm()
-           else 
-            noteForm.requestSubmit()
-          
+          if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') { resetForm() }
+          else { noteForm.requestSubmit() }
+
         }
       }
     })
@@ -308,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const spreadsheetData = noteType === 'spreadsheet' ? spreadsheetDraft.map(row => row.map(cell => cell.trim())) : null
 
     ensureNotificationPermissionIfNeeded(noteType)
-    
+
     const colorRadio = document.querySelector('input[name="note-color"]:checked')
     const color = colorRadio ? colorRadio.value : '#ffd1dc'
 
@@ -323,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
         reminderAt,
         spreadsheetData
       }
-      
+
       try {
         const res = await fetch(`/api/notes/${id}`, {
           method: 'PUT',
@@ -399,13 +390,13 @@ document.addEventListener('DOMContentLoaded', () => {
     sheetColsInput.value = cols
     initSpreadsheetDraft(rows, cols)
     for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) 
+      for (let c = 0; c < cols; c++) {
         spreadsheetDraft[r][c] = (sheetData[r] && sheetData[r][c]) ? String(sheetData[r][c]) : ''
-      
+      }
     }
     updateTypeSpecificFields()
     renderSpreadsheetGrid()
-    
+
     // Select color radio in form
     const radioToSelect = document.querySelector(`input[name="note-color"][value="${note.color}"]`)
     if (radioToSelect) {
@@ -429,7 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
     editorTitleHeading.textContent = 'Edit Your Jot'
     btnClearForm.style.display = 'inline-flex'
     btnSaveNote.querySelector('.btn-text').textContent = 'Save Changes'
-    
+
     // Expand creator card so input elements are visible/focusable
     expandCreator()
 
@@ -442,18 +433,18 @@ document.addEventListener('DOMContentLoaded', () => {
   function expandCreator() {
     if (editorCard.classList.contains('active')) return
     editorCard.classList.add('active')
-    
+
     // Toggle visibility of collapsed vs expanded states
     if (creatorCollapsed) creatorCollapsed.style.display = 'none'
     if (creatorExpanded) creatorExpanded.style.display = 'block'
-    
+
     noteTitleInput.focus()
   }
 
   function collapseCreator() {
     if (!editorCard.classList.contains('active')) return
     editorCard.classList.remove('active')
-    
+
     // Toggle visibility of collapsed vs expanded states
     if (creatorCollapsed) creatorCollapsed.style.display = 'flex'
     if (creatorExpanded) creatorExpanded.style.display = 'none'
@@ -471,7 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initSpreadsheetDraft(3, 3)
     updateTypeSpecificFields()
     renderSpreadsheetGrid()
-    
+
     // Reset color selector to first pink choice
     const pinkRadio = document.querySelector('input[name="note-color"][value="#ffd1dc"]')
     if (pinkRadio) {
@@ -547,9 +538,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const nextArchived = !note.archived
       const nextPinned = nextArchived ? false : note.pinned
       note.archived = nextArchived
-      if (nextArchived) 
-        note.pinned = false
-      
+      if (nextArchived) note.pinned = false
+
       render()
       updateNoteOnServerSilent(note.id, { archived: nextArchived, pinned: nextPinned })
       return
@@ -565,14 +555,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. DELETE ACTION
     if (target.closest('.action-delete')) {
       card.classList.add('card-poof')
-      
+
       setTimeout(async () => {
         notes = notes.filter(n => n.id !== noteId)
-        if (noteIdInput.value === noteId) 
-          resetForm()
-        
+        if (noteIdInput.value === noteId) resetForm()
         render()
-        
+
         try {
           const res = await fetch(`/api/notes/${noteId}`, { method: 'DELETE' })
           if (!res.ok) throw new Error('Cloud delete failed')
@@ -611,11 +599,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!startTimestamp) startTimestamp = timestamp
       const progress = Math.min((timestamp - startTimestamp) / duration, 1)
       obj.innerHTML = Math.floor(progress * (end - start) + start)
-      if (progress < 1) 
-        window.requestAnimationFrame(step)
-       else 
-        obj.innerHTML = end
-      
+      if (progress < 1) { window.requestAnimationFrame(step) }
+      else obj.innerHTML = end
+
     }
     window.requestAnimationFrame(step)
   }
@@ -640,9 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     // If focused note is no longer visible due to filters/view, exit focus mode.
-    if (focusedNoteId && !filteredNotes.some(note => note.id === focusedNoteId)) 
-      focusedNoteId = null
-    
+    if (focusedNoteId && !filteredNotes.some(note => note.id === focusedNoteId)) focusedNoteId = null
 
     // 4. Handle empty state display
     if (filteredNotes.length === 0) {
@@ -666,7 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       notesGrid.style.display = currentLayoutView === 'list' ? 'flex' : 'grid'
       emptyState.style.display = 'none'
-      
+
       // Render card templates
       notesGrid.innerHTML = filteredNotes.map(note => renderNoteCardHTML(note)).join('')
     }
@@ -695,11 +679,9 @@ document.addEventListener('DOMContentLoaded', () => {
     notePreviewPanel.setAttribute('aria-hidden', hasFocusedNote ? 'false' : 'true')
     document.body.classList.toggle('note-focus-open', hasFocusedNote)
 
-    if (hasFocusedNote) 
-      notePreviewContent.innerHTML = renderFocusedNotePanelHTML(focusedNote)
-     else 
-      notePreviewContent.innerHTML = ''
-    
+    if (hasFocusedNote) notePreviewContent.innerHTML = renderFocusedNotePanelHTML(focusedNote)
+    else notePreviewContent.innerHTML = ''
+
   }
 
   function renderFocusedNotePanelHTML(note) {
@@ -850,9 +832,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function ensureNotificationPermissionIfNeeded(noteType) {
     if (noteType !== 'reminder' || typeof Notification === 'undefined') return
-    if (Notification.permission === 'default') 
-      Notification.requestPermission().catch(() => {})
-    
+    if (Notification.permission === 'default') Notification.requestPermission().catch(() => { })
   }
 
   function renderMarkdown(markdownText) {
@@ -905,8 +885,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const typeBadgeMarkup = `<span class="note-type-badge type-${noteType}">${typeLabelMap[noteType] || 'Standard'}</span>`
 
     // Pin badge conditional class and marker
-    const pinBadgeMarkup = note.pinned 
-      ? `<div class="pin-badge" title="Pinned to Top">📌</div>` 
+    const pinBadgeMarkup = note.pinned
+      ? `<div class="pin-badge" title="Pinned to Top">📌</div>`
       : ''
 
     // Formatted timestamp text (e.g. "Just now", "2 mins ago", or neat date)
@@ -941,7 +921,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return `
       <article class="note-card ${note.pinned ? 'pinned-card' : ''}" data-id="${note.id}" style="--note-color: ${note.color};">
         ${pinBadgeMarkup}
-        
+
         <div class="note-header">
           ${typeBadgeMarkup}
           <h3 class="note-title">${escapedTitle}</h3>
@@ -954,22 +934,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         <div class="note-actions">
           <span style="margin-right: auto; align-self: center; font-size: 0.72rem; font-weight: 700; color: rgba(45, 43, 42, 0.45);">${dateText}</span>
-          
+
           <!-- Pin Note Action -->
           <button type="button" class="btn-icon action-pin" title="${pinActionTitle}">
             ${pinActionSVG}
           </button>
-          
+
           <!-- Edit Note Action -->
           <button type="button" class="btn-icon action-edit" title="Edit Note Details">
             <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"></path></svg>
           </button>
-          
+
           <!-- Archive Note Action -->
           <button type="button" class="btn-icon action-archive" title="${archiveTitle}">
             ${archiveIconSVG}
           </button>
-          
+
           <!-- Delete Note Action -->
           <button type="button" class="btn-icon action-delete" title="Delete Note Permanently">
             <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
@@ -1001,7 +981,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (diffMins < 60) return `${diffMins} mins ago`
     if (diffHours === 1) return '1 hour ago'
     if (diffHours < 24) return `${diffHours} hours ago`
-    
+
     // Return structured pretty date
     const options = { month: 'short', day: 'numeric' }
     return date.toLocaleDateString(undefined, options)

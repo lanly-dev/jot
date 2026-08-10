@@ -5,8 +5,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   // CENTRAL STATE
   let notes = []
-  let currentFilterTag = 'all'
-  let currentSearchQuery = ''
   let currentView = 'active' // 'active' or 'archived'
   let currentLayoutView = localStorage.getItem('jot_layout_view') || 'thumbnail' // 'thumbnail' or 'list'
   let isFormPinned = false // whether the note-in-creation is pinned
@@ -19,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     {
       id: 'sample-1',
       title: 'Welcome to Jot! ✨',
-      content: 'Hello! This is your cute, colorful space to jot down sweet thoughts, ideas, plans, or doodles.\n\nHere are some quick tips:\n🌸 Choose custom colors for each card!\n📌 Pin your most important notes so they stay at the top.\n📦 Archive old notes to keep your board tidy!\n🏷️ Add tags (separated by commas) to easily organize your jots.',
+      content: 'Hello! This is your cute, colorful space to jot down sweet thoughts, ideas, plans, or doodles.\n\nHere are some quick tips:\n🌸 Choose custom colors for each card!\n📌 Pin your most important notes so they stay at the top.\n📦 Archive old notes to keep your board tidy!',
       color: '#ffd1dc', // strawberry pink
       tags: ['welcome', 'tips', 'sweet'],
       pinned: true,
@@ -53,7 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const noteIdInput = document.getElementById('note-id')
   const noteTitleInput = document.getElementById('note-title')
   const noteContentInput = document.getElementById('note-content')
-  const noteTagsInput = document.getElementById('note-tags')
   const noteTypeSelect = document.getElementById('note-type')
   const noteReminderAtInput = document.getElementById('note-reminder-at')
   const reminderConfig = document.getElementById('reminder-config')
@@ -68,15 +65,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnClearForm = document.getElementById('btn-clear-form')
   const btnSaveNote = document.getElementById('btn-save-note')
   const colorOptionsContainer = document.getElementById('color-options')
-  
-  const searchInput = document.getElementById('search-input')
-  const clearSearchBtn = document.getElementById('clear-search-btn')
-  
+
   const btnFilterActive = document.getElementById('btn-filter-active')
   const btnFilterArchived = document.getElementById('btn-filter-archived')
   const btnLayoutToggle = document.getElementById('btn-layout-toggle')
-  const tagsListContainer = document.getElementById('tags-list')
-  
+
   const notesGrid = document.getElementById('notes-grid')
   const emptyState = document.getElementById('empty-state')
   const noteFocusBackdrop = document.getElementById('note-focus-backdrop')
@@ -189,22 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     })
 
-    // Live real-time search
-    searchInput.addEventListener('input', (e) => {
-      currentSearchQuery = e.target.value.toLowerCase().trim()
-      clearSearchBtn.style.display = currentSearchQuery.length > 0 ? 'flex' : 'none'
-      render()
-    })
-
-    // Clear search query
-    clearSearchBtn.addEventListener('click', () => {
-      searchInput.value = ''
-      currentSearchQuery = ''
-      clearSearchBtn.style.display = 'none'
-      searchInput.focus()
-      render()
-    })
-
     // Active vs. Archived View filter toggles
     btnFilterActive.addEventListener('click', () => {
       currentView = 'active'
@@ -250,19 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const col = Number(cell.getAttribute('data-col'))
       if (!spreadsheetDraft[row]) return
       spreadsheetDraft[row][col] = cell.value
-    })
-
-    // Tag filter list click delegation
-    tagsListContainer.addEventListener('click', (e) => {
-      const clickedTag = e.target.closest('.tag-pill')
-      if (clickedTag) {
-        document.querySelectorAll('.tag-pill').forEach(pill => {
-          pill.classList.remove('active')
-        })
-        clickedTag.classList.add('active')
-        currentFilterTag = clickedTag.getAttribute('data-tag')
-        render()
-      }
     })
 
     // Card Action Delegations (Pin, Edit, Archive, Delete, Tag-Filter Click inside Card)
@@ -339,7 +303,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const id = noteIdInput.value
     const title = noteTitleInput.value.trim()
     const content = noteContentInput.value.trim()
-    const tagsString = noteTagsInput.value.trim()
     const noteType = noteTypeSelect.value
     const reminderAt = noteType === 'reminder' ? noteReminderAtInput.value || null : null
     const spreadsheetData = noteType === 'spreadsheet' ? spreadsheetDraft.map(row => row.map(cell => cell.trim())) : null
@@ -349,17 +312,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const colorRadio = document.querySelector('input[name="note-color"]:checked')
     const color = colorRadio ? colorRadio.value : '#ffd1dc'
 
-    const tags = tagsString
-      ? tagsString.split(',').map(tag => tag.toLowerCase().trim()).filter(tag => tag.length > 0)
-      : []
-
     if (id) {
       // EDITING EXISTING NOTE
       const updatedFields = {
         title,
         content,
         color,
-        tags,
         pinned: isFormPinned,
         type: noteType,
         reminderAt,
@@ -387,7 +345,6 @@ document.addEventListener('DOMContentLoaded', () => {
         title,
         content,
         color,
-        tags,
         pinned: isFormPinned,
         type: noteType,
         reminderAt,
@@ -430,7 +387,6 @@ document.addEventListener('DOMContentLoaded', () => {
     noteIdInput.value = note.id
     noteTitleInput.value = note.title
     noteContentInput.value = note.content
-    noteTagsInput.value = Array.isArray(note.tags) ? note.tags.join(', ') : ''
     noteTypeSelect.value = note.type || 'standard'
     noteReminderAtInput.value = note.reminderAt ? note.reminderAt.slice(0, 16) : ''
 
@@ -631,48 +587,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return
     }
 
-    // 5. TAG PILL CLICK INSIDE CARD (Instantly filters by that tag!)
-    if (target.classList.contains('note-card-tag')) {
-      const clickedTag = target.getAttribute('data-tag')
-      currentFilterTag = clickedTag
-      render()
-      return
-    }
-
-    // 6. CLICK CARD TO FOCUS/EXPAND
+    // 5. CLICK CARD TO FOCUS/EXPAND
     openFocusedNote(noteId)
-  }
-
-  // RE-GENERATE DYNAMIC TAG LIST BAR
-  function renderTagFilterList() {
-    // Collect all tags from non-archived notes (or archived based on current view)
-    const relevantNotes = notes.filter(n => n.archived === (currentView === 'archived'))
-    const allTags = []
-    
-    relevantNotes.forEach(note => {
-      const tags = Array.isArray(note.tags) ? note.tags : []
-      tags.forEach(tag => {
-        if (!allTags.includes(tag)) 
-          allTags.push(tag)
-        
-      })
-    })
-
-    // Build list: "All Tags" is always there
-    let html = `<button class="tag-pill ${currentFilterTag === 'all' ? 'active' : ''}" data-tag="all">All Tags</button>`
-    
-    allTags.sort().forEach(tag => {
-      html += `<button class="tag-pill ${currentFilterTag === tag ? 'active' : ''}" data-tag="${tag}">#${tag}</button>`
-    })
-
-    tagsListContainer.innerHTML = html
-
-    // If the current filtered tag no longer exists in any of the notes, fallback to 'all'
-    if (currentFilterTag !== 'all' && !allTags.includes(currentFilterTag)) {
-      currentFilterTag = 'all'
-      // Slight delayed recursion to correctly render active class
-      setTimeout(render, 0)
-    }
   }
 
   // UPDATE STATS DASHBOARD VALUES
@@ -711,59 +627,34 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Update stats dashboard
     updateStatsDashboard()
 
-    // 2. Refresh dynamic Tag list filters
-    renderTagFilterList()
-
-    // 3. Filter notes based on active states
+    // 2. Filter notes based on active state
     let filteredNotes = notes.filter(note => {
-      // View: Active vs. Archived
-      const matchesView = note.archived === (currentView === 'archived')
-      
-      // Tag Filter
-      const matchesTag = currentFilterTag === 'all' || note.tags.includes(currentFilterTag)
-      
-      // Search Query
-      const titleText = String(note.title || '').toLowerCase()
-      const contentText = String(note.content || '').toLowerCase()
-      const matchesSearch = !currentSearchQuery || 
-        titleText.includes(currentSearchQuery) || 
-        contentText.includes(currentSearchQuery) ||
-        (Array.isArray(note.tags) ? note.tags : []).some(tag => tag.toLowerCase().includes(currentSearchQuery))
-
-      return matchesView && matchesTag && matchesSearch
+      return note.archived === (currentView === 'archived')
     })
 
-    // 4. Sort notes: Pinned notes bubble to top, then sorted by createdAt descending
+    // 3. Sort notes: Pinned notes bubble to top, then sorted by createdAt descending
     filteredNotes.sort((a, b) => {
       if (a.pinned && !b.pinned) return -1
       if (!a.pinned && b.pinned) return 1
       return new Date(b.createdAt) - new Date(a.createdAt)
     })
 
-    // If focused note is no longer visible due to filters/search/view, exit focus mode.
+    // If focused note is no longer visible due to filters/view, exit focus mode.
     if (focusedNoteId && !filteredNotes.some(note => note.id === focusedNoteId)) 
       focusedNoteId = null
     
 
-    // 5. Handle empty state display
+    // 4. Handle empty state display
     if (filteredNotes.length === 0) {
       notesGrid.style.display = 'none'
       emptyState.style.display = 'flex'
-      
-      // Update empty state text based on search or view
+
+      // Update empty state text based on view
       const emptyTitle = emptyState.querySelector('h3')
       const emptyPara = emptyState.querySelector('p')
       const emptyMascot = emptyState.querySelector('.empty-mascot')
 
-      if (currentSearchQuery) {
-        emptyMascot.textContent = '🔍'
-        emptyTitle.textContent = 'No matching jots found'
-        emptyPara.textContent = 'Try adjusting your keywords or clearing the search to find your notes!'
-      } else if (currentFilterTag !== 'all') {
-        emptyMascot.textContent = '🏷️'
-        emptyTitle.textContent = `No jots tagged #${currentFilterTag}`
-        emptyPara.textContent = `None of your current jots in this view have the tag #${currentFilterTag}.`
-      } else if (currentView === 'archived') {
+      if (currentView === 'archived') {
         emptyMascot.textContent = '📦'
         emptyTitle.textContent = 'Your archive is empty'
         emptyPara.textContent = 'When you have a jot that you are finished with, tap its Archive box to tuck it away here!'
@@ -813,7 +704,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderFocusedNotePanelHTML(note) {
     const noteType = note.type || 'standard'
-    const safeTags = Array.isArray(note.tags) ? note.tags : []
     const typeLabelMap = {
       standard: 'Standard',
       dev: 'Dev',
@@ -823,7 +713,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const escapedTitle = escapeHTML(note.title)
     const escapedContent = escapeHTML(note.content)
-    const tagsMarkup = safeTags.map(tag => `<span class="note-card-tag" data-tag="${tag}">#${tag}</span>`).join('')
     const reminderText = noteType === 'reminder' && note.reminderAt
       ? `<div class="reminder-chip">⏰ ${escapeHTML(formatReminder(note.reminderAt))}</div>`
       : ''
@@ -848,7 +737,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ${standardBodyMarkup}
         ${markdownMarkup}
         ${spreadsheetMarkup}
-        <div class="note-card-tags">${tagsMarkup}</div>
       </article>
     `
   }
@@ -858,12 +746,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!btnLayoutToggle) return
 
     const isListView = currentLayoutView === 'list'
+    const currentViewLabel = isListView ? 'List' : 'Thumbnail'
     const nextViewLabel = isListView ? 'thumbnail' : 'list'
-    const listIcon = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>`
-    const gridIcon = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>`
 
     btnLayoutToggle.classList.toggle('active', isListView)
-    btnLayoutToggle.innerHTML = `${isListView ? gridIcon : listIcon}<span class="sr-only">Switch to ${nextViewLabel} view</span>`
+    btnLayoutToggle.textContent = currentViewLabel
     btnLayoutToggle.title = `Switch to ${nextViewLabel} view`
     btnLayoutToggle.setAttribute('aria-label', `Switch to ${nextViewLabel} view`)
   }
@@ -1009,12 +896,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderNoteCardHTML(note) {
     const noteType = note.type || 'standard'
 
-    // Tag badges markup
-    const safeTags = Array.isArray(note.tags) ? note.tags : []
-    const tagsMarkup = safeTags.map(tag => 
-      `<span class="note-card-tag" data-tag="${tag}">#${tag}</span>`
-    ).join('')
-
     const typeLabelMap = {
       standard: 'Standard',
       dev: 'Dev',
@@ -1070,11 +951,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ${standardBodyMarkup}
         ${markdownMarkup}
         ${spreadsheetMarkup}
-        
-        <div class="note-card-tags">
-          ${tagsMarkup}
-        </div>
-        
+
         <div class="note-actions">
           <span style="margin-right: auto; align-self: center; font-size: 0.72rem; font-weight: 700; color: rgba(45, 43, 42, 0.45);">${dateText}</span>
           

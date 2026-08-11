@@ -354,9 +354,21 @@
           <p>Add your first password, API key, or login so it is always one cute tap away!</p>
         </div>
 
-        <!-- Credentials Grid Container -->
-        <div class="credentials-grid" id="credentials-grid" style="display: none;">
-          <!-- Cards will be dynamically loaded here by app.js -->
+        <!-- Credentials Table Container -->
+        <div class="credentials-table-wrap" id="credentials-table-wrap" style="display: none;">
+          <table class="credentials-table">
+            <thead>
+              <tr>
+                <th scope="col" class="col-site">Site</th>
+                <th scope="col" class="col-username">Username</th>
+                <th scope="col" class="col-password">Password</th>
+                <th scope="col" class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody id="credentials-grid">
+              <!-- Rows will be dynamically loaded here by app.js -->
+            </tbody>
+          </table>
         </div>
         </div>
       </section>

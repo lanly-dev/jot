@@ -116,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnSaveCredential = document.getElementById('btn-save-credential')
   const btnToggleFormPassword = document.getElementById('btn-toggle-form-password')
   const credentialsGrid = document.getElementById('credentials-grid')
+  const credentialsTableWrap = document.getElementById('credentials-table-wrap')
   const vaultEmptyState = document.getElementById('vault-empty-state')
   const statTotalCredentials = document.getElementById('stat-total-credentials')
   const btnLockVault = document.getElementById('btn-lock-vault')
@@ -619,7 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // CREDENTIAL CARD ACTIONS
   function handleCredentialCardActions(e) {
     const target = e.target
-    const card = target.closest('.credential-card')
+    const card = target.closest('.credential-row')
     if (!card) return
 
     const credId = card.getAttribute('data-id')
@@ -1054,12 +1055,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. Handle empty state display
     if (credentials.length === 0) {
-      credentialsGrid.style.display = 'none'
+      credentialsTableWrap.style.display = 'none'
       vaultEmptyState.style.display = 'flex'
     } else {
-      credentialsGrid.style.display = 'grid'
+      credentialsTableWrap.style.display = 'block'
       vaultEmptyState.style.display = 'none'
-      credentialsGrid.innerHTML = credentials.map(cred => renderCredentialCardHTML(cred)).join('')
+      credentialsGrid.innerHTML = credentials.map(cred => renderCredentialRowHTML(cred)).join('')
     }
 
     applyFocusedNoteState()
@@ -1183,58 +1184,48 @@ document.addEventListener('DOMContentLoaded', () => {
     `
   }
 
-  function renderCredentialCardHTML(cred) {
-    const maskedPassword = '••••••••••'
+  function renderCredentialRowHTML(cred) {
     const escSite = escapeHTML(cred.site)
     const escUsername = escapeHTML(cred.username)
-    const escNotes = escapeHTML(cred.notes)
-    const dateText = formatDate(cred.createdAt)
 
     return `
-      <article class="credential-card" data-id="${cred.id}">
-        <div class="credential-header">
-          <span class="credential-site-icon" aria-hidden="true">🔑</span>
-          <div class="credential-title-wrap">
-            <h3 class="credential-site">${escSite}</h3>
-            <p class="credential-meta">${dateText}</p>
-          </div>
-        </div>
-
-        <div class="credential-field">
-          <span class="credential-field-label">Username</span>
-          <div class="credential-field-row">
-            <span class="credential-field-value">${escUsername}</span>
-            <button type="button" class="btn-icon credential-copy" data-copy="username" title="Copy username">
+      <tr class="credential-row" data-id="${cred.id}">
+        <td class="col-site">
+          <span class="credential-site-cell">
+            <span class="credential-site-icon" aria-hidden="true">🔑</span>
+            <span class="credential-site" title="${escSite}">${escSite}</span>
+          </span>
+        </td>
+        <td class="col-username">
+          <span class="credential-username-cell">
+            <span class="credential-username" title="${escUsername}">${escUsername}</span>
+            <button type="button" class="btn-icon credential-cell-btn credential-copy" data-copy="username" title="Copy username">
               <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
             </button>
-          </div>
-        </div>
-
-        <div class="credential-field">
-          <span class="credential-field-label">Password</span>
-          <div class="credential-field-row">
-            <span class="credential-field-value credential-password">${maskedPassword}</span>
-            <button type="button" class="btn-icon credential-reveal" title="Show password">
+          </span>
+        </td>
+        <td class="col-password">
+          <span class="credential-password-cell">
+            <span class="credential-password">••••••••••</span>
+            <button type="button" class="btn-icon credential-cell-btn credential-reveal" title="Show password">
               <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
             </button>
-            <button type="button" class="btn-icon credential-copy" data-copy="password" title="Copy password">
+            <button type="button" class="btn-icon credential-cell-btn credential-copy" data-copy="password" title="Copy password">
               <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
             </button>
-          </div>
-        </div>
-
-        ${cred.notes ? `<div class="credential-notes">${escNotes}</div>` : ''}
-
-        <div class="note-actions">
-          <span style="margin-right: auto; align-self: center; font-size: 0.72rem; font-weight: 700; color: rgba(45, 43, 42, 0.45);">${dateText}</span>
-          <button type="button" class="btn-icon action-edit" title="Edit Credential">
-            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"></path></svg>
-          </button>
-          <button type="button" class="btn-icon action-delete" title="Delete Credential Permanently">
-            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-          </button>
-        </div>
-      </article>
+          </span>
+        </td>
+        <td class="col-actions">
+          <span class="credential-row-actions">
+            <button type="button" class="btn-icon action-edit" title="Edit Credential">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"></path></svg>
+            </button>
+            <button type="button" class="btn-icon action-delete" title="Delete Credential Permanently">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            </button>
+          </span>
+        </td>
+      </tr>
     `
   }
 

@@ -1547,80 +1547,135 @@ body.note-focus-open {
   background-color: var(--color-primary-light);
 }
 
-.credentials-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
-  width: 100%;
-}
-
-.credential-card {
+.credentials-table-wrap {
   background-color: #ffffff;
-  border-radius: 24px;
   border: 2px solid var(--border-color);
-  padding: 1.4rem;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
+  border-radius: 16px;
   box-shadow: var(--card-shadow);
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15), box-shadow 0.3s ease;
-  animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow-x: auto;
 }
 
-.credential-card:hover {
-  transform: translateY(-6px) rotate(0.5deg);
-  box-shadow: var(--card-shadow-hover);
+.credentials-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  min-width: 560px;
 }
 
-.credential-card::before {
-  content: '';
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%) rotate(1deg);
-  width: 75px;
-  height: 22px;
-  background-color: rgba(255, 255, 255, 0.4);
-  border-left: 2px dashed rgba(0, 0, 0, 0.03);
-  border-right: 2px dashed rgba(0, 0, 0, 0.03);
-  z-index: 1;
+.credentials-table thead th {
+  background-color: #faf8f6;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #9a948f;
+  text-align: left;
+  padding: 0.6rem 1rem;
+  border-bottom: 2px solid var(--border-color);
+  white-space: nowrap;
 }
 
-.credential-header {
+.credentials-table th.col-actions {
+  width: 88px;
+  text-align: right;
+}
+
+.credentials-table td {
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.credentials-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.credentials-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.credentials-table tbody tr:hover {
+  background-color: rgba(255, 117, 143, 0.04);
+}
+
+.credential-site-cell,
+.credential-username-cell,
+.credential-password-cell {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
-}
-
-.credential-site-icon {
-  font-size: 1.4rem;
-  display: flex;
-  align-items: center;
-}
-
-.credential-title-wrap {
+  gap: 0.45rem;
   min-width: 0;
 }
 
-.credential-site {
+.credential-site-icon {
   font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.credential-site {
+  font-size: 0.92rem;
   font-weight: 700;
   color: var(--text-main);
-  word-break: break-word;
-  margin-bottom: 0.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.credential-meta {
-  font-size: 0.72rem;
-  color: var(--text-muted);
+.credential-username,
+.credential-password {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text-main);
 }
 
-.credential-field {
+.credential-password {
+  letter-spacing: 0.5px;
+}
+
+.credential-cell-btn {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.credential-cell-btn:hover {
+  color: var(--color-primary);
+  background-color: var(--color-primary-light);
+}
+
+.credential-row-actions {
   display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.15rem;
+}
+
+.credential-row-actions .btn-icon {
+  width: 28px;
+  height: 28px;
+  color: var(--text-muted);
+}
+
+.credential-row-actions .btn-icon:hover {
+  background-color: var(--color-primary-light);
+  color: var(--text-main);
+}
+
+.credential-row-actions .btn-icon.action-delete:hover {
+  color: #ff4d6d;
+}
+
+.credential-row-actions .btn-icon.action-edit:hover {
+  color: #ff9f1c;
 }
 
 .credential-field-label {
@@ -1665,25 +1720,10 @@ body.note-focus-open {
   background-color: var(--color-primary-light);
 }
 
-.credential-field-row .btn-icon.action-copy:focus-visible,
-.credential-field-row .btn-icon:focus-visible {
+.credential-field-row .btn-icon:focus-visible,
+.credential-cell-btn:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
-}
-
-.credential-notes {
-  background: rgba(251, 249, 246, 0.8);
-  border: 1px dashed var(--border-color);
-  border-radius: 12px;
-  padding: 0.5rem 0.7rem;
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  word-break: break-word;
-  white-space: pre-wrap;
-}
-
-.credential-card .note-actions {
-  margin-top: 0;
 }
 
 /* Credential preview (focus panel) */
@@ -1811,5 +1851,9 @@ body.note-focus-open {
     flex: 1;
     justify-content: center;
     padding: 0.55rem 0.75rem;
+  }
+
+  .credentials-table-wrap {
+    border-radius: 12px;
   }
 }

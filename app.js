@@ -119,16 +119,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const vaultEmptyState = document.getElementById('vault-empty-state')
   const statTotalCredentials = document.getElementById('stat-total-credentials')
   const btnLockVault = document.getElementById('btn-lock-vault')
-  const vaultLockOverlay = document.getElementById('vault-lock-overlay')
-  const vaultLockTitle = document.getElementById('vault-lock-title')
-  const vaultLockHint = document.getElementById('vault-lock-hint')
-  const vaultLockForm = document.getElementById('vault-lock-form')
-  const vaultMasterPasswordInput = document.getElementById('vault-master-password')
-  const vaultMasterConfirmInput = document.getElementById('vault-master-confirm')
+  const vaultContent = document.getElementById('vault-content')
+  const vaultLockedState = document.getElementById('vault-locked-state')
+  const vaultLockedTitle = document.getElementById('vault-locked-title')
+  const vaultLockedHint = document.getElementById('vault-locked-hint')
+  const vaultUnlockForm = document.getElementById('vault-unlock-form')
+  const vaultUnlockPasswordInput = document.getElementById('vault-unlock-password')
+  const vaultUnlockConfirmInput = document.getElementById('vault-unlock-confirm')
   const vaultConfirmWrap = document.getElementById('vault-confirm-wrap')
-  const vaultLockError = document.getElementById('vault-lock-error')
-  const btnToggleLockPassword = document.getElementById('btn-toggle-lock-password')
-  const btnUnlockVault = document.getElementById('btn-unlock-vault')
+  const vaultUnlockError = document.getElementById('vault-unlock-error')
+  const btnToggleUnlockPassword = document.getElementById('btn-toggle-unlock-password')
+  const btnVaultUnlock = document.getElementById('btn-vault-unlock')
 
   // INITIALIZATION
   function init() {
@@ -308,10 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
     noteFocusBackdrop.addEventListener('click', closeFocusedNote)
     notePreviewClose.addEventListener('click', closeFocusedNote)
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        if (vaultLockOverlay.classList.contains('active')) { cancelVaultLock() }
-        else { closeFocusedNote() }
-      }
+      if (e.key === 'Escape') { closeFocusedNote() }
     })
 
     // Google Keep-Style Note Creator Listeners
@@ -365,14 +363,11 @@ document.addEventListener('DOMContentLoaded', () => {
     btnNavVault.addEventListener('click', () => switchMode('vault'))
 
     // VAULT LOCK / UNLOCK / SETUP
-    vaultLockForm.addEventListener('submit', handleVaultLockFormSubmit)
-    btnToggleLockPassword.addEventListener('click', () => {
-      togglePasswordVisibility(vaultMasterPasswordInput, btnToggleLockPassword)
+    vaultUnlockForm.addEventListener('submit', handleVaultUnlockFormSubmit)
+    btnToggleUnlockPassword.addEventListener('click', () => {
+      togglePasswordVisibility(vaultUnlockPasswordInput, btnToggleUnlockPassword)
     })
     btnLockVault.addEventListener('click', lockVault)
-    vaultLockOverlay.addEventListener('click', (e) => {
-      if (e.target === vaultLockOverlay) cancelVaultLock()
-    })
 
     // Credential form password reveal toggle
     btnToggleFormPassword.addEventListener('click', () => {
@@ -429,88 +424,71 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function enterVaultMode() {
     if (!vaultUnlocked) {
-      const configured = !!localStorage.getItem(VAULT_HASH_KEY)
-      vaultSetupMode = !configured
-      openVaultLock()
+      showVaultLockedState()
       return
     }
     render()
   }
 
-  function openVaultLock() {
+  function showVaultLockedState() {
     vaultSetupMode = !localStorage.getItem(VAULT_HASH_KEY)
-    vaultLockError.textContent = ''
-    vaultMasterPasswordInput.value = ''
-    vaultMasterConfirmInput.value = ''
+    vaultUnlockError.textContent = ''
+    vaultUnlockPasswordInput.value = ''
+    vaultUnlockConfirmInput.value = ''
 
     if (vaultSetupMode) {
-      vaultLockTitle.textContent = 'Create a Master Password'
-      vaultLockHint.textContent = 'This locks your vault. It is stored only on this device (hashed) and cannot be recovered if forgotten.'
-      vaultConfirmWrap.classList.remove('hidden')
-      btnUnlockVault.innerHTML = 'Create Vault ✨'
+      vaultLockedTitle.textContent = 'Create a Master Password'
+      vaultLockedHint.textContent = 'This locks your vault. It is stored only on this device (hashed) and cannot be recovered if forgotten.'
+      vaultConfirmWrap.style.display = 'flex'
+      btnVaultUnlock.innerHTML = 'Create Vault ✨'
     } else {
-      vaultLockTitle.textContent = 'Unlock Your Vault'
-      vaultLockHint.textContent = 'Enter your master password to see your saved credentials.'
-      vaultConfirmWrap.classList.add('hidden')
-      btnUnlockVault.innerHTML = 'Unlock Vault'
+      vaultLockedTitle.textContent = 'Vault is locked'
+      vaultLockedHint.textContent = 'Enter your master password to see your saved credentials.'
+      vaultConfirmWrap.style.display = 'none'
+      btnVaultUnlock.innerHTML = 'Unlock Vault'
     }
 
-    vaultLockOverlay.classList.add('active')
-    vaultLockOverlay.setAttribute('aria-hidden', 'false')
-    vaultMasterPasswordInput.focus()
+    vaultLockedState.classList.remove('hidden')
+    vaultContent.classList.add('hidden')
+    vaultUnlockPasswordInput.focus()
   }
 
-  function closeVaultLock() {
-    vaultLockOverlay.classList.remove('active')
-    vaultLockOverlay.setAttribute('aria-hidden', 'true')
-    vaultLockError.textContent = ''
-  }
-
-  function cancelVaultLock() {
-    vaultUnlocked = false
-    vaultSetupMode = false
-    closeVaultLock()
-    if (currentMode === 'vault') switchMode('notes')
-  }
-
-  async function handleVaultLockFormSubmit(e) {
+  async function handleVaultUnlockFormSubmit(e) {
     e.preventDefault()
-    vaultLockError.textContent = ''
+    vaultUnlockError.textContent = ''
 
-    const password = vaultMasterPasswordInput.value
+    const password = vaultUnlockPasswordInput.value
     if (!password) {
-      vaultLockError.textContent = 'Please enter a master password 😿'
+      vaultUnlockError.textContent = 'Please enter a master password 😿'
       return
     }
 
     if (vaultSetupMode) {
-      const confirm = vaultMasterConfirmInput.value
+      const confirm = vaultUnlockConfirmInput.value
       if (password.length < 4) {
-        vaultLockError.textContent = 'Master password should be at least 4 characters 🌸'
+        vaultUnlockError.textContent = 'Master password should be at least 4 characters 🌸'
         return
       }
       if (password !== confirm) {
-        vaultLockError.textContent = 'Passwords do not match 😿'
+        vaultUnlockError.textContent = 'Passwords do not match 😿'
         return
       }
       const hash = await hashPassword(password)
       localStorage.setItem(VAULT_HASH_KEY, hash)
       vaultUnlocked = true
-      closeVaultLock()
       showToast('Vault created! 🔐')
     } else {
       const hash = await hashPassword(password)
       if (hash === localStorage.getItem(VAULT_HASH_KEY)) {
         vaultUnlocked = true
-        closeVaultLock()
         showToast('Vault unlocked! 🔓')
       } else {
-        vaultLockError.textContent = 'Wrong master password 😿'
+        vaultUnlockError.textContent = 'Wrong master password 😿'
       }
     }
 
-    vaultMasterPasswordInput.value = ''
-    vaultMasterConfirmInput.value = ''
+    vaultUnlockPasswordInput.value = ''
+    vaultUnlockConfirmInput.value = ''
     if (vaultUnlocked) render()
   }
 
@@ -520,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
     credentialsGrid.innerHTML = ''
     vaultEmptyState.style.display = 'none'
     vaultSetupMode = false
-    openVaultLock()
+    showVaultLockedState()
     showToast('Vault locked 🔒')
   }
 
@@ -1062,7 +1040,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderVault() {
-    if (!vaultUnlocked) return
+    if (!vaultUnlocked) {
+      showVaultLockedState()
+      return
+    }
+
+    // Show vault content, hide locked state
+    vaultLockedState.classList.add('hidden')
+    vaultContent.classList.remove('hidden')
 
     // 1. Update vault stats
     statTotalCredentials.textContent = credentials.length

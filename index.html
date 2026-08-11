@@ -24,9 +24,21 @@
   <div class="bg-decor bg-decor-3"></div>
 
   <div class="app-container">
+    <!-- MODE NAVIGATION -->
+    <nav class="app-nav" aria-label="App mode navigation">
+      <button type="button" class="nav-tab active" id="nav-notes" data-mode="notes">
+        <span class="nav-icon" aria-hidden="true">📝</span>
+        <span>Notes</span>
+      </button>
+      <button type="button" class="nav-tab" id="nav-vault" data-mode="vault">
+        <span class="nav-icon" aria-hidden="true">🔐</span>
+        <span>Vault</span>
+      </button>
+    </nav>
+
     <!-- MAIN LAYOUT -->
     <main class="app-main">
-      <section class="display-section">
+      <section class="display-section" id="notes-mode">
         <!-- Note Creator Card -->
         <div class="note-creator-wrapper">
           <div class="note-creator" id="editor-card">
@@ -221,12 +233,143 @@
           <!-- Cards will be dynamically loaded here by app.js -->
         </div>
       </section>
+
+      <!-- VAULT MODE -->
+      <section class="display-section hidden" id="vault-mode">
+        <!-- Credential Creator Card -->
+        <div class="note-creator-wrapper">
+          <div class="note-creator" id="vault-creator">
+            <!-- COLLAPSED STATE -->
+            <div class="creator-collapsed" id="vault-creator-collapsed">
+              <div class="creator-trigger-row">
+                <div class="creator-trigger-left">
+                  <span class="pencil-icon-inside">🔑</span>
+                  <span class="placeholder-text">Add a new credential... 🔐</span>
+                </div>
+                <button type="button" class="btn-icon" id="btn-expand-vault-creator" title="Add a Credential">
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- EXPANDED STATE (Form) -->
+            <div class="creator-expanded" id="vault-creator-expanded" style="display: none; padding: 1.5rem;">
+              <div class="editor-header"
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2 id="credential-editor-title" style="font-size: 1.15rem; font-weight: 700;">Add a New Credential</h2>
+              </div>
+              <form id="credential-form" class="note-form">
+                <!-- Hidden input for editing mode -->
+                <input type="hidden" id="credential-id" value="">
+
+                <div class="input-group">
+                  <label for="credential-site" class="sr-only">Site / App Name</label>
+                  <input type="text" id="credential-site" placeholder="Site / App name (e.g. GitHub, Netflix)"
+                    maxlength="100" required>
+                </div>
+
+                <div class="input-group">
+                  <label for="credential-username" class="sr-only">Username or Email</label>
+                  <input type="text" id="credential-username" placeholder="Username or email" maxlength="150" required>
+                </div>
+
+                <div class="input-group">
+                  <label for="credential-password" class="sr-only">Password</label>
+                  <div class="password-input-wrap">
+                    <input type="password" id="credential-password" placeholder="Password" required>
+                    <button type="button" class="btn-icon password-reveal-toggle" id="btn-toggle-form-password"
+                      title="Show password" aria-label="Show or hide password">
+                      <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2"
+                        fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="input-group">
+                  <label for="credential-notes" class="sr-only">Notes</label>
+                  <textarea id="credential-notes" placeholder="Notes (optional)" rows="2"></textarea>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                  <button type="button" class="btn btn-secondary" id="btn-close-vault-creator"
+                    style="display: inline-flex;">Close</button>
+                  <button type="submit" class="btn btn-primary" id="btn-save-credential">
+                    <span class="btn-text">Save Credential</span>
+                    <span class="btn-sparkle">🔐</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="display-controls" aria-label="Vault controls">
+          <div class="display-control-group status-filter-group">
+            <span class="vault-stats">🔑 <span id="stat-total-credentials">0</span> credentials saved</span>
+          </div>
+          <div class="display-control-group">
+            <button type="button" class="btn-toggle" id="btn-lock-vault" title="Lock the vault">🔒 Lock</button>
+          </div>
+        </div>
+
+        <!-- Vault Empty State -->
+        <div class="empty-state" id="vault-empty-state" style="display: none;">
+          <div class="empty-mascot">🔐</div>
+          <h3>Your vault is empty</h3>
+          <p>Add your first password, API key, or login so it is always one cute tap away!</p>
+        </div>
+
+        <!-- Credentials Grid Container -->
+        <div class="credentials-grid" id="credentials-grid" style="display: none;">
+          <!-- Cards will be dynamically loaded here by app.js -->
+        </div>
+      </section>
     </main>
 
     <!-- FOOTER -->
     <footer class="app-footer">
       <p>Jot &copy; 2026. Handcrafted with 💖 and pastel sparkles.</p>
     </footer>
+  </div>
+
+  <!-- Vault Lock / Unlock Overlay -->
+  <div class="vault-lock-overlay" id="vault-lock-overlay" aria-hidden="true">
+    <div class="vault-lock-modal">
+      <div class="vault-lock-mascot">🔐</div>
+      <h3 id="vault-lock-title">Unlock Your Vault</h3>
+      <p id="vault-lock-hint">Enter your master password to see your saved credentials.</p>
+      <form id="vault-lock-form">
+        <div class="input-group" style="margin-bottom: 0.75rem;">
+          <label for="vault-master-password" class="sr-only">Master Password</label>
+          <div class="password-input-wrap">
+            <input type="password" id="vault-master-password" placeholder="Master password" autocomplete="off">
+            <button type="button" class="btn-icon password-reveal-toggle" id="btn-toggle-lock-password"
+              title="Show password" aria-label="Show or hide master password">
+              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2"
+                fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="input-group hidden" id="vault-confirm-wrap" style="margin-bottom: 0.75rem;">
+          <label for="vault-master-confirm" class="sr-only">Confirm Master Password</label>
+          <div class="password-input-wrap">
+            <input type="password" id="vault-master-confirm" placeholder="Confirm master password" autocomplete="off">
+          </div>
+        </div>
+        <p class="vault-lock-error" id="vault-lock-error" aria-live="polite"></p>
+        <button type="submit" class="btn btn-primary" id="btn-unlock-vault" style="width: 100%;">Unlock Vault</button>
+      </form>
+    </div>
   </div>
 
   <div class="note-focus-backdrop" id="note-focus-backdrop" aria-hidden="true"></div>

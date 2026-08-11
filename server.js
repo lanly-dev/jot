@@ -41,6 +41,7 @@ app.use(express.static(path.join(__dirname)))
 // File path for database storage
 const DATA_DIR = path.join(__dirname, 'data')
 const DATA_FILE = path.join(DATA_DIR, 'notes.json')
+const CREDENTIALS_FILE = path.join(DATA_DIR, 'credentials.json')
 
 function normalizeNoteType(type) {
   const allowedTypes = ['standard', 'dev', 'reminder', 'spreadsheet']
@@ -53,6 +54,17 @@ function normalizeSpreadsheetData(spreadsheetData) {
     if (!Array.isArray(row)) return []
     return row.slice(0, 8).map(cell => String(cell || ''))
   })
+}
+
+function normalizeCredential(cred) {
+  return {
+    id: cred.id,
+    site: String(cred.site || ''),
+    username: String(cred.username || ''),
+    password: String(cred.password || ''),
+    notes: String(cred.notes || ''),
+    createdAt: cred.createdAt || new Date().toISOString()
+  }
 }
 
 // Default sample notes seed
@@ -128,6 +140,40 @@ function writeNotes(notes) {
     fs.writeFileSync(DATA_FILE, JSON.stringify(notes, null, 2), 'utf-8')
   } catch (err) {
     console.error('Error writing to notes database:', err)
+  }
+}
+
+// Helper to ensure credentials database file exists
+function initializeCredentialsDatabase() {
+  if (!fs.existsSync(DATA_DIR))
+  {fs.mkdirSync(DATA_DIR, { recursive: true })}
+
+  if (!fs.existsSync(CREDENTIALS_FILE)) {
+    fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify([], null, 2), 'utf-8')
+    console.log('Credentials database initialized! 🔐')
+  }
+}
+
+// Helper to read credentials
+function readCredentials() {
+  try {
+    initializeCredentialsDatabase()
+    const data = fs.readFileSync(CREDENTIALS_FILE, 'utf-8')
+    const parsed = JSON.parse(data)
+    return Array.isArray(parsed) ? parsed : []
+  } catch (err) {
+    console.error('Error reading credentials database:', err)
+    return []
+  }
+}
+
+// Helper to write credentials
+function writeCredentials(credentials) {
+  try {
+    initializeCredentialsDatabase()
+    fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(credentials, null, 2), 'utf-8')
+  } catch (err) {
+    console.error('Error writing to credentials database:', err)
   }
 }
 
@@ -210,6 +256,67 @@ app.delete('/api/notes/:id', (req, res) => {
   writeNotes(notes)
   console.log(`Note deleted permanently: (${id}) 🗑️`)
   res.json({ success: true, message: 'Note deleted permanently 🌸' })
+})
+
+// GET: Retrieve all credentials
+app.get('/api/credentials', (req, res) => {
+  res.json(readCredentials())
+})
+
+// POST: Add a new credential
+app.post('/api/credentials', (req, res) => {
+  const credentials = readCredentials()
+  const newCredential = normalizeCredential({
+    id: req.body.id || 'cred-' + Date.now(),
+    site: req.body.site,
+    username: req.body.username,
+    password: req.body.password,
+    notes: req.body.notes,
+    createdAt: req.body.createdAt || new Date().toISOString()
+  })
+
+  credentials.unshift(newCredential)
+  writeCredentials(credentials)
+  console.log(`Credential created: "${newCredential.site}" (${newCredential.id}) 🔐`)
+  res.status(201).json(newCredential)
+})
+
+// PUT: Update an existing credential
+app.put('/api/credentials/:id', (req, res) => {
+  const { id } = req.params
+  const credentials = readCredentials()
+  const credIndex = credentials.findIndex(c => c.id === id)
+
+  if (credIndex === -1)
+  {return res.status(404).json({ error: 'Credential not found 😿' })}
+
+  const updatedCredential = normalizeCredential({
+    ...credentials[credIndex],
+    site: req.body.site !== undefined ? req.body.site : credentials[credIndex].site,
+    username: req.body.username !== undefined ? req.body.username : credentials[credIndex].username,
+    password: req.body.password !== undefined ? req.body.password : credentials[credIndex].password,
+    notes: req.body.notes !== undefined ? req.body.notes : credentials[credIndex].notes
+  })
+
+  credentials[credIndex] = updatedCredential
+  writeCredentials(credentials)
+  console.log(`Credential updated: "${updatedCredential.site}" (${id}) 🔏`)
+  res.json(updatedCredential)
+})
+
+// DELETE: Remove a credential permanently
+app.delete('/api/credentials/:id', (req, res) => {
+  const { id } = req.params
+  let credentials = readCredentials()
+  const credExists = credentials.some(c => c.id === id)
+
+  if (!credExists)
+  {return res.status(404).json({ error: 'Credential not found 😿' })}
+
+  credentials = credentials.filter(c => c.id !== id)
+  writeCredentials(credentials)
+  console.log(`Credential deleted permanently: (${id}) 🗑️`)
+  res.json({ success: true, message: 'Credential deleted permanently 🔐' })
 })
 
 // Start the Express server

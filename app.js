@@ -5,12 +5,18 @@
 document.addEventListener('DOMContentLoaded', () => {
   // CENTRAL STATE
   let notes = []
+  let credentials = []
+  let currentMode = 'notes' // 'notes' or 'vault'
   let currentView = 'active' // 'active' or 'archived'
   let currentLayoutView = localStorage.getItem('jot_layout_view') || 'thumbnail' // 'thumbnail' or 'list'
   let isFormPinned = false // whether the note-in-creation is pinned
   let focusedNoteId = null
+  let focusedCredentialId = null
   let spreadsheetDraft = []
+  let vaultUnlocked = false
+  let vaultSetupMode = false
   const reminderTimers = new Map()
+  const VAULT_HASH_KEY = 'jot_vault_master_hash'
 
   // DEFAULT SAMPLES (Loaded only on first visit to make it feel rich and welcoming!)
   const SAMPLE_NOTES = [
@@ -88,11 +94,48 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnExpandCreator = document.getElementById('btn-expand-creator')
   const btnCloseCreator = document.getElementById('btn-close-creator')
 
+  // Mode navigation elements
+  const btnNavNotes = document.getElementById('nav-notes')
+  const btnNavVault = document.getElementById('nav-vault')
+  const notesMode = document.getElementById('notes-mode')
+  const vaultMode = document.getElementById('vault-mode')
+
+  // Credential / Vault UI elements
+  const vaultCreator = document.getElementById('vault-creator')
+  const vaultCreatorCollapsed = document.getElementById('vault-creator-collapsed')
+  const vaultCreatorExpanded = document.getElementById('vault-creator-expanded')
+  const btnExpandVaultCreator = document.getElementById('btn-expand-vault-creator')
+  const btnCloseVaultCreator = document.getElementById('btn-close-vault-creator')
+  const credentialForm = document.getElementById('credential-form')
+  const credentialIdInput = document.getElementById('credential-id')
+  const credentialSiteInput = document.getElementById('credential-site')
+  const credentialUsernameInput = document.getElementById('credential-username')
+  const credentialPasswordInput = document.getElementById('credential-password')
+  const credentialNotesInput = document.getElementById('credential-notes')
+  const credentialEditorTitle = document.getElementById('credential-editor-title')
+  const btnSaveCredential = document.getElementById('btn-save-credential')
+  const btnToggleFormPassword = document.getElementById('btn-toggle-form-password')
+  const credentialsGrid = document.getElementById('credentials-grid')
+  const vaultEmptyState = document.getElementById('vault-empty-state')
+  const statTotalCredentials = document.getElementById('stat-total-credentials')
+  const btnLockVault = document.getElementById('btn-lock-vault')
+  const vaultLockOverlay = document.getElementById('vault-lock-overlay')
+  const vaultLockTitle = document.getElementById('vault-lock-title')
+  const vaultLockHint = document.getElementById('vault-lock-hint')
+  const vaultLockForm = document.getElementById('vault-lock-form')
+  const vaultMasterPasswordInput = document.getElementById('vault-master-password')
+  const vaultMasterConfirmInput = document.getElementById('vault-master-confirm')
+  const vaultConfirmWrap = document.getElementById('vault-confirm-wrap')
+  const vaultLockError = document.getElementById('vault-lock-error')
+  const btnToggleLockPassword = document.getElementById('btn-toggle-lock-password')
+  const btnUnlockVault = document.getElementById('btn-unlock-vault')
+
   // INITIALIZATION
   function init() {
     initSpreadsheetDraft(3, 3)
     setupEventListeners()
     fetchNotes()
+    fetchCredentials()
     updateLayoutToggleButton()
     updateTypeSpecificFields()
   }
@@ -127,6 +170,35 @@ document.addEventListener('DOMContentLoaded', () => {
   // STATE SAVING (Offline/Backup storage)
   function saveNotesToStorage() {
     localStorage.setItem('jot_notes', JSON.stringify(notes))
+  }
+
+  async function fetchCredentials() {
+    try {
+      const res = await fetch('/api/credentials')
+      if (!res.ok) throw new Error('Failed to fetch credentials')
+      const fetchedCredentials = await res.json()
+      credentials = Array.isArray(fetchedCredentials)
+        ? fetchedCredentials.map(cred => normalizeCredential(cred))
+        : []
+    } catch (err) {
+      console.error('Error fetching credentials from cloud:', err)
+      const savedCredentials = localStorage.getItem('jot_credentials')
+      credentials = savedCredentials
+        ? JSON.parse(savedCredentials).map(cred => normalizeCredential(cred))
+        : []
+    }
+  }
+
+  function normalizeCredential(cred) {
+    const merged = cred || {}
+    return {
+      id: merged.id || 'cred-' + Date.now(),
+      site: merged.site || '',
+      username: merged.username || '',
+      password: merged.password || '',
+      notes: merged.notes || '',
+      createdAt: merged.createdAt || new Date().toISOString()
+    }
   }
 
   // Dynamic Toast Notification UI
@@ -236,8 +308,10 @@ document.addEventListener('DOMContentLoaded', () => {
     noteFocusBackdrop.addEventListener('click', closeFocusedNote)
     notePreviewClose.addEventListener('click', closeFocusedNote)
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') { closeFocusedNote() }
-
+      if (e.key === 'Escape') {
+        if (vaultLockOverlay.classList.contains('active')) { cancelVaultLock() }
+        else { closeFocusedNote() }
+      }
     })
 
     // Google Keep-Style Note Creator Listeners
@@ -285,6 +359,382 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     })
+
+    // MODE NAVIGATION (Notes <-> Vault)
+    btnNavNotes.addEventListener('click', () => switchMode('notes'))
+    btnNavVault.addEventListener('click', () => switchMode('vault'))
+
+    // VAULT LOCK / UNLOCK / SETUP
+    vaultLockForm.addEventListener('submit', handleVaultLockFormSubmit)
+    btnToggleLockPassword.addEventListener('click', () => {
+      togglePasswordVisibility(vaultMasterPasswordInput, btnToggleLockPassword)
+    })
+    btnLockVault.addEventListener('click', lockVault)
+    vaultLockOverlay.addEventListener('click', (e) => {
+      if (e.target === vaultLockOverlay) cancelVaultLock()
+    })
+
+    // Credential form password reveal toggle
+    btnToggleFormPassword.addEventListener('click', () => {
+      togglePasswordVisibility(credentialPasswordInput, btnToggleFormPassword)
+    })
+
+    // Credential creator expand/collapse
+    if (btnExpandVaultCreator) {
+      btnExpandVaultCreator.addEventListener('click', (e) => {
+        e.stopPropagation()
+        if (!vaultCreator.classList.contains('active')) expandVaultCreator()
+      })
+    }
+    if (vaultCreatorCollapsed) {
+      vaultCreatorCollapsed.addEventListener('click', () => {
+        if (!vaultCreator.classList.contains('active')) expandVaultCreator()
+      })
+    }
+    if (btnCloseVaultCreator) {
+      btnCloseVaultCreator.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        resetCredentialForm()
+      })
+    }
+
+    // Credential form submit
+    credentialForm.addEventListener('submit', handleCredentialFormSubmit)
+
+    // Credential card action delegation
+    credentialsGrid.addEventListener('click', handleCredentialCardActions)
+
+    // Copy / reveal inside the focused credential preview panel
+    notePreviewContent.addEventListener('click', handleCredentialPanelActions)
+  }
+
+  // MODE SWITCHING
+  function switchMode(mode) {
+    if (currentMode === mode) return
+    currentMode = mode
+    closeFocusedNote()
+
+    btnNavNotes.classList.toggle('active', mode === 'notes')
+    btnNavVault.classList.toggle('active', mode === 'vault')
+    notesMode.classList.toggle('hidden', mode !== 'notes')
+    vaultMode.classList.toggle('hidden', mode !== 'vault')
+
+    if (mode === 'vault') {
+      enterVaultMode()
+    } else {
+      render()
+    }
+  }
+
+  function enterVaultMode() {
+    if (!vaultUnlocked) {
+      const configured = !!localStorage.getItem(VAULT_HASH_KEY)
+      vaultSetupMode = !configured
+      openVaultLock()
+      return
+    }
+    render()
+  }
+
+  function openVaultLock() {
+    vaultSetupMode = !localStorage.getItem(VAULT_HASH_KEY)
+    vaultLockError.textContent = ''
+    vaultMasterPasswordInput.value = ''
+    vaultMasterConfirmInput.value = ''
+
+    if (vaultSetupMode) {
+      vaultLockTitle.textContent = 'Create a Master Password'
+      vaultLockHint.textContent = 'This locks your vault. It is stored only on this device (hashed) and cannot be recovered if forgotten.'
+      vaultConfirmWrap.classList.remove('hidden')
+      btnUnlockVault.innerHTML = 'Create Vault ✨'
+    } else {
+      vaultLockTitle.textContent = 'Unlock Your Vault'
+      vaultLockHint.textContent = 'Enter your master password to see your saved credentials.'
+      vaultConfirmWrap.classList.add('hidden')
+      btnUnlockVault.innerHTML = 'Unlock Vault'
+    }
+
+    vaultLockOverlay.classList.add('active')
+    vaultLockOverlay.setAttribute('aria-hidden', 'false')
+    vaultMasterPasswordInput.focus()
+  }
+
+  function closeVaultLock() {
+    vaultLockOverlay.classList.remove('active')
+    vaultLockOverlay.setAttribute('aria-hidden', 'true')
+    vaultLockError.textContent = ''
+  }
+
+  function cancelVaultLock() {
+    vaultUnlocked = false
+    vaultSetupMode = false
+    closeVaultLock()
+    if (currentMode === 'vault') switchMode('notes')
+  }
+
+  async function handleVaultLockFormSubmit(e) {
+    e.preventDefault()
+    vaultLockError.textContent = ''
+
+    const password = vaultMasterPasswordInput.value
+    if (!password) {
+      vaultLockError.textContent = 'Please enter a master password 😿'
+      return
+    }
+
+    if (vaultSetupMode) {
+      const confirm = vaultMasterConfirmInput.value
+      if (password.length < 4) {
+        vaultLockError.textContent = 'Master password should be at least 4 characters 🌸'
+        return
+      }
+      if (password !== confirm) {
+        vaultLockError.textContent = 'Passwords do not match 😿'
+        return
+      }
+      const hash = await hashPassword(password)
+      localStorage.setItem(VAULT_HASH_KEY, hash)
+      vaultUnlocked = true
+      closeVaultLock()
+      showToast('Vault created! 🔐')
+    } else {
+      const hash = await hashPassword(password)
+      if (hash === localStorage.getItem(VAULT_HASH_KEY)) {
+        vaultUnlocked = true
+        closeVaultLock()
+        showToast('Vault unlocked! 🔓')
+      } else {
+        vaultLockError.textContent = 'Wrong master password 😿'
+      }
+    }
+
+    vaultMasterPasswordInput.value = ''
+    vaultMasterConfirmInput.value = ''
+    if (vaultUnlocked) render()
+  }
+
+  function lockVault() {
+    vaultUnlocked = false
+    closeFocusedNote()
+    credentialsGrid.innerHTML = ''
+    vaultEmptyState.style.display = 'none'
+    vaultSetupMode = false
+    openVaultLock()
+    showToast('Vault locked 🔒')
+  }
+
+  async function hashPassword(password) {
+    if (window.crypto && crypto.subtle) {
+      try {
+        const data = new TextEncoder().encode(password)
+        const digest = await crypto.subtle.digest('SHA-256', data)
+        return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('')
+      } catch (err) {
+        console.error('crypto.subtle unavailable, using fallback hash:', err)
+      }
+    }
+    let h1 = 0xdeadbeef
+    let h2 = 0x41c6ce57
+    for (let i = 0; i < password.length; i++) {
+      const ch = password.charCodeAt(i)
+      h1 = Math.imul(h1 ^ ch, 2654435761)
+      h2 = Math.imul(h2 ^ ch, 1597334677)
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909)
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909)
+    return (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0')
+  }
+
+  function togglePasswordVisibility(input, toggleBtn) {
+    const showing = input.type === 'text'
+    input.type = showing ? 'password' : 'text'
+    toggleBtn.title = showing ? 'Show password' : 'Hide password'
+    toggleBtn.classList.toggle('revealed', !showing)
+  }
+
+  // CREDENTIAL CREATOR UI
+  function expandVaultCreator() {
+    if (vaultCreator.classList.contains('active')) return
+    vaultCreator.classList.add('active')
+    if (vaultCreatorCollapsed) vaultCreatorCollapsed.style.display = 'none'
+    if (vaultCreatorExpanded) vaultCreatorExpanded.style.display = 'block'
+    credentialSiteInput.focus()
+  }
+
+  function resetCredentialForm() {
+    vaultCreator.classList.remove('active')
+    if (vaultCreatorCollapsed) vaultCreatorCollapsed.style.display = 'flex'
+    if (vaultCreatorExpanded) vaultCreatorExpanded.style.display = 'none'
+    credentialForm.reset()
+    credentialIdInput.value = ''
+    credentialPasswordInput.type = 'password'
+    btnToggleFormPassword.classList.remove('revealed')
+    btnToggleFormPassword.title = 'Show password'
+    credentialEditorTitle.textContent = 'Add a New Credential'
+    btnSaveCredential.querySelector('.btn-text').textContent = 'Save Credential'
+  }
+
+  async function handleCredentialFormSubmit(e) {
+    e.preventDefault()
+
+    const id = credentialIdInput.value
+    const credentialData = {
+      site: credentialSiteInput.value.trim(),
+      username: credentialUsernameInput.value.trim(),
+      password: credentialPasswordInput.value,
+      notes: credentialNotesInput.value.trim()
+    }
+
+    if (id) {
+      try {
+        const res = await fetch(`/api/credentials/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(credentialData)
+        })
+        if (!res.ok) throw new Error('Cloud update failed')
+        const updated = await res.json()
+        credentials = credentials.map(c => c.id === id ? normalizeCredential({ ...c, ...updated }) : c)
+        showToast('Credential updated! 🔏')
+      } catch (err) {
+        console.error(err)
+        credentials = credentials.map(c => c.id === id ? normalizeCredential({ ...c, ...credentialData }) : c)
+        showToast('Updated locally ⚠️', 'warn')
+      }
+    } else {
+      try {
+        const res = await fetch('/api/credentials', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(credentialData)
+        })
+        if (!res.ok) throw new Error('Cloud save failed')
+        const saved = await res.json()
+        credentials.unshift(normalizeCredential(saved))
+        showToast('Credential saved! 🔐')
+      } catch (err) {
+        console.error(err)
+        credentials.unshift(normalizeCredential({ ...credentialData, id: 'cred-' + Date.now() }))
+        showToast('Saved locally ⚠️', 'warn')
+      }
+    }
+
+    localStorage.setItem('jot_credentials', JSON.stringify(credentials))
+    resetCredentialForm()
+    render()
+  }
+
+  function populateCredentialForm(cred) {
+    credentialIdInput.value = cred.id
+    credentialSiteInput.value = cred.site
+    credentialUsernameInput.value = cred.username
+    credentialPasswordInput.value = cred.password
+    credentialNotesInput.value = cred.notes
+    credentialEditorTitle.textContent = 'Edit Credential'
+    btnSaveCredential.querySelector('.btn-text').textContent = 'Save Changes'
+    expandVaultCreator()
+    window.scrollTo({ top: vaultCreator.offsetTop - 50, behavior: 'smooth' })
+    credentialSiteInput.focus()
+  }
+
+  // CREDENTIAL CARD ACTIONS
+  function handleCredentialCardActions(e) {
+    const target = e.target
+    const card = target.closest('.credential-card')
+    if (!card) return
+
+    const credId = card.getAttribute('data-id')
+    const cred = credentials.find(c => c.id === credId)
+    if (!cred) return
+
+    if (target.closest('.credential-reveal')) {
+      const valueEl = card.querySelector('.credential-password')
+      const revealed = card.classList.toggle('revealed')
+      valueEl.textContent = revealed ? cred.password : '••••••••••'
+      return
+    }
+
+    if (target.closest('.credential-copy')) {
+      const what = target.closest('.credential-copy').getAttribute('data-copy')
+      copyToClipboard(what === 'password' ? cred.password : cred.username, what)
+      return
+    }
+
+    if (target.closest('.action-edit')) {
+      closeFocusedNote()
+      populateCredentialForm(cred)
+      return
+    }
+
+    if (target.closest('.action-delete')) {
+      card.classList.add('card-poof')
+      setTimeout(async () => {
+        credentials = credentials.filter(c => c.id !== credId)
+        if (credentialIdInput.value === credId) resetCredentialForm()
+        localStorage.setItem('jot_credentials', JSON.stringify(credentials))
+        render()
+        try {
+          const res = await fetch(`/api/credentials/${credId}`, { method: 'DELETE' })
+          if (!res.ok) throw new Error('Cloud delete failed')
+          showToast('Credential deleted permanently! 🗑️')
+        } catch (err) {
+          console.error(err)
+          showToast('Deleted locally ⚠️', 'warn')
+        }
+      }, 300)
+      return
+    }
+
+    openFocusedCredential(credId)
+  }
+
+  function handleCredentialPanelActions(e) {
+    const target = e.target
+
+    if (target.closest('.credential-reveal')) {
+      const valueEl = target.closest('.credential-field-row').querySelector('.credential-password')
+      const credId = target.closest('.credential-preview-article').getAttribute('data-id')
+      const cred = credentials.find(c => c.id === credId)
+      if (!cred) return
+      const revealed = valueEl.classList.toggle('revealed')
+      valueEl.textContent = revealed ? cred.password : '••••••••••'
+      return
+    }
+
+    if (target.closest('.credential-copy')) {
+      const credId = target.closest('.credential-preview-article').getAttribute('data-id')
+      const cred = credentials.find(c => c.id === credId)
+      if (!cred) return
+      const what = target.closest('.credential-copy').getAttribute('data-copy')
+      copyToClipboard(what === 'password' ? cred.password : cred.username, what)
+    }
+  }
+
+  async function copyToClipboard(text, label) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text)
+      } else {
+        const ta = document.createElement('textarea')
+        ta.value = text
+        ta.style.position = 'fixed'
+        ta.style.opacity = '0'
+        document.body.appendChild(ta)
+        ta.select()
+        document.execCommand('copy')
+        document.body.removeChild(ta)
+      }
+      showToast(`${label} copied to clipboard! 📋`)
+    } catch (err) {
+      console.error(err)
+      showToast('Copy failed ⚠️', 'warn')
+    }
+  }
+
+  function openFocusedCredential(credId) {
+    focusedCredentialId = focusedCredentialId === credId ? null : credId
+    applyFocusedNoteState()
   }
 
   // CREATE OR UPDATE NOTE FORM HANDLER
@@ -608,6 +1058,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // MAIN RENDER CONTROLLER
   function render() {
+    if (currentMode === 'vault') { renderVault() } else { renderNotes() }
+  }
+
+  function renderVault() {
+    if (!vaultUnlocked) return
+
+    // 1. Update vault stats
+    statTotalCredentials.textContent = credentials.length
+
+    // 2. Handle empty state display
+    if (credentials.length === 0) {
+      credentialsGrid.style.display = 'none'
+      vaultEmptyState.style.display = 'flex'
+    } else {
+      credentialsGrid.style.display = 'grid'
+      vaultEmptyState.style.display = 'none'
+      credentialsGrid.innerHTML = credentials.map(cred => renderCredentialCardHTML(cred)).join('')
+    }
+
+    applyFocusedNoteState()
+  }
+
+  function renderNotes() {
     notesGrid.classList.toggle('list-view', currentLayoutView === 'list')
 
     // 1. Update stats dashboard
@@ -665,21 +1138,23 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function closeFocusedNote() {
-    if (!focusedNoteId) return
     focusedNoteId = null
+    focusedCredentialId = null
     applyFocusedNoteState()
   }
 
   function applyFocusedNoteState() {
     const focusedNote = notes.find(note => note.id === focusedNoteId)
-    const hasFocusedNote = !!focusedNote
+    const focusedCredential = credentials.find(cred => cred.id === focusedCredentialId)
+    const hasFocused = !!focusedNote || !!focusedCredential
 
-    noteFocusBackdrop.classList.toggle('active', hasFocusedNote)
-    notePreviewPanel.classList.toggle('active', hasFocusedNote)
-    notePreviewPanel.setAttribute('aria-hidden', hasFocusedNote ? 'false' : 'true')
-    document.body.classList.toggle('note-focus-open', hasFocusedNote)
+    noteFocusBackdrop.classList.toggle('active', hasFocused)
+    notePreviewPanel.classList.toggle('active', hasFocused)
+    notePreviewPanel.setAttribute('aria-hidden', hasFocused ? 'false' : 'true')
+    document.body.classList.toggle('note-focus-open', hasFocused)
 
-    if (hasFocusedNote) notePreviewContent.innerHTML = renderFocusedNotePanelHTML(focusedNote)
+    if (focusedNote) notePreviewContent.innerHTML = renderFocusedNotePanelHTML(focusedNote)
+    else if (focusedCredential) notePreviewContent.innerHTML = renderFocusedCredentialPanelHTML(focusedCredential)
     else notePreviewContent.innerHTML = ''
 
   }
@@ -719,6 +1194,102 @@ document.addEventListener('DOMContentLoaded', () => {
         ${standardBodyMarkup}
         ${markdownMarkup}
         ${spreadsheetMarkup}
+      </article>
+    `
+  }
+
+  function renderCredentialCardHTML(cred) {
+    const maskedPassword = '••••••••••'
+    const escSite = escapeHTML(cred.site)
+    const escUsername = escapeHTML(cred.username)
+    const escNotes = escapeHTML(cred.notes)
+    const dateText = formatDate(cred.createdAt)
+
+    return `
+      <article class="credential-card" data-id="${cred.id}">
+        <div class="credential-header">
+          <span class="credential-site-icon" aria-hidden="true">🔑</span>
+          <div class="credential-title-wrap">
+            <h3 class="credential-site">${escSite}</h3>
+            <p class="credential-meta">${dateText}</p>
+          </div>
+        </div>
+
+        <div class="credential-field">
+          <span class="credential-field-label">Username</span>
+          <div class="credential-field-row">
+            <span class="credential-field-value">${escUsername}</span>
+            <button type="button" class="btn-icon credential-copy" data-copy="username" title="Copy username">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="credential-field">
+          <span class="credential-field-label">Password</span>
+          <div class="credential-field-row">
+            <span class="credential-field-value credential-password">${maskedPassword}</span>
+            <button type="button" class="btn-icon credential-reveal" title="Show password">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+            <button type="button" class="btn-icon credential-copy" data-copy="password" title="Copy password">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        ${cred.notes ? `<div class="credential-notes">${escNotes}</div>` : ''}
+
+        <div class="note-actions">
+          <span style="margin-right: auto; align-self: center; font-size: 0.72rem; font-weight: 700; color: rgba(45, 43, 42, 0.45);">${dateText}</span>
+          <button type="button" class="btn-icon action-edit" title="Edit Credential">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"></path></svg>
+          </button>
+          <button type="button" class="btn-icon action-delete" title="Delete Credential Permanently">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+          </button>
+        </div>
+      </article>
+    `
+  }
+
+  function renderFocusedCredentialPanelHTML(cred) {
+    const escSite = escapeHTML(cred.site)
+    const escUsername = escapeHTML(cred.username)
+    const escNotes = escapeHTML(cred.notes)
+
+    return `
+      <article class="credential-preview-article" data-id="${cred.id}">
+        <div class="note-header">
+          <span class="note-type-badge">Credential</span>
+          <h2 class="note-preview-title">${escSite}</h2>
+          <p class="note-preview-meta">${escapeHTML(formatDate(cred.createdAt))}</p>
+        </div>
+
+        <div class="credential-detail-field">
+          <span class="credential-field-label">Username</span>
+          <div class="credential-field-row">
+            <span class="credential-field-value">${escUsername}</span>
+            <button type="button" class="btn-icon credential-copy" data-copy="username" title="Copy username">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="credential-detail-field">
+          <span class="credential-field-label">Password</span>
+          <div class="credential-field-row">
+            <span class="credential-field-value credential-password">••••••••••</span>
+            <button type="button" class="btn-icon credential-reveal" title="Show password">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+            <button type="button" class="btn-icon credential-copy" data-copy="password" title="Copy password">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        ${cred.notes ? `<div class="credential-detail-notes"><span class="credential-field-label">Notes</span><p>${escNotes}</p></div>` : ''}
       </article>
     `
   }

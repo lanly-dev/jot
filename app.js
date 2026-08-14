@@ -79,9 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const notesGrid = document.getElementById('notes-grid')
   const emptyState = document.getElementById('empty-state')
   const noteFocusBackdrop = document.getElementById('note-focus-backdrop')
-  const notePreviewPanel = document.getElementById('note-preview-panel')
-  const notePreviewContent = document.getElementById('note-preview-content')
-  const notePreviewClose = document.getElementById('note-preview-close')
+  const noteFocusPanel = document.getElementById('note-focus-panel')
+  const noteFocusContent = document.getElementById('note-focus-content')
+  const noteFocusClose = document.getElementById('note-focus-close')
 
   // Stats dashboard selectors
   const statTotalNotes = document.getElementById('stat-total-notes')
@@ -308,7 +308,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Focus mode exit handlers
     noteFocusBackdrop.addEventListener('click', closeFocusedNote)
-    notePreviewClose.addEventListener('click', closeFocusedNote)
+    noteFocusClose.addEventListener('click', closeFocusedNote)
+    noteFocusContent.addEventListener('click', handleFocusNoteActions)
+    noteFocusContent.addEventListener('click', handleCredentialPanelActions)
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') { closeFocusedNote() }
     })
@@ -402,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
     credentialsGrid.addEventListener('click', handleCredentialCardActions)
 
     // Copy / reveal inside the focused credential preview panel
-    notePreviewContent.addEventListener('click', handleCredentialPanelActions)
+    noteFocusContent.addEventListener('click', handleCredentialPanelActions)
   }
 
   // MODE SWITCHING
@@ -1135,14 +1137,75 @@ document.addEventListener('DOMContentLoaded', () => {
     const hasFocused = !!focusedNote || !!focusedCredential
 
     noteFocusBackdrop.classList.toggle('active', hasFocused)
-    notePreviewPanel.classList.toggle('active', hasFocused)
-    notePreviewPanel.setAttribute('aria-hidden', hasFocused ? 'false' : 'true')
+    noteFocusPanel.classList.toggle('active', hasFocused)
+    noteFocusPanel.setAttribute('aria-hidden', hasFocused ? 'false' : 'true')
     document.body.classList.toggle('note-focus-open', hasFocused)
 
-    if (focusedNote) notePreviewContent.innerHTML = renderFocusedNotePanelHTML(focusedNote)
-    else if (focusedCredential) notePreviewContent.innerHTML = renderFocusedCredentialPanelHTML(focusedCredential)
-    else notePreviewContent.innerHTML = ''
+    if (focusedNote) noteFocusContent.innerHTML = renderFocusedNotePanelHTML(focusedNote)
+    else if (focusedCredential) noteFocusContent.innerHTML = renderFocusedCredentialPanelHTML(focusedCredential)
+    else noteFocusContent.innerHTML = ''
 
+    if (focusedNote) noteFocusContent.querySelector('.note-focus-title-input')?.focus()
+  }
+
+  // Inline editing of the focused note + save / close actions
+  function handleFocusNoteActions(e) {
+    const target = e.target
+    const article = target.closest('.note-focus-article')
+    if (!article) return
+    const noteId = article.getAttribute('data-id')
+    const note = notes.find(n => n.id === noteId)
+    if (!note) return
+
+    if (target.closest('#focus-action-close')) {
+      closeFocusedNote()
+      return
+    }
+
+    if (target.closest('#focus-action-save')) {
+      const titleInput = article.querySelector('.note-focus-title-input')
+      const bodyInput = article.querySelector('.note-focus-body-input')
+      const nextTitle = titleInput ? titleInput.value.trim() : note.title
+      const nextContent = bodyInput ? bodyInput.value : note.content
+
+      if (nextTitle.trim() === '' && nextContent.trim() === '') {
+        showToast('A jot needs a little something 😿', 'warn')
+        return
+      }
+
+      const updatedFields = {
+        title: nextTitle,
+        content: nextContent,
+        color: note.color,
+        pinned: note.pinned,
+        type: note.type || 'standard',
+        reminderAt: note.reminderAt || null,
+        spreadsheetData: note.spreadsheetData || null
+      }
+      saveNoteFromFocus(note, updatedFields)
+    }
+  }
+
+  async function saveNoteFromFocus(note, fields) {
+    try {
+      const res = await fetch(`/api/notes/${note.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fields)
+      })
+      if (!res.ok) throw new Error('Cloud update failed')
+      const updatedNote = await res.json()
+      notes = notes.map(n => n.id === note.id ? normalizeNote(updatedNote, fields) : n)
+      showToast('Jot updated! ✏️')
+    } catch (err) {
+      console.error(err)
+      notes = notes.map(n => n.id === note.id ? normalizeNote({ ...n, ...fields }) : n)
+      showToast('Updated locally ⚠️', 'warn')
+    }
+    saveNotesToStorage()
+    render()
+    // Keep the focus editor open, refreshed with the saved values
+    applyFocusedNoteState()
   }
 
   function renderFocusedNotePanelHTML(note) {
@@ -1159,27 +1222,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const reminderText = noteType === 'reminder' && note.reminderAt
       ? `<div class="reminder-chip">⏰ ${escapeHTML(formatReminder(note.reminderAt))}</div>`
       : ''
-    const markdownMarkup = noteType === 'dev'
-      ? `<div class="note-body-markdown">${renderMarkdown(note.content || '')}</div>`
-      : ''
     const spreadsheetMarkup = noteType === 'spreadsheet'
       ? renderSpreadsheetPreview(note.spreadsheetData)
       : ''
-    const standardBodyMarkup = noteType === 'standard' || noteType === 'reminder'
-      ? `<p class="note-body">${escapedContent}</p>`
-      : ''
+    const typeLabel = typeLabelMap[noteType] || 'Standard'
 
     return `
-      <article class="note-preview-article" style="--note-color: ${note.color};">
-        <div class="note-header">
-          <span class="note-type-badge type-${noteType}">${typeLabelMap[noteType] || 'Standard'}</span>
-          <h2 class="note-preview-title">${escapedTitle}</h2>
-          <p class="note-preview-meta">${escapeHTML(formatDate(note.createdAt))}</p>
+      <article class="note-focus-article" style="--note-color: ${note.color};" data-id="${note.id}">
+        <div class="note-focus-meta-row">
+          <span class="note-type-badge type-${noteType}">${typeLabel}</span>
+          <span class="note-focus-meta">${escapeHTML(formatDate(note.createdAt))}</span>
         </div>
         ${reminderText}
-        ${standardBodyMarkup}
-        ${markdownMarkup}
+        <input type="text" class="note-focus-title-input" value="${escapedTitle}"
+          placeholder="Note title" maxlength="200" aria-label="Note title">
+        <textarea class="note-focus-body-input" rows="6" placeholder="Write your note here..."
+          aria-label="Note content">${escapedContent}</textarea>
         ${spreadsheetMarkup}
+        <div class="note-focus-actions">
+          <button type="button" class="btn btn-secondary" id="focus-action-close">Close</button>
+          <button type="button" class="btn btn-primary" id="focus-action-save">
+            <span class="btn-sparkle">💾</span> Save Changes
+          </button>
+        </div>
       </article>
     `
   }
@@ -1238,8 +1303,8 @@ document.addEventListener('DOMContentLoaded', () => {
       <article class="credential-preview-article" data-id="${cred.id}">
         <div class="note-header">
           <span class="note-type-badge">Credential</span>
-          <h2 class="note-preview-title">${escSite}</h2>
-          <p class="note-preview-meta">${escapeHTML(formatDate(cred.createdAt))}</p>
+          <h2 class="note-focus-title">${escSite}</h2>
+          <p class="note-focus-meta">${escapeHTML(formatDate(cred.createdAt))}</p>
         </div>
 
         <div class="credential-detail-field">

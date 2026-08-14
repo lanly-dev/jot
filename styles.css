@@ -136,9 +136,6 @@ h4 {
 }
 
 /* ==========================================================================
-   APP HEADER & STATS
-   ========================================================================== */
-/* ==========================================================================
    MAIN LAYOUT & GENERAL UI
    ========================================================================== */
 .app-main {
@@ -641,8 +638,8 @@ h4 {
 .note-focus-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(25, 22, 20, 0.35);
-  backdrop-filter: blur(3px);
+  background: rgba(25, 22, 20, 0.3);
+  backdrop-filter: blur(2px);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -660,17 +657,17 @@ body.note-focus-open {
   overflow: hidden;
 }
 
-.note-preview-panel {
+.note-focus-panel {
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -48%);
-  width: min(900px, calc(100vw - 2rem));
-  max-height: calc(100vh - 2.5rem);
+  transform: translate(-50%, -46%) scale(0.98);
+  width: min(680px, calc(100vw - 2rem));
+  max-height: calc(100vh - 3rem);
   background: #ffffff;
-  border: 2px solid var(--border-color);
-  border-radius: 24px;
-  box-shadow: 0 24px 55px rgba(45, 43, 42, 0.3);
+  border: 1px solid rgba(45, 43, 42, 0.08);
+  border-radius: 22px;
+  box-shadow: 0 24px 70px rgba(45, 43, 42, 0.18);
   z-index: 35;
   opacity: 0;
   visibility: hidden;
@@ -678,53 +675,154 @@ body.note-focus-open {
   transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-.note-preview-panel.active {
+.note-focus-panel.active {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(1);
 }
 
-.note-preview-close {
-  align-self: flex-end;
-  margin: 0.8rem 0.9rem 0 0;
-  width: 32px;
-  height: 32px;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  background: #faf8f6;
+.note-focus-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem 0.5rem;
+}
+
+.note-focus-header-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--text-muted);
-  font-size: 1.2rem;
-  line-height: 1;
+}
+
+.focus-sparkle {
+  color: var(--color-primary);
+}
+
+.note-focus-close {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
-.note-preview-content {
+.note-focus-close:hover {
+  background: rgba(45, 43, 42, 0.06);
+  color: var(--text-main);
+  transform: rotate(90deg);
+}
+
+.note-focus-content {
   overflow: auto;
-  padding: 0 1.4rem 1.4rem;
+  padding: 0.4rem 1.25rem 1.5rem;
 }
 
-.note-preview-article {
-  background-color: var(--note-color, var(--pastel-pink));
-  border: 2px solid var(--border-color);
-  border-radius: 18px;
-  padding: 1.3rem;
+.note-focus-article {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
 }
 
-.note-preview-title {
+.note-focus-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.note-focus-title {
   font-size: 1.45rem;
   line-height: 1.2;
   margin: 0 0 0.3rem;
   word-break: break-word;
 }
 
-.note-preview-meta {
-  font-size: 0.8rem;
+.note-focus-meta {
+  font-size: 0.78rem;
   color: var(--text-muted);
   font-weight: 700;
-  margin-bottom: 0.7rem;
+}
+
+.note-focus-title-input {
+  width: 100%;
+  border: none;
+  border-bottom: 2px solid var(--border-color);
+  border-radius: 0;
+  background: transparent;
+  padding: 0.6rem 0.1rem;
+  font-family: inherit;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-main);
+  transition: border-color 0.15s ease;
+}
+
+.note-focus-title-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.note-focus-title-input:focus {
+  outline: none;
+  border-bottom-color: var(--color-primary);
+}
+
+.note-focus-body-input {
+  width: 100%;
+  min-height: 260px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: #fbf9f7;
+  padding: 0.9rem 1rem;
+  font-family: inherit;
+  font-size: 0.98rem;
+  line-height: 1.7;
+  color: var(--text-main);
+  resize: vertical;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.note-focus-body-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.note-focus-body-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: #ffffff;
+}
+
+.note-focus-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding-top: 0.2rem;
+}
+
+/* Credential / legacy heading reuse inside focus panel */
+.note-focus-content .note-header {
+  margin-bottom: 0.3rem;
+}
+
+.note-focus-content .note-body {
+  font-size: 1rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
 }
 
 .note-card {

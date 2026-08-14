@@ -310,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
     noteFocusBackdrop.addEventListener('click', closeFocusedNote)
     noteFocusClose.addEventListener('click', closeFocusedNote)
     noteFocusContent.addEventListener('click', handleFocusNoteActions)
-    noteFocusContent.addEventListener('click', handleCredentialPanelActions)
+    noteFocusContent.addEventListener('click', handleFocusCredentialActions)
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') { closeFocusedNote() }
     })
@@ -402,9 +402,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Credential card action delegation
     credentialsGrid.addEventListener('click', handleCredentialCardActions)
-
-    // Copy / reveal inside the focused credential preview panel
-    noteFocusContent.addEventListener('click', handleCredentialPanelActions)
   }
 
   // MODE SWITCHING
@@ -670,26 +667,69 @@ document.addEventListener('DOMContentLoaded', () => {
     openFocusedCredential(credId)
   }
 
-  function handleCredentialPanelActions(e) {
+  // Inline editing of the focused credential (vault) + reveal / save / close
+  function handleFocusCredentialActions(e) {
     const target = e.target
+    const article = target.closest('.credential-focus-article')
+    if (!article) return
+    const credId = article.getAttribute('data-id')
+    const cred = credentials.find(c => c.id === credId)
+    if (!cred) return
 
-    if (target.closest('.credential-reveal')) {
-      const valueEl = target.closest('.credential-field-row').querySelector('.credential-password')
-      const credId = target.closest('.credential-preview-article').getAttribute('data-id')
-      const cred = credentials.find(c => c.id === credId)
-      if (!cred) return
-      const revealed = valueEl.classList.toggle('revealed')
-      valueEl.textContent = revealed ? cred.password : '••••••••••'
+    // Show / hide password
+    if (target.closest('.focus-password-toggle')) {
+      const input = article.querySelector('.focus-password-input')
+      if (!input) return
+      const reveal = input.type === 'password'
+      input.type = reveal ? 'text' : 'password'
+      target.classList.toggle('revealed', reveal)
+      target.title = reveal ? 'Hide password' : 'Show password'
       return
     }
 
-    if (target.closest('.credential-copy')) {
-      const credId = target.closest('.credential-preview-article').getAttribute('data-id')
-      const cred = credentials.find(c => c.id === credId)
-      if (!cred) return
-      const what = target.closest('.credential-copy').getAttribute('data-copy')
-      copyToClipboard(what === 'password' ? cred.password : cred.username, what)
+    // Close the focus panel
+    if (target.closest('#cred-focus-action-close')) {
+      closeFocusedNote()
+      return
     }
+
+    // Save the edited credential
+    if (target.closest('#cred-focus-action-save')) {
+      const site = article.querySelector('[data-field="site"]').value.trim()
+      const username = article.querySelector('[data-field="username"]').value.trim()
+      const password = article.querySelector('[data-field="password"]').value
+      const notes = article.querySelector('[data-field="notes"]').value.trim()
+
+      if (!site) {
+        showToast('A site name is needed 😿', 'warn')
+        return
+      }
+
+      const credentialData = { site, username, password, notes }
+      saveCredentialFromFocus(cred, credentialData)
+    }
+  }
+
+  async function saveCredentialFromFocus(cred, data) {
+    try {
+      const res = await fetch(`/api/credentials/${cred.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+      if (!res.ok) throw new Error('Cloud update failed')
+      const updated = await res.json()
+      credentials = credentials.map(c => c.id === cred.id ? normalizeCredential({ ...c, ...updated }) : c)
+      showToast('Credential updated! 🔏')
+    } catch (err) {
+      console.error(err)
+      credentials = credentials.map(c => c.id === cred.id ? normalizeCredential({ ...c, ...data }) : c)
+      showToast('Updated locally ⚠️', 'warn')
+    }
+    localStorage.setItem('jot_credentials', JSON.stringify(credentials))
+    render()
+    // Keep the focus editor open, refreshed with the saved values
+    applyFocusedNoteState()
   }
 
   async function copyToClipboard(text, label) {
@@ -1297,40 +1337,55 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderFocusedCredentialPanelHTML(cred) {
     const escSite = escapeHTML(cred.site)
     const escUsername = escapeHTML(cred.username)
-    const escNotes = escapeHTML(cred.notes)
+    const escPassword = escapeHTML(cred.password)
+    const escNotes = escapeHTML(cred.notes || '')
 
     return `
-      <article class="credential-preview-article" data-id="${cred.id}">
-        <div class="note-header">
+      <article class="note-focus-article credential-focus-article" data-id="${cred.id}">
+        <div class="note-focus-meta-row">
           <span class="note-type-badge">Credential</span>
-          <h2 class="note-focus-title">${escSite}</h2>
-          <p class="note-focus-meta">${escapeHTML(formatDate(cred.createdAt))}</p>
+          <span class="note-focus-meta">${escapeHTML(formatDate(cred.createdAt))}</span>
         </div>
 
-        <div class="credential-detail-field">
-          <span class="credential-field-label">Username</span>
-          <div class="credential-field-row">
-            <span class="credential-field-value">${escUsername}</span>
-            <button type="button" class="btn-icon credential-copy" data-copy="username" title="Copy username">
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        <label class="note-focus-field">
+          <span class="note-focus-field-label">Site</span>
+          <input type="text" class="note-focus-body-input note-focus-field-input" data-field="site"
+            value="${escSite}" placeholder="Site / app name" maxlength="120"
+            autocomplete="off" aria-label="Site">
+        </label>
+
+        <label class="note-focus-field">
+          <span class="note-focus-field-label">Username</span>
+          <input type="text" class="note-focus-body-input note-focus-field-input" data-field="username"
+            value="${escUsername}" placeholder="Username / email" maxlength="120"
+            autocomplete="off" aria-label="Username">
+        </label>
+
+        <label class="note-focus-field">
+          <span class="note-focus-field-label">Password</span>
+          <div class="credential-password-wrap">
+            <input type="password" class="note-focus-body-input note-focus-field-input focus-password-input"
+              data-field="password" value="${escPassword}" placeholder="••••••••••"
+              autocomplete="new-password" aria-label="Password">
+            <button type="button" class="btn-icon focus-password-toggle" title="Show password">
+              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
+                stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
             </button>
           </div>
-        </div>
+        </label>
 
-        <div class="credential-detail-field">
-          <span class="credential-field-label">Password</span>
-          <div class="credential-field-row">
-            <span class="credential-field-value credential-password">••••••••••</span>
-            <button type="button" class="btn-icon credential-reveal" title="Show password">
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            </button>
-            <button type="button" class="btn-icon credential-copy" data-copy="password" title="Copy password">
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-            </button>
-          </div>
-        </div>
+        <label class="note-focus-field">
+          <span class="note-focus-field-label">Notes</span>
+          <textarea class="note-focus-body-input" data-field="notes" rows="3" placeholder="Notes (optional)"
+            aria-label="Notes">${escNotes}</textarea>
+        </label>
 
-        ${cred.notes ? `<div class="credential-detail-notes"><span class="credential-field-label">Notes</span><p>${escNotes}</p></div>` : ''}
+        <div class="note-focus-actions">
+          <button type="button" class="btn btn-secondary" id="cred-focus-action-close">Close</button>
+          <button type="button" class="btn btn-primary" id="cred-focus-action-save">
+            <span class="btn-sparkle">💾</span> Save Changes
+          </button>
+        </div>
       </article>
     `
   }

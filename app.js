@@ -132,6 +132,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnToggleUnlockPassword = document.getElementById('btn-toggle-unlock-password')
   const btnVaultUnlock = document.getElementById('btn-vault-unlock')
 
+  // Popover selectors
+  const btnTypePopup = document.getElementById('btn-type-popup')
+  const typePopover = document.getElementById('type-popover')
+  const typeIconDisplay = document.getElementById('type-icon-display')
+  const typeLabelDisplay = document.getElementById('type-label-display')
+  const btnColorPopup = document.getElementById('btn-color-popup')
+  const colorPopover = document.getElementById('color-popover')
+  const colorSwatchDisplay = document.getElementById('color-swatch-display')
+
+  const btnCredTypePopup = document.getElementById('btn-cred-type-popup')
+  const credTypePopover = document.getElementById('cred-type-popover')
+  const credTypeIconDisplay = document.getElementById('cred-type-icon-display')
+  const credTypeLabelDisplay = document.getElementById('cred-type-label-display')
+  const credentialTypeSelect = document.getElementById('credential-type')
+  const btnCredColorPopup = document.getElementById('btn-cred-color-popup')
+  const credColorPopover = document.getElementById('cred-color-popover')
+  const credColorSwatchDisplay = document.getElementById('cred-color-swatch-display')
+  const credentialColorOptionsContainer = document.getElementById('credential-color-options')
+
   // INITIALIZATION
   function init() {
     initSpreadsheetDraft(3, 3)
@@ -228,6 +247,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // SETUP EVENT LISTENERS
   function setupEventListeners() {
+    // Auto-expanding content textareas
+    const autoExpand = (el) => {
+      if (!el) return
+      el.style.height = 'auto'
+      el.style.height = Math.max(el.scrollHeight, 70) + 'px'
+    }
+    if (noteContentInput) {
+      noteContentInput.addEventListener('input', () => autoExpand(noteContentInput))
+    }
+    if (credentialNotesInput) {
+      credentialNotesInput.addEventListener('input', () => autoExpand(credentialNotesInput))
+    }
+
     // Form submission (Save Note)
     noteForm.addEventListener('submit', handleFormSubmit)
 
@@ -241,20 +273,36 @@ document.addEventListener('DOMContentLoaded', () => {
       editorPinBtn.title = isFormPinned ? 'Unpin Note' : 'Pin Note to Top'
     })
 
-    // Color option picker radio click animations
+    // Color option picker radio click animations & swatch sync
     colorOptionsContainer.addEventListener('change', (e) => {
       if (e.target.name === 'note-color') {
-        document.querySelectorAll('.color-option-label').forEach(label => {
+        document.querySelectorAll('#color-options .color-option-label').forEach(label => {
           label.classList.remove('current')
         })
         const selectedLabel = e.target.closest('.color-option-label')
         if (selectedLabel) {
           selectedLabel.classList.add('current')
-          // Style editor border or soft glow based on selected color
           editorCard.style.borderColor = e.target.value
+          if (colorSwatchDisplay) colorSwatchDisplay.style.backgroundColor = e.target.value
         }
       }
     })
+
+    if (credentialColorOptionsContainer) {
+      credentialColorOptionsContainer.addEventListener('change', (e) => {
+        if (e.target.name === 'credential-color') {
+          document.querySelectorAll('#credential-color-options .color-option-label').forEach(label => {
+            label.classList.remove('current')
+          })
+          const selectedLabel = e.target.closest('.color-option-label')
+          if (selectedLabel) {
+            selectedLabel.classList.add('current')
+            vaultCreator.style.borderColor = e.target.value
+            if (credColorSwatchDisplay) credColorSwatchDisplay.style.backgroundColor = e.target.value
+          }
+        }
+      })
+    }
 
     // Active vs. Archived View filter toggles (radio style with icons)
     btnFilterActive.addEventListener('change', () => {
@@ -282,6 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Note type and type-specific editors
     noteTypeSelect.addEventListener('change', () => {
       updateTypeSpecificFields()
+      updateTypePopoverUI(noteTypeSelect.value)
     })
 
     const resizeSheet = () => {
@@ -322,9 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (editorCard.classList.contains('active')) {
           if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') { resetForm() }
           else { noteForm.requestSubmit() }
-
         } else { expandCreator() }
-
       })
     }
 
@@ -332,7 +379,6 @@ document.addEventListener('DOMContentLoaded', () => {
       creatorCollapsed.addEventListener('click', (e) => {
         if (e.target.closest('#btn-expand-creator')) return
         if (!editorCard.classList.contains('active')) { expandCreator() }
-
       })
     }
 
@@ -342,7 +388,6 @@ document.addEventListener('DOMContentLoaded', () => {
         e.stopPropagation()
         if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') { resetForm() }
         else { noteForm.requestSubmit() }
-
       })
     }
 
@@ -350,16 +395,65 @@ document.addEventListener('DOMContentLoaded', () => {
     noteTitleInput.addEventListener('focus', expandCreator)
     noteContentInput.addEventListener('focus', expandCreator)
 
-    // Collapse on click outside
+    // Collapse on click outside & close popovers
     document.addEventListener('click', (e) => {
+      // Close popovers if clicked outside popover-wrapper
+      if (!e.target.closest('.popover-wrapper')) {
+        closeAllPopovers()
+      }
+
       if (editorCard && !editorCard.contains(e.target) && !e.target.closest('#btn-expand-creator')) {
         if (editorCard.classList.contains('active')) {
           if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') { resetForm() }
           else { noteForm.requestSubmit() }
-
         }
       }
     })
+
+    // Popover Trigger Click Handlers
+    const togglePopover = (btn, popover) => {
+      if (!btn || !popover) return
+      const isOpen = popover.classList.contains('open')
+      closeAllPopovers()
+      if (!isOpen) {
+        popover.classList.add('open')
+        btn.classList.add('active')
+        btn.setAttribute('aria-expanded', 'true')
+      }
+    }
+
+    if (btnTypePopup) btnTypePopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnTypePopup, typePopover) })
+    if (btnColorPopup) btnColorPopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnColorPopup, colorPopover) })
+    if (btnCredTypePopup) btnCredTypePopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnCredTypePopup, credTypePopover) })
+    if (btnCredColorPopup) btnCredColorPopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnCredColorPopup, credColorPopover) })
+
+    // Popover item clicks
+    if (typePopover) {
+      typePopover.addEventListener('click', (e) => {
+        const item = e.target.closest('.popover-item')
+        if (!item) return
+        const type = item.getAttribute('data-type')
+        if (type && noteTypeSelect) {
+          noteTypeSelect.value = type
+          updateTypeSpecificFields()
+          updateTypePopoverUI(type)
+          closeAllPopovers()
+        }
+      })
+    }
+
+    if (credTypePopover) {
+      credTypePopover.addEventListener('click', (e) => {
+        const item = e.target.closest('.popover-item')
+        if (!item) return
+        const type = item.getAttribute('data-type')
+        if (type && credentialTypeSelect) {
+          credentialTypeSelect.value = type
+          updateCredTypePopoverUI(type)
+          closeAllPopovers()
+        }
+      })
+    }
 
     // MODE NAVIGATION (Notes <-> Vault)
     btnNavNotes.addEventListener('click', () => switchMode('notes'))
@@ -402,6 +496,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Credential card action delegation
     credentialsGrid.addEventListener('click', handleCredentialCardActions)
+  }
+
+  function closeAllPopovers() {
+    document.querySelectorAll('.popover-menu.open').forEach(p => p.classList.remove('open'))
+    document.querySelectorAll('.btn-popover-trigger.active').forEach(b => {
+      b.classList.remove('active')
+      b.setAttribute('aria-expanded', 'false')
+    })
+  }
+
+  function updateTypePopoverUI(type) {
+    const iconMap = { standard: '📝', dev: '💻', reminder: '⏰', spreadsheet: '📊' }
+    const labelMap = { standard: 'Standard', dev: 'Dev', reminder: 'Reminder', spreadsheet: 'Sheet' }
+    if (typeIconDisplay) typeIconDisplay.textContent = iconMap[type] || '📝'
+    if (typeLabelDisplay) typeLabelDisplay.textContent = labelMap[type] || 'Standard'
+    if (typePopover) {
+      typePopover.querySelectorAll('.popover-item').forEach(item => {
+        item.classList.toggle('active', item.getAttribute('data-type') === type)
+      })
+    }
+  }
+
+  function updateCredTypePopoverUI(type) {
+    const iconMap = { login: '🔑', payment: '💳', 'secure-note': '🔒' }
+    const labelMap = { login: 'Login', payment: 'Payment', 'secure-note': 'Secure Note' }
+    if (credTypeIconDisplay) credTypeIconDisplay.textContent = iconMap[type] || '🔑'
+    if (credTypeLabelDisplay) credTypeLabelDisplay.textContent = labelMap[type] || 'Login'
+    if (credTypePopover) {
+      credTypePopover.querySelectorAll('.popover-item').forEach(item => {
+        item.classList.toggle('active', item.getAttribute('data-type') === type)
+      })
+    }
   }
 
   // MODE SWITCHING
@@ -541,11 +667,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function resetCredentialForm() {
+    closeAllPopovers()
     vaultCreator.classList.remove('active')
     if (vaultCreatorCollapsed) vaultCreatorCollapsed.style.display = 'flex'
     if (vaultCreatorExpanded) vaultCreatorExpanded.style.display = 'none'
     credentialForm.reset()
     credentialIdInput.value = ''
+    if (credentialTypeSelect) {
+      credentialTypeSelect.value = 'login'
+      updateCredTypePopoverUI('login')
+    }
+    const pinkRadio = document.querySelector('input[name="credential-color"][value="#ffd1d9"]')
+    if (pinkRadio) {
+      pinkRadio.checked = true
+      document.querySelectorAll('#credential-color-options .color-option-label').forEach(label => label.classList.remove('current'))
+      pinkRadio.closest('.color-option-label')?.classList.add('current')
+      if (credColorSwatchDisplay) credColorSwatchDisplay.style.backgroundColor = '#ffd1d9'
+    }
+    vaultCreator.style.borderColor = 'var(--border-color)'
     credentialPasswordInput.type = 'password'
     btnToggleFormPassword.classList.remove('revealed')
     btnToggleFormPassword.title = 'Show password'
@@ -557,11 +696,15 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault()
 
     const id = credentialIdInput.value
+    const selectedColorRadio = document.querySelector('input[name="credential-color"]:checked')
+    const color = selectedColorRadio ? selectedColorRadio.value : '#ffd1d9'
     const credentialData = {
       site: credentialSiteInput.value.trim(),
       username: credentialUsernameInput.value.trim(),
       password: credentialPasswordInput.value,
-      notes: credentialNotesInput.value.trim()
+      notes: credentialNotesInput.value.trim(),
+      type: credentialTypeSelect ? credentialTypeSelect.value : 'login',
+      color
     }
 
     if (id) {
@@ -609,6 +752,21 @@ document.addEventListener('DOMContentLoaded', () => {
     credentialUsernameInput.value = cred.username
     credentialPasswordInput.value = cred.password
     credentialNotesInput.value = cred.notes
+    if (credentialTypeSelect) {
+      credentialTypeSelect.value = cred.type || 'login'
+      updateCredTypePopoverUI(cred.type || 'login')
+    }
+
+    const credColor = cred.color || '#ffd1d9'
+    const radioToSelect = document.querySelector(`input[name="credential-color"][value="${credColor}"]`)
+    if (radioToSelect) {
+      radioToSelect.checked = true
+      document.querySelectorAll('#credential-color-options .color-option-label').forEach(label => label.classList.remove('current'))
+      radioToSelect.closest('.color-option-label')?.classList.add('current')
+      if (credColorSwatchDisplay) credColorSwatchDisplay.style.backgroundColor = credColor
+      vaultCreator.style.borderColor = credColor
+    }
+
     credentialEditorTitle.textContent = 'Edit Credential'
     btnSaveCredential.querySelector('.btn-text').textContent = 'Save Changes'
     expandVaultCreator()
@@ -850,6 +1008,7 @@ document.addEventListener('DOMContentLoaded', () => {
     noteTitleInput.value = note.title
     noteContentInput.value = note.content
     noteTypeSelect.value = note.type || 'standard'
+    updateTypePopoverUI(note.type || 'standard')
     noteReminderAtInput.value = note.reminderAt ? note.reminderAt.slice(0, 16) : ''
 
     const sheetData = Array.isArray(note.spreadsheetData) && note.spreadsheetData.length > 0
@@ -872,13 +1031,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const radioToSelect = document.querySelector(`input[name="note-color"][value="${note.color}"]`)
     if (radioToSelect) {
       radioToSelect.checked = true
-      document.querySelectorAll('.color-option-label').forEach(label => {
+      document.querySelectorAll('#color-options .color-option-label').forEach(label => {
         label.classList.remove('current')
       })
       const parentLabel = radioToSelect.closest('.color-option-label')
       if (parentLabel) {
         parentLabel.classList.add('current')
         editorCard.style.borderColor = note.color
+        if (colorSwatchDisplay) colorSwatchDisplay.style.backgroundColor = note.color
       }
     }
 
@@ -923,10 +1083,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // RESET FORM TO CREATE STATE
   function resetForm() {
+    closeAllPopovers()
     collapseCreator()
     noteIdInput.value = ''
     noteForm.reset()
     noteTypeSelect.value = 'standard'
+    updateTypePopoverUI('standard')
     noteReminderAtInput.value = ''
     sheetRowsInput.value = 3
     sheetColsInput.value = 3
@@ -938,10 +1100,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const pinkRadio = document.querySelector('input[name="note-color"][value="#ffd1dc"]')
     if (pinkRadio) {
       pinkRadio.checked = true
-      document.querySelectorAll('.color-option-label').forEach(label => {
+      document.querySelectorAll('#color-options .color-option-label').forEach(label => {
         label.classList.remove('current')
       })
-      pinkRadio.closest('.color-option-label').classList.add('current')
+      pinkRadio.closest('.color-option-label')?.classList.add('current')
+      if (colorSwatchDisplay) colorSwatchDisplay.style.backgroundColor = '#ffd1dc'
     }
     editorCard.style.borderColor = 'var(--border-color)'
 

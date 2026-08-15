@@ -1331,8 +1331,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     saveNotesToStorage()
     render()
-    // Keep the focus editor open, refreshed with the saved values
-    applyFocusedNoteState()
+    // Dismiss the focus editor modal
+    closeFocusedNote()
   }
 
   function renderFocusedNotePanelHTML(note) {

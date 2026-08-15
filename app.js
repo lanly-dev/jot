@@ -103,7 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Credential / Vault UI elements
   const vaultCreatorCollapsed = document.getElementById('vault-creator-collapsed')
-  const btnExpandVaultCreator = document.getElementById('btn-expand-vault-creator')
   const credentialModalBackdrop = document.getElementById('credential-modal-backdrop')
   const credentialModalPanel = document.getElementById('credential-modal-panel')
   const btnCloseCredentialModal = document.getElementById('btn-close-credential-modal')
@@ -490,12 +489,6 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     // Credential creator modal openers and closers
-    if (btnExpandVaultCreator) {
-      btnExpandVaultCreator.addEventListener('click', (e) => {
-        e.stopPropagation()
-        openCredentialModal()
-      })
-    }
     if (vaultCreatorCollapsed) {
       vaultCreatorCollapsed.addEventListener('click', () => {
         openCredentialModal()

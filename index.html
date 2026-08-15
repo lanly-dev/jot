@@ -63,7 +63,8 @@
               <div class="tape-decorator" style="display: none;"></div>
               <div class="editor-header"
                 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                <h2 id="editor-title-heading" style="font-size: 1.1rem; font-weight: 700; color: var(--text-dark);">Create a New Jot</h2>
+                <h2 id="editor-title-heading" style="font-size: 1.1rem; font-weight: 700; color: var(--text-dark);">
+                  Create a New Jot</h2>
               </div>
               <form id="note-form" class="note-form">
                 <!-- Hidden input for editing mode -->
@@ -77,7 +78,9 @@
                     <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
                       stroke-linecap="round" stroke-linejoin="round" class="svg-pin">
                       <line x1="12" y1="17" x2="12" y2="22"></line>
-                      <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24Z"></path>
+                      <path
+                        d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24Z">
+                      </path>
                     </svg>
                   </button>
                 </div>
@@ -87,9 +90,11 @@
                   <textarea id="note-content" placeholder="Write your thoughts down here... Feel free to be creative!"
                     rows="2" required></textarea>
 
-                  <p class="note-type-hint" id="devnote-hint" style="display: none;">Dev Note supports markdown formatting like headings, lists, links, code blocks, and inline code.</p>
+                  <p class="note-type-hint" id="devnote-hint" style="display: none;">Dev Note supports markdown
+                    formatting like headings, lists, links, code blocks, and inline code.</p>
 
-                  <div class="input-group conditional-config" id="reminder-config" style="display: none; margin-top: 0.5rem;">
+                  <div class="input-group conditional-config" id="reminder-config"
+                    style="display: none; margin-top: 0.5rem;">
                     <label for="note-reminder-at">Reminder Time</label>
                     <input type="datetime-local" id="note-reminder-at">
                   </div>
@@ -118,7 +123,8 @@
 
                     <!-- Type Popover Icon Trigger -->
                     <div class="popover-wrapper">
-                      <button type="button" class="btn-popover-trigger" id="btn-type-popup" title="Select Note Type" aria-expanded="false">
+                      <button type="button" class="btn-popover-trigger" id="btn-type-popup" title="Select Note Type"
+                        aria-expanded="false">
                         <span class="trigger-icon" id="type-icon-display">📝</span>
                         <span class="trigger-label" id="type-label-display">Standard</span>
                         <span class="trigger-arrow">▾</span>
@@ -146,15 +152,18 @@
 
                     <!-- Color Popover Icon Trigger -->
                     <div class="popover-wrapper">
-                      <button type="button" class="btn-popover-trigger" id="btn-color-popup" title="Choose Card Color" aria-expanded="false">
-                        <span class="color-dot-swatch" id="color-swatch-display" style="background-color: #ffd1dc;"></span>
+                      <button type="button" class="btn-popover-trigger" id="btn-color-popup" title="Choose Card Color"
+                        aria-expanded="false">
+                        <span class="color-dot-swatch" id="color-swatch-display"
+                          style="background-color: #ffd1dc;"></span>
                         <span class="trigger-icon">🎨</span>
                         <span class="trigger-arrow">▾</span>
                       </button>
                       <div class="popover-menu color-popover-menu" id="color-popover">
                         <div class="popover-title">Card Color</div>
                         <div class="color-options" id="color-options">
-                          <label class="color-option-label current" style="--option-color: #ffd1dc;" title="Strawberry Soft Pink">
+                          <label class="color-option-label current" style="--option-color: #ffd1dc;"
+                            title="Strawberry Soft Pink">
                             <input type="radio" name="note-color" value="#ffd1dc" checked>
                             <span class="color-dot"></span>
                           </label>
@@ -162,11 +171,13 @@
                             <input type="radio" name="note-color" value="#d0f0c0">
                             <span class="color-dot"></span>
                           </label>
-                          <label class="color-option-label" style="--option-color: #e6e6fa;" title="Lavender Light Purple">
+                          <label class="color-option-label" style="--option-color: #e6e6fa;"
+                            title="Lavender Light Purple">
                             <input type="radio" name="note-color" value="#e6e6fa">
                             <span class="color-dot"></span>
                           </label>
-                          <label class="color-option-label" style="--option-color: #fef1b7;" title="Banana Pastel Yellow">
+                          <label class="color-option-label" style="--option-color: #fef1b7;"
+                            title="Banana Pastel Yellow">
                             <input type="radio" name="note-color" value="#fef1b7">
                             <span class="color-dot"></span>
                           </label>
@@ -185,8 +196,10 @@
 
                   <!-- Form Action Buttons -->
                   <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="btn-clear-form" style="display: none;">Cancel Edit</button>
-                    <button type="button" class="btn btn-secondary" id="btn-close-creator" style="display: inline-flex;">Close</button>
+                    <button type="button" class="btn btn-secondary" id="btn-clear-form" style="display: none;">Cancel
+                      Edit</button>
+                    <button type="button" class="btn btn-secondary" id="btn-close-creator"
+                      style="display: inline-flex;">Close</button>
                     <button type="submit" class="btn btn-primary" id="btn-save-note">
                       <span class="btn-text">Save Note</span>
                       <span class="btn-sparkle">✨</span>
@@ -277,8 +290,8 @@
                 aria-label="Master password">
               <button type="button" class="btn-icon password-reveal-toggle" id="btn-toggle-unlock-password"
                 title="Show password" aria-label="Show or hide master password">
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2"
-                  fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path>
                   <circle cx="12" cy="12" r="3"></circle>
                 </svg>
@@ -292,89 +305,83 @@
             <button type="submit" class="btn btn-primary" id="btn-vault-unlock">Unlock Vault</button>
           </form>
         </div>
-
         <div id="vault-content">
-        <!-- Trigger Row to Open Credential Modal -->
-        <div class="note-creator-wrapper">
-          <div class="note-creator creator-modal-trigger" id="vault-creator-trigger">
-            <div class="creator-collapsed" id="vault-creator-collapsed">
-              <div class="creator-trigger-row">
-                <div class="creator-trigger-left">
-                  <span class="pencil-icon-inside">🔑</span>
-                  <span class="placeholder-text">Add a new credential... 🔐</span>
+          <!-- Trigger Row to Open Credential Modal -->
+          <div class="note-creator-wrapper">
+            <div class="note-creator creator-modal-trigger" id="vault-creator-trigger">
+              <div class="creator-collapsed" id="vault-creator-collapsed">
+                <div class="creator-trigger-row">
+                  <div class="creator-trigger-left">
+                    <span class="pencil-icon-inside">🔑</span>
+                    <span class="placeholder-text">Add a new credential... 🔐</span>
+                  </div>
                 </div>
-                <button type="button" class="btn-icon" id="btn-expand-vault-creator" title="Add a Credential">
-                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                </button>
               </div>
             </div>
           </div>
-        </div>
-
-        <div class="display-controls vault-display-controls" aria-label="Vault controls">
-          <div class="display-control-group status-filter-group" aria-label="Vault type filter" role="radiogroup">
-            <label class="status-option active" for="vault-filter-all">
-              <input type="radio" name="vault-filter" id="vault-filter-all" value="all" checked aria-label="All items">
-              <span class="status-icon">✨</span>
-              <span class="status-text">All</span>
-            </label>
-            <label class="status-option" for="vault-filter-login">
-              <input type="radio" name="vault-filter" id="vault-filter-login" value="login" aria-label="Logins">
-              <span class="status-icon">🔑</span>
-              <span class="status-text">Logins</span>
-            </label>
-            <label class="status-option" for="vault-filter-payment">
-              <input type="radio" name="vault-filter" id="vault-filter-payment" value="payment" aria-label="Payments">
-              <span class="status-icon">💳</span>
-              <span class="status-text">Payments</span>
-            </label>
-            <label class="status-option" for="vault-filter-note">
-              <input type="radio" name="vault-filter" id="vault-filter-note" value="secure-note" aria-label="Secure Notes">
-              <span class="status-icon">🔒</span>
-              <span class="status-text">Notes</span>
-            </label>
-          </div>
-          <div style="display: flex; align-items: center; gap: 1rem;">
-            <div class="header-stats-collapsed">
-              <span title="Total Saved Credentials">🔑 <span id="stat-total-credentials">0</span></span>
+          <div class="display-controls vault-display-controls" aria-label="Vault controls">
+            <div class="display-control-group status-filter-group" aria-label="Vault type filter" role="radiogroup">
+              <label class="status-option active" for="vault-filter-all">
+                <input type="radio" name="vault-filter" id="vault-filter-all" value="all" checked
+                  aria-label="All items">
+                <span class="status-icon">✨</span>
+                <span class="status-text">All</span>
+              </label>
+              <label class="status-option" for="vault-filter-login">
+                <input type="radio" name="vault-filter" id="vault-filter-login" value="login" aria-label="Logins">
+                <span class="status-icon">🔑</span>
+                <span class="status-text">Logins</span>
+              </label>
+              <label class="status-option" for="vault-filter-payment">
+                <input type="radio" name="vault-filter" id="vault-filter-payment" value="payment" aria-label="Payments">
+                <span class="status-icon">💳</span>
+                <span class="status-text">Payments</span>
+              </label>
+              <label class="status-option" for="vault-filter-note">
+                <input type="radio" name="vault-filter" id="vault-filter-note" value="secure-note"
+                  aria-label="Secure Notes">
+                <span class="status-icon">🔒</span>
+                <span class="status-text">Notes</span>
+              </label>
             </div>
-            <button type="button" class="btn-lock-vault-action" id="btn-lock-vault" title="Lock the Vault">
-              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"
-                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-              </svg>
-              <span>Lock</span>
-            </button>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <div class="header-stats-collapsed">
+                <span title="Total Saved Credentials">🔑 <span id="stat-total-credentials">0</span></span>
+              </div>
+              <button type="button" class="btn-lock-vault-action" id="btn-lock-vault" title="Lock the Vault">
+                <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <span>Lock</span>
+              </button>
+            </div>
           </div>
-        </div>
 
-        <!-- Vault Empty State -->
-        <div class="empty-state" id="vault-empty-state" style="display: none;">
-          <div class="empty-mascot">🔐</div>
-          <h3>Your vault is empty</h3>
-          <p>Add your first password, API key, or login so it is always one cute tap away!</p>
-        </div>
+          <!-- Vault Empty State -->
+          <div class="empty-state" id="vault-empty-state" style="display: none;">
+            <div class="empty-mascot">🔐</div>
+            <h3>Your vault is empty</h3>
+            <p>Add your first password, API key, or login so it is always one cute tap away!</p>
+          </div>
 
-        <!-- Credentials Table Container -->
-        <div class="credentials-table-wrap" id="credentials-table-wrap" style="display: none;">
-          <table class="credentials-table">
-            <thead>
-              <tr>
-                <th scope="col" class="col-site">Site</th>
-                <th scope="col" class="col-username">Username</th>
-                <th scope="col" class="col-password">Password</th>
-                <th scope="col" class="col-actions"></th>
-              </tr>
-            </thead>
-            <tbody id="credentials-grid">
-              <!-- Rows will be dynamically loaded here by app.js -->
-            </tbody>
-          </table>
-        </div>
+          <!-- Credentials Table Container -->
+          <div class="credentials-table-wrap" id="credentials-table-wrap" style="display: none;">
+            <table class="credentials-table">
+              <thead>
+                <tr>
+                  <th scope="col" class="col-site">Site</th>
+                  <th scope="col" class="col-username">Username</th>
+                  <th scope="col" class="col-password">Password</th>
+                  <th scope="col" class="col-actions"></th>
+                </tr>
+              </thead>
+              <tbody id="credentials-grid">
+                <!-- Rows will be dynamically loaded here by app.js -->
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
     </main>
@@ -402,7 +409,8 @@
 
   <!-- CREDENTIAL CREATOR MODAL -->
   <div class="credential-modal-backdrop" id="credential-modal-backdrop" aria-hidden="true"></div>
-  <section class="credential-modal-panel" id="credential-modal-panel" aria-hidden="true" aria-label="Credential Editor Modal">
+  <section class="credential-modal-panel" id="credential-modal-panel" aria-hidden="true"
+    aria-label="Credential Editor Modal">
     <div class="credential-modal-inner" id="credential-modal-card">
       <header class="credential-modal-header">
         <div class="modal-title-group">
@@ -424,8 +432,8 @@
 
         <!-- 1st ROW: Label / Site Name Input -->
         <div class="creator-row-1">
-          <input type="text" id="credential-site" placeholder="Site / App name (e.g. GitHub, Netflix)"
-            maxlength="100" required>
+          <input type="text" id="credential-site" placeholder="Site / App name (e.g. GitHub, Netflix)" maxlength="100"
+            required>
         </div>
 
         <!-- 2nd ROW: Content (Username, Password, Notes - Expandable depend on content) -->
@@ -441,8 +449,8 @@
               <input type="password" id="credential-password" placeholder="Password" required>
               <button type="button" class="btn-icon password-reveal-toggle" id="btn-toggle-form-password"
                 title="Show password" aria-label="Show or hide password">
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2"
-                  fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8Z"></path>
                   <circle cx="12" cy="12" r="3"></circle>
                 </svg>
@@ -468,7 +476,8 @@
 
             <!-- Credential Type Popover Icon Trigger -->
             <div class="popover-wrapper">
-              <button type="button" class="btn-popover-trigger" id="btn-cred-type-popup" title="Select Credential Type" aria-expanded="false">
+              <button type="button" class="btn-popover-trigger" id="btn-cred-type-popup" title="Select Credential Type"
+                aria-expanded="false">
                 <span class="trigger-icon" id="cred-type-icon-display">🔑</span>
                 <span class="trigger-label" id="cred-type-label-display">Login</span>
                 <span class="trigger-arrow">▾</span>
@@ -492,7 +501,8 @@
 
             <!-- Credential Color Popover Icon Trigger -->
             <div class="popover-wrapper">
-              <button type="button" class="btn-popover-trigger" id="btn-cred-color-popup" title="Choose Card Color" aria-expanded="false">
+              <button type="button" class="btn-popover-trigger" id="btn-cred-color-popup" title="Choose Card Color"
+                aria-expanded="false">
                 <span class="color-dot-swatch" id="cred-color-swatch-display" style="background-color: #ffd1d9;"></span>
                 <span class="trigger-icon">🎨</span>
                 <span class="trigger-arrow">▾</span>
@@ -500,7 +510,8 @@
               <div class="popover-menu color-popover-menu" id="cred-color-popover">
                 <div class="popover-title">Card Color</div>
                 <div class="color-options" id="credential-color-options">
-                  <label class="color-option-label current" style="--option-color: #ffd1d9;" title="Strawberry Soft Pink">
+                  <label class="color-option-label current" style="--option-color: #ffd1d9;"
+                    title="Strawberry Soft Pink">
                     <input type="radio" name="credential-color" value="#ffd1d9" checked>
                     <span class="color-dot"></span>
                   </label>

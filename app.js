@@ -102,11 +102,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const vaultMode = document.getElementById('vault-mode')
 
   // Credential / Vault UI elements
-  const vaultCreator = document.getElementById('vault-creator')
   const vaultCreatorCollapsed = document.getElementById('vault-creator-collapsed')
-  const vaultCreatorExpanded = document.getElementById('vault-creator-expanded')
   const btnExpandVaultCreator = document.getElementById('btn-expand-vault-creator')
-  const btnCloseVaultCreator = document.getElementById('btn-close-vault-creator')
+  const credentialModalBackdrop = document.getElementById('credential-modal-backdrop')
+  const credentialModalPanel = document.getElementById('credential-modal-panel')
+  const btnCloseCredentialModal = document.getElementById('btn-close-credential-modal')
+  const btnCancelCredentialModal = document.getElementById('btn-cancel-credential-modal')
   const credentialForm = document.getElementById('credential-form')
   const credentialIdInput = document.getElementById('credential-id')
   const credentialSiteInput = document.getElementById('credential-site')
@@ -299,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const selectedLabel = e.target.closest('.color-option-label')
           if (selectedLabel) {
             selectedLabel.classList.add('current')
-            vaultCreator.style.borderColor = e.target.value
+            if (credentialModalPanel) credentialModalPanel.style.borderColor = e.target.value
             if (credColorSwatchDisplay) credColorSwatchDisplay.style.backgroundColor = e.target.value
           }
         }
@@ -374,7 +375,10 @@ document.addEventListener('DOMContentLoaded', () => {
     noteFocusContent.addEventListener('click', handleFocusNoteActions)
     noteFocusContent.addEventListener('click', handleFocusCredentialActions)
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') { closeFocusedNote() }
+      if (e.key === 'Escape') {
+        closeFocusedNote()
+        closeCredentialModal()
+      }
     })
 
     // Google Keep-Style Note Creator Listeners
@@ -485,24 +489,26 @@ document.addEventListener('DOMContentLoaded', () => {
       togglePasswordVisibility(credentialPasswordInput, btnToggleFormPassword)
     })
 
-    // Credential creator expand/collapse
+    // Credential creator modal openers and closers
     if (btnExpandVaultCreator) {
       btnExpandVaultCreator.addEventListener('click', (e) => {
         e.stopPropagation()
-        if (!vaultCreator.classList.contains('active')) expandVaultCreator()
+        openCredentialModal()
       })
     }
     if (vaultCreatorCollapsed) {
       vaultCreatorCollapsed.addEventListener('click', () => {
-        if (!vaultCreator.classList.contains('active')) expandVaultCreator()
+        openCredentialModal()
       })
     }
-    if (btnCloseVaultCreator) {
-      btnCloseVaultCreator.addEventListener('click', (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        resetCredentialForm()
-      })
+    if (btnCloseCredentialModal) {
+      btnCloseCredentialModal.addEventListener('click', closeCredentialModal)
+    }
+    if (btnCancelCredentialModal) {
+      btnCancelCredentialModal.addEventListener('click', closeCredentialModal)
+    }
+    if (credentialModalBackdrop) {
+      credentialModalBackdrop.addEventListener('click', closeCredentialModal)
     }
 
     // Credential form submit
@@ -698,20 +704,27 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleBtn.classList.toggle('revealed', !showing)
   }
 
-  // CREDENTIAL CREATOR UI
-  function expandVaultCreator() {
-    if (vaultCreator.classList.contains('active')) return
-    vaultCreator.classList.add('active')
-    if (vaultCreatorCollapsed) vaultCreatorCollapsed.style.display = 'none'
-    if (vaultCreatorExpanded) vaultCreatorExpanded.style.display = 'block'
-    credentialSiteInput.focus()
+  // CREDENTIAL CREATOR MODAL UI
+  function openCredentialModal() {
+    closeFocusedNote()
+    if (credentialModalBackdrop) credentialModalBackdrop.classList.add('active')
+    if (credentialModalPanel) credentialModalPanel.classList.add('active')
+    document.body.classList.add('note-focus-open')
+    setTimeout(() => {
+      if (credentialSiteInput) credentialSiteInput.focus()
+    }, 50)
+  }
+
+  function closeCredentialModal() {
+    closeAllPopovers()
+    if (credentialModalBackdrop) credentialModalBackdrop.classList.remove('active')
+    if (credentialModalPanel) credentialModalPanel.classList.remove('active')
+    document.body.classList.remove('note-focus-open')
+    resetCredentialForm()
   }
 
   function resetCredentialForm() {
     closeAllPopovers()
-    vaultCreator.classList.remove('active')
-    if (vaultCreatorCollapsed) vaultCreatorCollapsed.style.display = 'flex'
-    if (vaultCreatorExpanded) vaultCreatorExpanded.style.display = 'none'
     credentialForm.reset()
     credentialIdInput.value = ''
     if (credentialTypeSelect) {
@@ -726,7 +739,7 @@ document.addEventListener('DOMContentLoaded', () => {
       pinkRadio.closest('.color-option-label')?.classList.add('current')
       if (credColorSwatchDisplay) credColorSwatchDisplay.style.backgroundColor = '#ffd1d9'
     }
-    vaultCreator.style.borderColor = 'var(--border-color)'
+    if (credentialModalPanel) credentialModalPanel.style.borderColor = 'var(--border-color)'
     credentialPasswordInput.type = 'password'
     btnToggleFormPassword.classList.remove('revealed')
     btnToggleFormPassword.title = 'Show password'
@@ -784,7 +797,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     localStorage.setItem('jot_credentials', JSON.stringify(credentials))
-    resetCredentialForm()
+    closeCredentialModal()
     render()
   }
 
@@ -807,14 +820,12 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('#credential-color-options .color-option-label').forEach(label => label.classList.remove('current'))
       radioToSelect.closest('.color-option-label')?.classList.add('current')
       if (credColorSwatchDisplay) credColorSwatchDisplay.style.backgroundColor = credColor
-      vaultCreator.style.borderColor = credColor
+      if (credentialModalPanel) credentialModalPanel.style.borderColor = credColor
     }
 
     credentialEditorTitle.textContent = 'Edit Credential'
     btnSaveCredential.querySelector('.btn-text').textContent = 'Save Changes'
-    expandVaultCreator()
-    window.scrollTo({ top: vaultCreator.offsetTop - 50, behavior: 'smooth' })
-    credentialSiteInput.focus()
+    openCredentialModal()
   }
 
   // CREDENTIAL CARD ACTIONS

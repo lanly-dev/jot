@@ -37,11 +37,16 @@
   padding: 0;
 }
 
+html {
+  font-size: 17px;
+}
+
 body {
   font-family: var(--font-body);
   color: var(--text-main);
   background-color: var(--bg-main);
   min-height: 100vh;
+  font-size: 1rem;
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
@@ -128,11 +133,11 @@ h4 {
   max-width: 1300px;
   width: 100%;
   margin: 0 auto;
-  padding: 2.5rem 1.5rem 1.5rem 1.5rem;
+  padding: 1.5rem 1.25rem 1.25rem 1.25rem;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  gap: 2rem;
+  gap: .5rem;
 }
 
 /* ==========================================================================
@@ -141,7 +146,7 @@ h4 {
 .app-main {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.25rem;
   align-items: center;
   flex-grow: 1;
   width: 100%;
@@ -156,8 +161,8 @@ h4 {
   font-family: var(--font-body);
   font-weight: 700;
   font-size: 0.95rem;
-  padding: 0.75rem 1.5rem;
-  border-radius: 16px;
+  padding: 0.55rem 1.2rem;
+  border-radius: 14px;
   border: none;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -211,7 +216,7 @@ h4 {
 
 /* Inputs & Form Groups */
 .input-group {
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.85rem;
   width: 100%;
 }
 
@@ -221,8 +226,8 @@ h4 {
   width: 100%;
   background-color: rgba(255, 255, 255, 0.8);
   border: 2px solid var(--border-color);
-  border-radius: 16px;
-  padding: 0.85rem 1.15rem;
+  border-radius: 14px;
+  padding: 0.65rem 0.95rem;
   font-family: var(--font-body);
   font-weight: 500;
   font-size: 0.95rem;
@@ -489,7 +494,7 @@ h4 {
 .display-section {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: .5rem;
   width: 100%;
   max-width: 1000px;
 }
@@ -540,9 +545,7 @@ h4 {
   justify-content: space-between;
   flex-wrap: wrap;
   width: 100%;
-  max-width: 680px;
-  margin: -0.5rem auto 0;
-  padding-bottom: 1rem;
+  padding-bottom: 0.65rem;
   border-bottom: 1px dashed var(--border-color);
 }
 
@@ -678,7 +681,7 @@ h4 {
 .notes-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1.5rem;
+  gap: .5rem;
   width: 100%;
   position: relative;
 }
@@ -686,7 +689,7 @@ h4 {
 .notes-grid.list-view {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .note-focus-backdrop {
@@ -743,7 +746,7 @@ body.note-focus-open {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.25rem 0.5rem;
+  padding: 0.75rem 1rem 0.25rem;
 }
 
 .note-focus-header-label {
@@ -761,8 +764,8 @@ body.note-focus-open {
 .note-focus-close {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: none;
   border-radius: 50%;
@@ -780,7 +783,7 @@ body.note-focus-open {
 
 .note-focus-content {
   overflow: auto;
-  padding: 0.4rem 1.25rem 1.5rem;
+  padding: 0.35rem 1.15rem 1.15rem;
 }
 
 .note-focus-article {
@@ -918,17 +921,17 @@ body.note-focus-open {
 }
 
 .credential-modal-inner {
-  padding: 1.5rem;
+  padding: 1.2rem 1.35rem;
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.65rem;
 }
 
 .credential-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.15rem;
 }
 
 .modal-title-group {
@@ -968,13 +971,13 @@ body.note-focus-open {
 
 .note-card {
   background-color: var(--note-color, var(--pastel-pink));
-  border-radius: 24px;
+  border-radius: 10px;
   border: 2px solid var(--border-color);
-  padding: 1.75rem;
+  padding: 1rem;
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 220px;
+  min-height: 180px;
   box-shadow: var(--card-shadow);
   transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15), box-shadow 0.3s ease;
   animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -1055,7 +1058,7 @@ body.note-focus-open {
 
 /* Note Card Content */
 .note-header {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
   padding-right: 1.75rem;
 }
 
@@ -1065,11 +1068,11 @@ body.note-focus-open {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.35px;
-  padding: 0.18rem 0.5rem;
+  padding: 0.15rem 0.45rem;
   border-radius: 999px;
   border: 1px solid rgba(45, 43, 42, 0.12);
   background: rgba(255, 255, 255, 0.65);
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.25rem;
 }
 
 .note-type-badge.type-dev {
@@ -1085,25 +1088,24 @@ body.note-focus-open {
 }
 
 .note-title {
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--text-main);
   word-break: break-word;
 }
 
 .note-body {
-  font-size: 0.92rem;
-  line-height: 1.5;
-  color: rgba(45, 43, 42, 0.85);
+  font-size: 0.8rem;
+  color: rgba(45, 43, 42, 0.88);
   white-space: pre-wrap;
   word-break: break-word;
   flex-grow: 1;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.5rem;
 }
 
 .note-body-markdown {
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: 0.96rem;
+  line-height: 1.6;
   color: rgba(45, 43, 42, 0.88);
   margin-bottom: 1rem;
 }
@@ -1383,7 +1385,7 @@ body.note-focus-open {
 @media (max-width: 600px) {
   .app-container {
     padding: 1.5rem 1rem 1rem 1rem;
-    gap: 1.5rem;
+    gap: .5rem;
   }
 
 }
@@ -1466,14 +1468,14 @@ body.note-focus-open {
 #editor-card {
   background-color: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
-  border-radius: 24px;
+  border-radius: 20px;
   border: 2px solid var(--border-color);
-  padding: 0.85rem 1.5rem;
+  padding: 0.65rem 1.2rem;
   box-shadow: var(--card-shadow);
   transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
   position: relative;
   width: 100%;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   cursor: pointer;
 }
 
@@ -1487,8 +1489,8 @@ body.note-focus-open {
 .note-creator.active,
 #editor-card.active {
   background-color: #ffffff;
-  border-radius: 28px;
-  padding: 1.75rem;
+  border-radius: 24px;
+  padding: 1.25rem 1.35rem;
   box-shadow: 0 15px 40px rgba(45, 43, 42, 0.08);
   cursor: default;
 }
@@ -1663,19 +1665,19 @@ body.note-focus-open {
   width: 100%;
   border-collapse: collapse;
   font-family: var(--font-body);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   min-width: 560px;
 }
 
 .credentials-table thead th {
   background-color: #faf8f6;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #9a948f;
   text-align: left;
-  padding: 0.6rem 1rem;
+  padding: 0.65rem 1rem;
   border-bottom: 2px solid var(--border-color);
   white-space: nowrap;
 }
@@ -1686,7 +1688,7 @@ body.note-focus-open {
 }
 
 .credentials-table td {
-  padding: 0.55rem 1rem;
+  padding: 0.65rem 1rem;
   border-bottom: 1px solid var(--border-color);
   vertical-align: middle;
 }
@@ -1713,14 +1715,14 @@ body.note-focus-open {
 }
 
 .credential-site-icon {
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   display: flex;
   align-items: center;
   flex-shrink: 0;
 }
 
 .credential-site {
-  font-size: 0.92rem;
+  font-size: 0.98rem;
   font-weight: 700;
   color: var(--text-main);
   white-space: nowrap;
@@ -1736,7 +1738,7 @@ body.note-focus-open {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 600;
-  font-size: 0.88rem;
+  font-size: 0.94rem;
   color: var(--text-main);
 }
 

@@ -108,9 +108,12 @@
                     </div>
                     <div class="spreadsheet-grid" id="spreadsheet-grid" aria-label="Spreadsheet input grid"></div>
                   </div>
+
+                  <!-- Active tags chips row in creator -->
+                  <div class="creator-active-tags-bar" id="creator-active-tags-bar" style="display: none;"></div>
                 </div>
 
-                <!-- 3rd ROW: Options Bar (Type Icon, Color Icon with popups) & Actions -->
+                <!-- 3rd ROW: Options Bar (Type Icon, Color Icon, Tags with popups) & Actions -->
                 <div class="creator-row-3">
                   <div class="options-toolbar">
                     <!-- Hidden Select Element synced with Type Popover -->
@@ -192,6 +195,28 @@
                         </div>
                       </div>
                     </div>
+
+                    <!-- Tags Popover Trigger -->
+                    <div class="popover-wrapper">
+                      <button type="button" class="btn-popover-trigger" id="btn-tags-popup" title="Add Tags"
+                        aria-expanded="false">
+                        <span class="trigger-icon">🏷️</span>
+                        <span class="trigger-label" id="tags-label-display">Tags</span>
+                        <span class="trigger-arrow">▾</span>
+                      </button>
+                      <div class="popover-menu tags-popover-menu" id="tags-popover">
+                        <div class="popover-title">Jot Tags</div>
+                        <div class="tags-input-row">
+                          <input type="text" id="note-tag-input" placeholder="Type tag and press Enter..." maxlength="25" autocomplete="off">
+                          <button type="button" class="btn btn-secondary btn-add-tag-inline" id="btn-add-tag-inline" title="Add tag">+</button>
+                        </div>
+                        <div class="tags-chips-list" id="creator-tags-chips"></div>
+                        <div class="tags-suggestions-box" id="tags-suggestions-box">
+                          <div class="tags-suggestions-title">Quick Add:</div>
+                          <div class="tags-suggestions-chips" id="tags-suggestions-chips"></div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <!-- Form Action Buttons -->
@@ -237,6 +262,14 @@
               </span>
               <span class="status-text">Archived</span>
             </label>
+          </div>
+
+          <!-- Active Tag Filter Chip indicator -->
+          <div class="active-tag-filter-wrap" id="active-tag-filter-wrap" style="display: none;">
+            <span class="active-tag-badge">
+              <span class="active-tag-text" id="active-tag-text">#tag</span>
+              <button type="button" class="btn-clear-tag-filter" id="btn-clear-tag-filter" title="Clear tag filter">✕</button>
+            </span>
           </div>
           <div style="display: flex; gap: 1rem;">
             <div class="header-stats-collapsed">

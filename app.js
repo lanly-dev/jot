@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let vaultUnlocked = false
   let vaultSetupMode = false
   let currentVaultFilter = 'all' // 'all', 'login', 'payment', 'secure-note'
+  let creatorDraftTags = []
+  let currentTagFilter = null
   const reminderTimers = new Map()
   const VAULT_HASH_KEY = 'jot_vault_master_hash'
 
@@ -140,6 +142,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const colorPopover = document.getElementById('color-popover')
   const colorSwatchDisplay = document.getElementById('color-swatch-display')
 
+  // Tags selectors
+  const btnTagsPopup = document.getElementById('btn-tags-popup')
+  const tagsPopover = document.getElementById('tags-popover')
+  const tagsLabelDisplay = document.getElementById('tags-label-display')
+  const noteTagInput = document.getElementById('note-tag-input')
+  const btnAddTagInline = document.getElementById('btn-add-tag-inline')
+  const creatorTagsChips = document.getElementById('creator-tags-chips')
+  const creatorActiveTagsBar = document.getElementById('creator-active-tags-bar')
+  const tagsSuggestionsChips = document.getElementById('tags-suggestions-chips')
+  const activeTagFilterWrap = document.getElementById('active-tag-filter-wrap')
+  const activeTagText = document.getElementById('active-tag-text')
+  const btnClearTagFilter = document.getElementById('btn-clear-tag-filter')
+
   const btnCredTypePopup = document.getElementById('btn-cred-type-popup')
   const credTypePopover = document.getElementById('cred-type-popover')
   const credTypeIconDisplay = document.getElementById('cred-type-icon-display')
@@ -185,6 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       showToast('Running in local offline mode ⚠️', 'warn')
     }
+    renderCreatorTagsUI()
     render()
   }
 
@@ -363,10 +379,77 @@ document.addEventListener('DOMContentLoaded', () => {
     // Card Action Delegations (Pin, Edit, Archive, Delete, Tag-Filter Click inside Card)
     notesGrid.addEventListener('click', handleCardActions)
 
+    // Tag filter clear button
+    if (btnClearTagFilter) {
+      btnClearTagFilter.addEventListener('click', () => {
+        currentTagFilter = null
+        render()
+      })
+    }
+
+    // Tags Popover input and chips events
+    if (noteTagInput) {
+      noteTagInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ',') {
+          e.preventDefault()
+          addCreatorTag(noteTagInput.value)
+          noteTagInput.value = ''
+        }
+      })
+    }
+    if (btnAddTagInline) {
+      btnAddTagInline.addEventListener('click', (e) => {
+        e.preventDefault()
+        addCreatorTag(noteTagInput.value)
+        noteTagInput.value = ''
+      })
+    }
+    if (creatorTagsChips) {
+      creatorTagsChips.addEventListener('click', (e) => {
+        const tag = e.target.closest('.btn-tag-remove')?.getAttribute('data-tag')
+        if (tag) removeCreatorTag(tag)
+      })
+    }
+    if (creatorActiveTagsBar) {
+      creatorActiveTagsBar.addEventListener('click', (e) => {
+        const tag = e.target.closest('.btn-tag-remove')?.getAttribute('data-tag')
+        if (tag) removeCreatorTag(tag)
+      })
+    }
+    if (tagsSuggestionsChips) {
+      tagsSuggestionsChips.addEventListener('click', (e) => {
+        const pill = e.target.closest('.tag-suggestion-pill')
+        if (pill) {
+          addCreatorTag(pill.getAttribute('data-tag'))
+        }
+      })
+    }
+
     // Focus mode exit handlers
     noteFocusBackdrop.addEventListener('click', closeFocusedNote)
     noteFocusClose.addEventListener('click', closeFocusedNote)
     noteFocusContent.addEventListener('click', handleFocusNoteActions)
+    noteFocusContent.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.id === 'focus-tag-input') {
+        e.preventDefault()
+        const input = e.target
+        const newTag = input.value.trim().replace(/^#/, '').toLowerCase()
+        if (newTag) {
+          const list = noteFocusContent.querySelector('#focus-tags-list')
+          if (list) {
+            const existing = Array.from(list.querySelectorAll('.note-tag-chip')).map(c => c.getAttribute('data-tag'))
+            if (!existing.includes(newTag)) {
+              const chip = document.createElement('span')
+              chip.className = 'note-tag-chip active-chip'
+              chip.setAttribute('data-tag', newTag)
+              chip.innerHTML = `#${escapeHTML(newTag)} <button type="button" class="btn-tag-remove" data-tag="${escapeHTML(newTag)}">×</button>`
+              list.appendChild(chip)
+            }
+            input.value = ''
+          }
+        }
+      }
+    })
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         closeFocusedNote()
@@ -434,6 +517,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnTypePopup) btnTypePopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnTypePopup, typePopover) })
     if (btnColorPopup) btnColorPopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnColorPopup, colorPopover) })
+    if (btnTagsPopup) btnTagsPopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnTagsPopup, tagsPopover) })
     if (btnCredTypePopup) btnCredTypePopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnCredTypePopup, credTypePopover) })
     if (btnCredColorPopup) btnCredColorPopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnCredColorPopup, credColorPopover) })
 
@@ -534,6 +618,72 @@ document.addEventListener('DOMContentLoaded', () => {
       credTypePopover.querySelectorAll('.popover-item').forEach(item => {
         item.classList.toggle('active', item.getAttribute('data-type') === type)
       })
+    }
+  }
+
+  // TAGS SYSTEM HELPERS
+  function addCreatorTag(tag) {
+    if (!tag) return
+    const cleanTag = tag.trim().replace(/^#/, '').toLowerCase()
+    if (!cleanTag) return
+    if (!creatorDraftTags.includes(cleanTag)) {
+      creatorDraftTags.push(cleanTag)
+      renderCreatorTagsUI()
+    }
+  }
+
+  function removeCreatorTag(tag) {
+    creatorDraftTags = creatorDraftTags.filter(t => t !== tag)
+    renderCreatorTagsUI()
+  }
+
+  function getAllExistingTags() {
+    const set = new Set()
+    notes.forEach(n => {
+      if (Array.isArray(n.tags)) {
+        n.tags.forEach(t => {
+          if (t && typeof t === 'string') set.add(t.trim().replace(/^#/, '').toLowerCase())
+        })
+      }
+    })
+    return Array.from(set)
+  }
+
+  function renderCreatorTagsUI() {
+    if (tagsLabelDisplay) {
+      tagsLabelDisplay.textContent = creatorDraftTags.length > 0 ? `Tags (${creatorDraftTags.length})` : 'Tags'
+    }
+
+    if (creatorActiveTagsBar) {
+      if (creatorDraftTags.length > 0) {
+        creatorActiveTagsBar.style.display = 'flex'
+        creatorActiveTagsBar.innerHTML = creatorDraftTags.map(t =>
+          `<span class="note-tag-chip active-chip">#${escapeHTML(t)} <button type="button" class="btn-tag-remove" data-tag="${escapeHTML(t)}" title="Remove tag">×</button></span>`
+        ).join('')
+      } else {
+        creatorActiveTagsBar.style.display = 'none'
+        creatorActiveTagsBar.innerHTML = ''
+      }
+    }
+
+    if (creatorTagsChips) {
+      creatorTagsChips.innerHTML = creatorDraftTags.map(t =>
+        `<span class="note-tag-chip active-chip">#${escapeHTML(t)} <button type="button" class="btn-tag-remove" data-tag="${escapeHTML(t)}" title="Remove tag">×</button></span>`
+      ).join('')
+    }
+
+    if (tagsSuggestionsChips) {
+      const allTags = getAllExistingTags().filter(t => !creatorDraftTags.includes(t))
+      if (allTags.length > 0) {
+        tagsSuggestionsChips.innerHTML = allTags.slice(0, 6).map(t =>
+          `<button type="button" class="tag-suggestion-pill" data-tag="${escapeHTML(t)}">+ #${escapeHTML(t)}</button>`
+        ).join('')
+        const box = document.getElementById('tags-suggestions-box')
+        if (box) box.style.display = 'block'
+      } else {
+        const box = document.getElementById('tags-suggestions-box')
+        if (box) box.style.display = 'none'
+      }
     }
   }
 
@@ -940,6 +1090,7 @@ document.addEventListener('DOMContentLoaded', () => {
         type: noteType,
         reminderAt,
         spreadsheetData,
+        tags: [...creatorDraftTags],
         archived: false,
         createdAt: new Date().toISOString()
       }
@@ -1010,6 +1161,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initSpreadsheetDraft(3, 3)
     updateTypeSpecificFields()
     renderSpreadsheetGrid()
+
+    // Reset tags
+    creatorDraftTags = []
+    renderCreatorTagsUI()
 
     // Reset color selector to first pink choice
     const pinkRadio = document.querySelector('input[name="note-color"][value="#ffd1dc"]')
@@ -1116,6 +1271,16 @@ document.addEventListener('DOMContentLoaded', () => {
       return
     }
 
+    // 4. CLICK TAG TO FILTER
+    if (target.closest('.note-tag-chip')) {
+      const tag = target.closest('.note-tag-chip').getAttribute('data-tag')
+      if (tag) {
+        currentTagFilter = currentTagFilter === tag ? null : tag
+        render()
+        return
+      }
+    }
+
     // 5. CLICK CARD TO FOCUS/EXPAND
     openFocusedNote(noteId)
   }
@@ -1202,10 +1367,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Update stats dashboard
     updateStatsDashboard()
 
-    // 2. Filter notes based on active state
+    // 2. Filter notes based on active state and tag filter
     let filteredNotes = notes.filter(note => {
-      return note.archived === (currentView === 'archived')
+      const statusMatch = note.archived === (currentView === 'archived')
+      const tagMatch = !currentTagFilter || (Array.isArray(note.tags) && note.tags.map(t => t.toLowerCase()).includes(currentTagFilter.toLowerCase()))
+      return statusMatch && tagMatch
     })
+
+    // Update active tag filter chip display
+    if (activeTagFilterWrap && activeTagText) {
+      if (currentTagFilter) {
+        activeTagFilterWrap.style.display = 'inline-flex'
+        activeTagText.textContent = `🏷️ #${currentTagFilter}`
+      } else {
+        activeTagFilterWrap.style.display = 'none'
+      }
+    }
 
     // 3. Sort notes: Pinned notes bubble to top, then sorted by createdAt descending
     filteredNotes.sort((a, b) => {
@@ -1289,6 +1466,33 @@ document.addEventListener('DOMContentLoaded', () => {
       return
     }
 
+    if (target.closest('#btn-add-focus-tag')) {
+      const input = article.querySelector('#focus-tag-input')
+      if (input) {
+        const newTag = input.value.trim().replace(/^#/, '').toLowerCase()
+        if (newTag) {
+          const list = article.querySelector('#focus-tags-list')
+          if (list) {
+            const existing = Array.from(list.querySelectorAll('.note-tag-chip')).map(c => c.getAttribute('data-tag'))
+            if (!existing.includes(newTag)) {
+              const chip = document.createElement('span')
+              chip.className = 'note-tag-chip active-chip'
+              chip.setAttribute('data-tag', newTag)
+              chip.innerHTML = `#${escapeHTML(newTag)} <button type="button" class="btn-tag-remove" data-tag="${escapeHTML(newTag)}">×</button>`
+              list.appendChild(chip)
+            }
+            input.value = ''
+          }
+        }
+      }
+      return
+    }
+
+    if (target.closest('.btn-tag-remove')) {
+      target.closest('.note-tag-chip')?.remove()
+      return
+    }
+
     if (target.closest('#focus-action-save')) {
       const titleInput = article.querySelector('.note-focus-title-input')
       const bodyInput = article.querySelector('.note-focus-body-input')
@@ -1300,12 +1504,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return
       }
 
+      const tags = Array.from(article.querySelectorAll('#focus-tags-list .note-tag-chip'))
+        .map(c => c.getAttribute('data-tag'))
+        .filter(Boolean)
+
       const updatedFields = {
         title: nextTitle,
         content: nextContent,
         color: note.color,
         pinned: note.pinned,
         type: note.type || 'standard',
+        tags,
         reminderAt: note.reminderAt || null,
         spreadsheetData: note.spreadsheetData || null
       }
@@ -1366,6 +1575,21 @@ document.addEventListener('DOMContentLoaded', () => {
         <textarea class="note-focus-body-input" rows="6" placeholder="Write your note here..."
           aria-label="Note content">${escapedContent}</textarea>
         ${spreadsheetMarkup}
+
+        <div class="note-focus-tags-section">
+          <div class="note-focus-tags-header">
+            <span>Tags 🏷️</span>
+            <span style="font-size: 0.68rem; color: var(--text-muted); font-weight: 500;">Type tag & press Enter</span>
+          </div>
+          <div class="note-focus-tags-input-wrap">
+            <input type="text" class="note-focus-tag-input" id="focus-tag-input" placeholder="Add tag..." maxlength="25">
+            <button type="button" class="btn btn-secondary btn-add-focus-tag" id="btn-add-focus-tag" style="padding: 0.2rem 0.6rem; font-weight: 700;">+</button>
+          </div>
+          <div class="note-focus-tags-list" id="focus-tags-list">
+            ${(note.tags || []).map(t => `<span class="note-tag-chip active-chip" data-tag="${escapeHTML(t)}">#${escapeHTML(t)} <button type="button" class="btn-tag-remove" data-tag="${escapeHTML(t)}">×</button></span>`).join('')}
+          </div>
+        </div>
+
         <div class="note-focus-actions">
           <button type="button" class="btn btn-secondary" id="focus-action-close">Close</button>
           <button type="button" class="btn btn-primary" id="focus-action-save">
@@ -1638,6 +1862,10 @@ document.addEventListener('DOMContentLoaded', () => {
       ? `<p class="note-body">${escapedContent}</p>`
       : ''
 
+    const tagsMarkup = Array.isArray(note.tags) && note.tags.length > 0
+      ? `<div class="note-tags-row">${note.tags.map(t => `<button type="button" class="note-tag-chip" data-tag="${escapeHTML(t)}">#${escapeHTML(t)}</button>`).join('')}</div>`
+      : ''
+
     return `
       <article class="note-card ${note.pinned ? 'pinned-card' : ''}" data-id="${note.id}" style="--note-color: ${note.color};">
         ${pinBadgeMarkup}
@@ -1651,6 +1879,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ${standardBodyMarkup}
         ${markdownMarkup}
         ${spreadsheetMarkup}
+        ${tagsMarkup}
 
         <div class="note-actions">
           <span style="margin-right: auto; align-self: center; font-size: 0.72rem; font-weight: 700; color: rgba(45, 43, 42, 0.45);">${dateText}</span>

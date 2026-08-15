@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentVaultFilter = 'all' // 'all', 'login', 'payment', 'secure-note'
   let creatorDraftTags = []
   let currentTagFilter = null
+  let currentSearchQuery = ''
   const reminderTimers = new Map()
   const VAULT_HASH_KEY = 'jot_vault_master_hash'
 
@@ -76,6 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnFilterActive = document.getElementById('status-active')
   const btnFilterArchived = document.getElementById('status-archived')
   const btnLayoutToggle = document.getElementById('btn-layout-toggle')
+  const notesSearchInput = document.getElementById('notes-search-input')
 
   const notesGrid = document.getElementById('notes-grid')
   const emptyState = document.getElementById('empty-state')
@@ -350,6 +352,18 @@ document.addEventListener('DOMContentLoaded', () => {
       updateLayoutToggleButton()
       render()
     })
+
+    // Search input handler
+    if (notesSearchInput) {
+      notesSearchInput.addEventListener('input', (e) => {
+        currentSearchQuery = e.target.value.trim().toLowerCase()
+        const container = notesSearchInput.closest('.search-option')
+        if (container) {
+          container.classList.toggle('active', currentSearchQuery.length > 0)
+        }
+        renderNotes()
+      })
+    }
 
     // Note type and type-specific editors
     noteTypeSelect.addEventListener('change', () => {
@@ -1371,7 +1385,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let filteredNotes = notes.filter(note => {
       const statusMatch = note.archived === (currentView === 'archived')
       const tagMatch = !currentTagFilter || (Array.isArray(note.tags) && note.tags.map(t => t.toLowerCase()).includes(currentTagFilter.toLowerCase()))
-      return statusMatch && tagMatch
+      const searchMatch = !currentSearchQuery || 
+        (note.title && note.title.toLowerCase().includes(currentSearchQuery)) || 
+        (note.content && note.content.toLowerCase().includes(currentSearchQuery))
+      return statusMatch && tagMatch && searchMatch
     })
 
     // Update active tag filter chip display

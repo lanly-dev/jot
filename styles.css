@@ -529,7 +529,7 @@ h4 {
   justify-content: space-between;
   flex-wrap: wrap;
   width: 100%;
-  padding-bottom: 0.65rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px dashed var(--border-color);
 }
 
@@ -569,16 +569,14 @@ h4 {
   gap: 0.5rem;
 }
 
-.status-option {
+.status-option,
+.search-option {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.25rem 0.1rem;
   border: none;
   border-bottom: 2px solid transparent;
-  border-radius: 0;
   background: transparent;
-  box-shadow: none;
   cursor: pointer;
   font-family: var(--font-body);
   font-weight: 600;
@@ -595,34 +593,86 @@ h4 {
   pointer-events: none;
 }
 
-.status-option .status-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.status-option svg,
+.search-option svg {
+  display: block;
   color: inherit;
   transition: color 0.2s ease;
-}
-
-.status-option .status-icon svg {
-  display: block;
 }
 
 .status-option:hover {
   color: var(--text-main);
 }
 
-.status-option.active {
+.status-option.active,
+.search-option:focus-within {
   color: var(--text-main);
   border-bottom-color: var(--color-primary);
 }
 
-.status-option.active .status-icon {
+.status-option.active svg,
+.search-option:focus-within svg {
   color: var(--color-primary);
 }
 
 .status-option:focus-within {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+/* Search Field Styles */
+.search-group {
+  margin-left: 0.5rem;
+  flex-grow: 1;
+  justify-content: end;
+}
+
+.search-option {
+  cursor: text;
+}
+
+#notes-search-input {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  width: 120px;
+  outline: none;
+  transition: width 0.3s ease;
+}
+
+#notes-search-input:focus {
+  width: 180px;
+}
+
+#notes-search-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* Responsive adjustments for display controls */
+@media (max-width: 768px) {
+  .display-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .search-group {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+
+  #notes-search-input {
+    width: 100%;
+  }
+
+  #notes-search-input:focus {
+    width: 100%;
+  }
 }
 
 /* Vault lock button */

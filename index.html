@@ -236,29 +236,37 @@
             <label class="status-option active" for="status-active">
               <input type="radio" name="note-status" id="status-active" value="active" checked
                 aria-labelledby="status-active ">
-              <span class="status-icon">
-                <!-- Activity / Pulse icon representing Active notes -->
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
-                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                </svg>
-              </span>
+              <!-- Activity / Pulse icon representing Active notes -->
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
               <span class="status-text">Active</span>
             </label>
             <label class="status-option" for="status-archived">
               <input type="radio" name="note-status" id="status-archived" value="archived"
                 aria-labelledby="status-archived ">
-              <span class="status-icon">
-                <!-- Archive box icon representing Archived notes -->
-                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
-                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <polyline points="21 8 21 21 3 21 3 8"></polyline>
-                  <rect x="1" y="3" width="22" height="5"></rect>
-                  <line x1="10" y1="12" x2="14" y2="12"></line>
-                </svg>
-              </span>
+              <!-- Archive box icon representing Archived notes -->
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="21 8 21 21 3 21 3 8"></polyline>
+                <rect x="1" y="3" width="22" height="5"></rect>
+                <line x1="10" y1="12" x2="14" y2="12"></line>
+              </svg>
               <span class="status-text">Archived</span>
             </label>
+          </div>
+
+          <!-- Search Field -->
+          <div class="display-control-group search-group" aria-label="Search notes">
+            <div class="search-option">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="search" id="notes-search-input" placeholder="Search..." aria-label="Search notes">
+            </div>
           </div>
 
           <!-- Active Tag Filter Chip indicator -->
@@ -353,23 +361,23 @@
               <label class="status-option active" for="vault-filter-all">
                 <input type="radio" name="vault-filter" id="vault-filter-all" value="all" checked
                   aria-label="All items">
-                <span class="status-icon">✨</span>
+                ✨
                 <span class="status-text">All</span>
               </label>
               <label class="status-option" for="vault-filter-login">
                 <input type="radio" name="vault-filter" id="vault-filter-login" value="login" aria-label="Logins">
-                <span class="status-icon">🔑</span>
+                🔑
                 <span class="status-text">Logins</span>
               </label>
               <label class="status-option" for="vault-filter-payment">
                 <input type="radio" name="vault-filter" id="vault-filter-payment" value="payment" aria-label="Payments">
-                <span class="status-icon">💳</span>
+                💳
                 <span class="status-text">Payments</span>
               </label>
               <label class="status-option" for="vault-filter-note">
                 <input type="radio" name="vault-filter" id="vault-filter-note" value="secure-note"
                   aria-label="Secure Notes">
-                <span class="status-icon">🔒</span>
+                🔒
                 <span class="status-text">Notes</span>
               </label>
             </div>

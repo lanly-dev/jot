@@ -57,12 +57,15 @@ function normalizeSpreadsheetData(spreadsheetData) {
 }
 
 function normalizeCredential(cred) {
+  const allowedTypes = ['login', 'payment', 'secure-note']
   return {
     id: cred.id,
     site: String(cred.site || ''),
     username: String(cred.username || ''),
     password: String(cred.password || ''),
     notes: String(cred.notes || ''),
+    type: allowedTypes.includes(cred.type) ? cred.type : 'login',
+    color: String(cred.color || '#ffd1d9'),
     createdAt: cred.createdAt || new Date().toISOString()
   }
 }
@@ -272,6 +275,8 @@ app.post('/api/credentials', (req, res) => {
     username: req.body.username,
     password: req.body.password,
     notes: req.body.notes,
+    type: req.body.type,
+    color: req.body.color,
     createdAt: req.body.createdAt || new Date().toISOString()
   })
 
@@ -295,7 +300,9 @@ app.put('/api/credentials/:id', (req, res) => {
     site: req.body.site !== undefined ? req.body.site : credentials[credIndex].site,
     username: req.body.username !== undefined ? req.body.username : credentials[credIndex].username,
     password: req.body.password !== undefined ? req.body.password : credentials[credIndex].password,
-    notes: req.body.notes !== undefined ? req.body.notes : credentials[credIndex].notes
+    notes: req.body.notes !== undefined ? req.body.notes : credentials[credIndex].notes,
+    type: req.body.type !== undefined ? req.body.type : credentials[credIndex].type,
+    color: req.body.color !== undefined ? req.body.color : credentials[credIndex].color
   })
 
   credentials[credIndex] = updatedCredential

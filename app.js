@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentLayoutView = localStorage.getItem('jot_layout_view') || 'thumbnail' // 'thumbnail' or 'list'
   let isFormPinned = false // whether the note-in-creation is pinned
   let focusedNoteId = null
-  let focusedCredentialId = null
   let spreadsheetDraft = []
   let vaultUnlocked = false
   let vaultSetupMode = false
@@ -69,7 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const editorCard = document.getElementById('editor-card')
   const editorTitleHeading = document.getElementById('editor-title-heading')
   const editorPinBtn = document.getElementById('editor-pin-btn')
-  const btnClearForm = document.getElementById('btn-clear-form')
   const btnSaveNote = document.getElementById('btn-save-note')
   const colorOptionsContainer = document.getElementById('color-options')
 
@@ -265,9 +263,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Form submission (Save Note)
     noteForm.addEventListener('submit', handleFormSubmit)
 
-    // Cancel editing button
-    btnClearForm.addEventListener('click', resetForm)
-
     // Editor Pin toggle
     editorPinBtn.addEventListener('click', () => {
       isFormPinned = !isFormPinned
@@ -372,7 +367,6 @@ document.addEventListener('DOMContentLoaded', () => {
     noteFocusBackdrop.addEventListener('click', closeFocusedNote)
     noteFocusClose.addEventListener('click', closeFocusedNote)
     noteFocusContent.addEventListener('click', handleFocusNoteActions)
-    noteFocusContent.addEventListener('click', handleFocusCredentialActions)
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         closeFocusedNote()
@@ -869,72 +863,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return
     }
 
-    openFocusedCredential(credId)
-  }
-
-  // Inline editing of the focused credential (vault) + reveal / save / close
-  function handleFocusCredentialActions(e) {
-    const target = e.target
-    const article = target.closest('.credential-focus-article')
-    if (!article) return
-    const credId = article.getAttribute('data-id')
-    const cred = credentials.find(c => c.id === credId)
-    if (!cred) return
-
-    // Show / hide password
-    if (target.closest('.focus-password-toggle')) {
-      const input = article.querySelector('.focus-password-input')
-      if (!input) return
-      const reveal = input.type === 'password'
-      input.type = reveal ? 'text' : 'password'
-      target.classList.toggle('revealed', reveal)
-      target.title = reveal ? 'Hide password' : 'Show password'
-      return
-    }
-
-    // Close the focus panel
-    if (target.closest('#cred-focus-action-close')) {
-      closeFocusedNote()
-      return
-    }
-
-    // Save the edited credential
-    if (target.closest('#cred-focus-action-save')) {
-      const site = article.querySelector('[data-field="site"]').value.trim()
-      const username = article.querySelector('[data-field="username"]').value.trim()
-      const password = article.querySelector('[data-field="password"]').value
-      const notes = article.querySelector('[data-field="notes"]').value.trim()
-
-      if (!site) {
-        showToast('A site name is needed 😿', 'warn')
-        return
-      }
-
-      const credentialData = { site, username, password, notes }
-      saveCredentialFromFocus(cred, credentialData)
-    }
-  }
-
-  async function saveCredentialFromFocus(cred, data) {
-    try {
-      const res = await fetch(`/api/credentials/${cred.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      })
-      if (!res.ok) throw new Error('Cloud update failed')
-      const updated = await res.json()
-      credentials = credentials.map(c => c.id === cred.id ? normalizeCredential({ ...c, ...updated }) : c)
-      showToast('Credential updated! 🔏')
-    } catch (err) {
-      console.error(err)
-      credentials = credentials.map(c => c.id === cred.id ? normalizeCredential({ ...c, ...data }) : c)
-      showToast('Updated locally ⚠️', 'warn')
-    }
-    localStorage.setItem('jot_credentials', JSON.stringify(credentials))
-    render()
-    // Keep the focus editor open, refreshed with the saved values
-    applyFocusedNoteState()
+    populateCredentialForm(cred)
   }
 
   async function copyToClipboard(text, label) {
@@ -956,11 +885,6 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error(err)
       showToast('Copy failed ⚠️', 'warn')
     }
-  }
-
-  function openFocusedCredential(credId) {
-    focusedCredentialId = focusedCredentialId === credId ? null : credId
-    applyFocusedNoteState()
   }
 
   // CREATE OR UPDATE NOTE FORM HANDLER
@@ -1106,7 +1030,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Reset buttons to Create state
     editorTitleHeading.textContent = 'Create a New Jot'
-    btnClearForm.style.display = 'none'
     btnSaveNote.querySelector('.btn-text').textContent = 'Save Note'
   }
 
@@ -1332,25 +1255,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function closeFocusedNote() {
     focusedNoteId = null
-    focusedCredentialId = null
     applyFocusedNoteState()
   }
 
   function applyFocusedNoteState() {
     const focusedNote = notes.find(note => note.id === focusedNoteId)
-    const focusedCredential = credentials.find(cred => cred.id === focusedCredentialId)
-    const hasFocused = !!focusedNote || !!focusedCredential
+    const isOpen = Boolean(focusedNote)
 
-    noteFocusBackdrop.classList.toggle('active', hasFocused)
-    noteFocusPanel.classList.toggle('active', hasFocused)
-    noteFocusPanel.setAttribute('aria-hidden', hasFocused ? 'false' : 'true')
-    document.body.classList.toggle('note-focus-open', hasFocused)
+    noteFocusBackdrop.classList.toggle('active', isOpen)
+    noteFocusPanel.classList.toggle('active', isOpen)
+    noteFocusPanel.setAttribute('aria-hidden', isOpen ? 'false' : 'true')
+    document.body.classList.toggle('note-focus-open', isOpen)
 
-    if (focusedNote) noteFocusContent.innerHTML = renderFocusedNotePanelHTML(focusedNote)
-    else if (focusedCredential) noteFocusContent.innerHTML = renderFocusedCredentialPanelHTML(focusedCredential)
-    else noteFocusContent.innerHTML = ''
-
-    if (focusedNote) noteFocusContent.querySelector('.note-focus-title-input')?.focus()
+    if (focusedNote) {
+      noteFocusContent.innerHTML = renderFocusedNotePanelHTML(focusedNote)
+      noteFocusContent.querySelector('.note-focus-title-input')?.focus()
+    } else {
+      noteFocusContent.innerHTML = ''
+    }
   }
 
   // Inline editing of the focused note + save / close actions
@@ -1496,62 +1418,6 @@ document.addEventListener('DOMContentLoaded', () => {
           </span>
         </td>
       </tr>
-    `
-  }
-
-  function renderFocusedCredentialPanelHTML(cred) {
-    const escSite = escapeHTML(cred.site)
-    const escUsername = escapeHTML(cred.username)
-    const escPassword = escapeHTML(cred.password)
-    const escNotes = escapeHTML(cred.notes || '')
-
-    return `
-      <article class="note-focus-article credential-focus-article" data-id="${cred.id}">
-        <div class="note-focus-meta-row">
-          <span class="note-type-badge">Credential</span>
-          <span class="note-focus-meta">${escapeHTML(formatDate(cred.createdAt))}</span>
-        </div>
-
-        <label class="note-focus-field">
-          <span class="note-focus-field-label">Site</span>
-          <input type="text" class="note-focus-body-input note-focus-field-input" data-field="site"
-            value="${escSite}" placeholder="Site / app name" maxlength="120"
-            autocomplete="off" aria-label="Site">
-        </label>
-
-        <label class="note-focus-field">
-          <span class="note-focus-field-label">Username</span>
-          <input type="text" class="note-focus-body-input note-focus-field-input" data-field="username"
-            value="${escUsername}" placeholder="Username / email" maxlength="120"
-            autocomplete="off" aria-label="Username">
-        </label>
-
-        <label class="note-focus-field">
-          <span class="note-focus-field-label">Password</span>
-          <div class="credential-password-wrap">
-            <input type="password" class="note-focus-body-input note-focus-field-input focus-password-input"
-              data-field="password" value="${escPassword}" placeholder="••••••••••"
-              autocomplete="new-password" aria-label="Password">
-            <button type="button" class="btn-icon focus-password-toggle" title="Show password">
-              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
-                stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            </button>
-          </div>
-        </label>
-
-        <label class="note-focus-field">
-          <span class="note-focus-field-label">Notes</span>
-          <textarea class="note-focus-body-input" data-field="notes" rows="3" placeholder="Notes (optional)"
-            aria-label="Notes">${escNotes}</textarea>
-        </label>
-
-        <div class="note-focus-actions">
-          <button type="button" class="btn btn-secondary" id="cred-focus-action-close">Close</button>
-          <button type="button" class="btn btn-primary" id="cred-focus-action-save">
-            <span class="btn-sparkle">💾</span> Save Changes
-          </button>
-        </div>
-      </article>
     `
   }
 

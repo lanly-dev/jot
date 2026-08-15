@@ -868,68 +868,6 @@ body.note-focus-open {
   padding-top: 0.2rem;
 }
 
-/* Credential / legacy heading reuse inside focus panel */
-.note-focus-content .note-header {
-  margin-bottom: 0.3rem;
-}
-
-.note-focus-content .note-body {
-  font-size: 1rem;
-  line-height: 1.7;
-  white-space: pre-wrap;
-}
-
-/* Editable Credential focus panel */
-.credential-focus-article {
-  gap: 1rem;
-}
-
-.note-focus-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.note-focus-field-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.note-focus-field-input {
-  min-height: 0;
-  padding: 0.75rem 0.9rem;
-  font-size: 0.95rem;
-  background: #ffffff;
-}
-
-.note-focus-field textarea.note-focus-body-input {
-  min-height: 92px;
-}
-
-.credential-password-wrap {
-  position: relative;
-}
-
-.credential-password-wrap .note-focus-field-input {
-  padding-right: 3rem;
-}
-
-.focus-password-toggle {
-  position: absolute;
-  right: 0.45rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 34px;
-  height: 34px;
-}
-
-.focus-password-toggle.revealed {
-  color: var(--color-primary);
-}
-
 /* ==========================================================================
    CREDENTIAL CREATOR MODAL
    ========================================================================== */
@@ -1523,7 +1461,8 @@ body.note-focus-open {
   transition: max-width 0.3s ease;
 }
 
-/* Base style for the cards */
+/* Base style for note & vault creator cards */
+.note-creator,
 #editor-card {
   background-color: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
@@ -1535,30 +1474,32 @@ body.note-focus-open {
   position: relative;
   width: 100%;
   margin-bottom: 1.5rem;
+  cursor: pointer;
 }
 
+.note-creator:hover,
 #editor-card:hover {
   border-color: #ffd1dc;
   box-shadow: var(--card-shadow-hover);
 }
 
 /* When expanded and active */
+.note-creator.active,
 #editor-card.active {
   background-color: #ffffff;
   border-radius: 28px;
   padding: 1.75rem;
   box-shadow: 0 15px 40px rgba(45, 43, 42, 0.08);
+  cursor: default;
 }
 
 /* Collapsed state styling */
 .creator-collapsed {
   display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
+  align-items: center;
   width: 100%;
 }
 
-/* Creator trigger row styling */
 .creator-trigger-row {
   display: flex;
   align-items: center;
@@ -1960,7 +1901,7 @@ body.note-focus-open {
   color: var(--text-main);
 }
 
-.vault-locked-state > p {
+.vault-locked-state>p {
   font-size: 0.95rem;
   color: var(--text-muted);
   max-width: 360px;

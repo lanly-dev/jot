@@ -1002,63 +1002,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.scrollTo({ top: notesGrid.offsetTop - 100, behavior: 'smooth' })
   }
 
-  // POPULATE FORM FOR EDITING
-  function populateFormForEditing(note) {
-    noteIdInput.value = note.id
-    noteTitleInput.value = note.title
-    noteContentInput.value = note.content
-    noteTypeSelect.value = note.type || 'standard'
-    updateTypePopoverUI(note.type || 'standard')
-    noteReminderAtInput.value = note.reminderAt ? note.reminderAt.slice(0, 16) : ''
 
-    const sheetData = Array.isArray(note.spreadsheetData) && note.spreadsheetData.length > 0
-      ? note.spreadsheetData
-      : [['', '', ''], ['', '', ''], ['', '', '']]
-    const rows = Math.min(Math.max(sheetData.length, 1), 12)
-    const cols = Math.min(Math.max((sheetData[0] || []).length, 1), 8)
-    sheetRowsInput.value = rows
-    sheetColsInput.value = cols
-    initSpreadsheetDraft(rows, cols)
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        spreadsheetDraft[r][c] = (sheetData[r] && sheetData[r][c]) ? String(sheetData[r][c]) : ''
-      }
-    }
-    updateTypeSpecificFields()
-    renderSpreadsheetGrid()
-
-    // Select color radio in form
-    const radioToSelect = document.querySelector(`input[name="note-color"][value="${note.color}"]`)
-    if (radioToSelect) {
-      radioToSelect.checked = true
-      document.querySelectorAll('#color-options .color-option-label').forEach(label => {
-        label.classList.remove('current')
-      })
-      const parentLabel = radioToSelect.closest('.color-option-label')
-      if (parentLabel) {
-        parentLabel.classList.add('current')
-        editorCard.style.borderColor = note.color
-        if (colorSwatchDisplay) colorSwatchDisplay.style.backgroundColor = note.color
-      }
-    }
-
-    // Pin button state
-    isFormPinned = note.pinned
-    editorPinBtn.classList.toggle('pinned', isFormPinned)
-    editorPinBtn.title = isFormPinned ? 'Unpin Note' : 'Pin Note to Top'
-
-    // Heading & buttons update
-    editorTitleHeading.textContent = 'Edit Your Jot'
-    btnClearForm.style.display = 'inline-flex'
-    btnSaveNote.querySelector('.btn-text').textContent = 'Save Changes'
-
-    // Expand creator card so input elements are visible/focusable
-    expandCreator()
-
-    // Smooth scroll to editor form so user can see it instantly
-    window.scrollTo({ top: editorCard.offsetTop - 50, behavior: 'smooth' })
-    noteTitleInput.focus()
-  }
 
   // Note Creator UI Behaviors
   function expandCreator() {
@@ -1179,14 +1123,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return
     }
 
-    // 3. EDIT ACTION
-    if (target.closest('.action-edit')) {
-      closeFocusedNote()
-      populateFormForEditing(note)
-      return
-    }
-
-    // 4. DELETE ACTION
+    // 3. DELETE ACTION
     if (target.closest('.action-delete')) {
       card.classList.add('card-poof')
 
@@ -1752,7 +1689,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Pin action button inside card footer
     const pinActionTitle = note.pinned ? 'Unpin Note' : 'Pin Note'
-    const pinActionSVG = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="${note.pinned ? 'fill:var(--color-primary); color:var(--color-primary);' : ''}"><line x1="18" y1="8" x2="22" y2="12"></line><line x1="12" y1="2" x2="12" y2="6"></line><path d="M12 6H8a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-4"></path><line x1="12" y1="17" x2="12" y2="22"></line></svg>`
+    const pinActionSVG = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="${note.pinned ? 'var(--color-primary)' : 'none'}" stroke-linecap="round" stroke-linejoin="round" class="svg-pin ${note.pinned ? 'is-pinned' : ''}"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24Z"></path></svg>`
 
     // Title and Content escaping to avoid XSS injections while maintaining layout spacing
     const escapedTitle = escapeHTML(note.title)
@@ -1790,11 +1727,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <!-- Pin Note Action -->
           <button type="button" class="btn-icon action-pin" title="${pinActionTitle}">
             ${pinActionSVG}
-          </button>
-
-          <!-- Edit Note Action -->
-          <button type="button" class="btn-icon action-edit" title="Edit Note Details">
-            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"></path></svg>
           </button>
 
           <!-- Archive Note Action -->

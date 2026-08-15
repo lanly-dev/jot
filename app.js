@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let spreadsheetDraft = []
   let vaultUnlocked = false
   let vaultSetupMode = false
+  let currentVaultFilter = 'all' // 'all', 'login', 'payment', 'secure-note'
   const reminderTimers = new Map()
   const VAULT_HASH_KEY = 'jot_vault_master_hash'
 
@@ -159,6 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchCredentials()
     updateLayoutToggleButton()
     updateTypeSpecificFields()
+    updateCredentialTypeSpecificFields('login')
   }
 
   async function fetchNotes() {
@@ -319,6 +321,17 @@ document.addEventListener('DOMContentLoaded', () => {
       render()
     })
 
+    // Vault category filter toggles
+    document.querySelectorAll('input[name="vault-filter"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        currentVaultFilter = e.target.value
+        document.querySelectorAll('input[name="vault-filter"]').forEach(r => {
+          r.closest('.status-option')?.classList.toggle('active', r.checked)
+        })
+        render()
+      })
+    })
+
     // Thumbnail/List layout toggle
     btnLayoutToggle.addEventListener('click', () => {
       currentLayoutView = currentLayoutView === 'thumbnail' ? 'list' : 'thumbnail'
@@ -449,6 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const type = item.getAttribute('data-type')
         if (type && credentialTypeSelect) {
           credentialTypeSelect.value = type
+          updateCredentialTypeSpecificFields(type)
           updateCredTypePopoverUI(type)
           closeAllPopovers()
         }
@@ -527,6 +541,33 @@ document.addEventListener('DOMContentLoaded', () => {
       credTypePopover.querySelectorAll('.popover-item').forEach(item => {
         item.classList.toggle('active', item.getAttribute('data-type') === type)
       })
+    }
+  }
+
+  function updateCredentialTypeSpecificFields(type) {
+    if (!type) type = credentialTypeSelect ? credentialTypeSelect.value : 'login'
+
+    if (type === 'secure-note') {
+      credentialUsernameInput.required = false
+      credentialPasswordInput.required = false
+      credentialUsernameInput.placeholder = 'Identifier / Tag (optional)'
+      credentialPasswordInput.placeholder = 'Secret key / Password (optional)'
+      credentialNotesInput.placeholder = 'Write your confidential secret note here...'
+      credentialNotesInput.required = true
+    } else if (type === 'payment') {
+      credentialUsernameInput.required = true
+      credentialPasswordInput.required = true
+      credentialUsernameInput.placeholder = 'Cardholder name'
+      credentialPasswordInput.placeholder = 'Card number / Expiry / CVV'
+      credentialNotesInput.placeholder = 'Billing address or notes (optional)'
+      credentialNotesInput.required = false
+    } else {
+      credentialUsernameInput.required = true
+      credentialPasswordInput.required = true
+      credentialUsernameInput.placeholder = 'Username or email'
+      credentialPasswordInput.placeholder = 'Password'
+      credentialNotesInput.placeholder = 'Notes (optional)'
+      credentialNotesInput.required = false
     }
   }
 
@@ -676,6 +717,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (credentialTypeSelect) {
       credentialTypeSelect.value = 'login'
       updateCredTypePopoverUI('login')
+      updateCredentialTypeSpecificFields('login')
     }
     const pinkRadio = document.querySelector('input[name="credential-color"][value="#ffd1d9"]')
     if (pinkRadio) {
@@ -755,6 +797,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (credentialTypeSelect) {
       credentialTypeSelect.value = cred.type || 'login'
       updateCredTypePopoverUI(cred.type || 'login')
+      updateCredentialTypeSpecificFields(cred.type || 'login')
     }
 
     const credColor = cred.color || '#ffd1d9'
@@ -1192,17 +1235,35 @@ document.addEventListener('DOMContentLoaded', () => {
     vaultLockedState.classList.add('hidden')
     vaultContent.classList.remove('hidden')
 
-    // 1. Update vault stats
+    // 1. Filter credentials based on currentVaultFilter
+    let filteredCredentials = credentials
+    if (currentVaultFilter !== 'all') {
+      filteredCredentials = credentials.filter(c => (c.type || 'login') === currentVaultFilter)
+    }
+
+    // 2. Update vault stats
     statTotalCredentials.textContent = credentials.length
 
-    // 2. Handle empty state display
-    if (credentials.length === 0) {
+    // 3. Handle empty state display
+    if (filteredCredentials.length === 0) {
       credentialsTableWrap.style.display = 'none'
       vaultEmptyState.style.display = 'flex'
+      const emptyTitle = vaultEmptyState.querySelector('h3')
+      const emptyPara = vaultEmptyState.querySelector('p')
+      if (emptyTitle && emptyPara) {
+        if (currentVaultFilter !== 'all') {
+          const typeNames = { login: 'logins', payment: 'payments', 'secure-note': 'secure notes' }
+          emptyTitle.textContent = `No ${typeNames[currentVaultFilter] || 'items'} found`
+          emptyPara.textContent = 'Add a new credential or switch filter back to "All" to view your saved credentials.'
+        } else {
+          emptyTitle.textContent = 'Your vault is empty'
+          emptyPara.textContent = 'Add your first password, API key, or login so it is always one cute tap away!'
+        }
+      }
     } else {
       credentialsTableWrap.style.display = 'block'
       vaultEmptyState.style.display = 'none'
-      credentialsGrid.innerHTML = credentials.map(cred => renderCredentialRowHTML(cred)).join('')
+      credentialsGrid.innerHTML = filteredCredentials.map(cred => renderCredentialRowHTML(cred)).join('')
     }
 
     applyFocusedNoteState()

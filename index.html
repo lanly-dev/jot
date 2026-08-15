@@ -444,12 +444,41 @@
           </div>
         </div>
 
-        <div class="display-controls" aria-label="Vault controls">
-          <div class="display-control-group status-filter-group">
-            <span class="vault-stats">🔑 <span id="stat-total-credentials">0</span> credentials saved</span>
+        <div class="display-controls vault-display-controls" aria-label="Vault controls">
+          <div class="display-control-group status-filter-group" aria-label="Vault type filter" role="radiogroup">
+            <label class="status-option active" for="vault-filter-all">
+              <input type="radio" name="vault-filter" id="vault-filter-all" value="all" checked aria-label="All items">
+              <span class="status-icon">✨</span>
+              <span class="status-text">All</span>
+            </label>
+            <label class="status-option" for="vault-filter-login">
+              <input type="radio" name="vault-filter" id="vault-filter-login" value="login" aria-label="Logins">
+              <span class="status-icon">🔑</span>
+              <span class="status-text">Logins</span>
+            </label>
+            <label class="status-option" for="vault-filter-payment">
+              <input type="radio" name="vault-filter" id="vault-filter-payment" value="payment" aria-label="Payments">
+              <span class="status-icon">💳</span>
+              <span class="status-text">Payments</span>
+            </label>
+            <label class="status-option" for="vault-filter-note">
+              <input type="radio" name="vault-filter" id="vault-filter-note" value="secure-note" aria-label="Secure Notes">
+              <span class="status-icon">🔒</span>
+              <span class="status-text">Notes</span>
+            </label>
           </div>
-          <div class="display-control-group">
-            <button type="button" class="btn-toggle" id="btn-lock-vault" title="Lock the vault">🔒 Lock</button>
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <div class="header-stats-collapsed">
+              <span title="Total Saved Credentials">🔑 <span id="stat-total-credentials">0</span></span>
+            </div>
+            <button type="button" class="btn-lock-vault-action" id="btn-lock-vault" title="Lock the Vault">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <span>Lock</span>
+            </button>
           </div>
         </div>
 

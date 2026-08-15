@@ -342,25 +342,10 @@ h4 {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.02);
 }
 
-.editor-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.editor-header h2 {
-  font-size: 1.45rem;
-  color: var(--text-main);
-  font-weight: 700;
-}
-
 /* Pin Toggle Button in Form */
 .pin-toggle-btn {
   width: 38px;
   height: 38px;
-  border: 1.5px solid var(--border-color);
-  border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1203,6 +1188,7 @@ body.note-focus-open {
 .notes-grid.list-view .note-card {
   flex-direction: row;
   align-items: center;
+  gap: .5rem
 }
 
 .notes-grid.list-view .note-card::before {

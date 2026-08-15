@@ -61,11 +61,6 @@
             <!-- EXPANDED STATE (Form) -->
             <div class="creator-expanded" id="creator-expanded" style="display: none;">
               <div class="tape-decorator" style="display: none;"></div>
-              <div class="editor-header"
-                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                <h2 id="editor-title-heading" style="font-size: 1.1rem; font-weight: 700; color: var(--text-dark);">
-                  Create a New Jot</h2>
-              </div>
               <form id="note-form" class="note-form">
                 <!-- Hidden input for editing mode -->
                 <input type="hidden" id="note-id" value="">
@@ -207,8 +202,10 @@
                       <div class="popover-menu tags-popover-menu" id="tags-popover">
                         <div class="popover-title">Jot Tags</div>
                         <div class="tags-input-row">
-                          <input type="text" id="note-tag-input" placeholder="Type tag and press Enter..." maxlength="25" autocomplete="off">
-                          <button type="button" class="btn btn-secondary btn-add-tag-inline" id="btn-add-tag-inline" title="Add tag">+</button>
+                          <input type="text" id="note-tag-input" placeholder="Type tag and press Enter..."
+                            maxlength="25" autocomplete="off">
+                          <button type="button" class="btn btn-secondary btn-add-tag-inline" id="btn-add-tag-inline"
+                            title="Add tag">+</button>
                         </div>
                         <div class="tags-chips-list" id="creator-tags-chips"></div>
                         <div class="tags-suggestions-box" id="tags-suggestions-box">
@@ -268,7 +265,8 @@
           <div class="active-tag-filter-wrap" id="active-tag-filter-wrap" style="display: none;">
             <span class="active-tag-badge">
               <span class="active-tag-text" id="active-tag-text">#tag</span>
-              <button type="button" class="btn-clear-tag-filter" id="btn-clear-tag-filter" title="Clear tag filter">✕</button>
+              <button type="button" class="btn-clear-tag-filter" id="btn-clear-tag-filter"
+                title="Clear tag filter">✕</button>
             </span>
           </div>
           <div style="display: flex; gap: 1rem;">

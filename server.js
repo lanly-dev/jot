@@ -6,6 +6,8 @@ const express = require('express')
 const cors = require('cors')
 const fs = require('fs')
 const path = require('path')
+// const nodeCrypto = require('crypto')
+// const crytpo = require('crypto')
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -42,6 +44,69 @@ app.use(express.static(path.join(__dirname)))
 const DATA_DIR = path.join(__dirname, 'data')
 const DATA_FILE = path.join(DATA_DIR, 'notes.json')
 const CREDENTIALS_FILE = path.join(DATA_DIR, 'credentials.json')
+
+// ---------------------------------------------------------------------------
+// Credential encryption at rest
+// Sensitive fields (password, notes) are encrypted with AES-256-GCM before they
+// are written to disk and decrypted transparently when read, so the JSON file
+// never contains plaintext secrets. Override the key via the JOT_SECRET_KEY
+// environment variable (base64, 32 bytes); otherwise a random key is generated
+// on first run and stored in a git-ignored file.
+// ---------------------------------------------------------------------------
+const SECRET_FILE = path.join(DATA_DIR, '.jot-secret.key')
+const ENC_PREFIX = 'ENC:'
+const SENSITIVE_FIELDS = ['password', 'notes']
+let credentialKey = null
+
+function loadEncryptionKey() {
+  if (credentialKey) return credentialKey
+  if (process.env.JOT_SECRET_KEY) {
+    credentialKey = new Uint8Array(Buffer.from(process.env.JOT_SECRET_KEY, 'base64'))
+  } else if (fs.existsSync(SECRET_FILE)) {
+    credentialKey = new Uint8Array(Buffer.from(fs.readFileSync(SECRET_FILE, 'utf-8').trim(), 'base64'))
+  } else {
+    credentialKey = new Uint8Array(32)
+    crypto.randomFillSync(credentialKey)
+    fs.mkdirSync(DATA_DIR, { recursive: true })
+    fs.writeFileSync(SECRET_FILE, Buffer.from(credentialKey).toString('base64'), 'utf-8')
+    console.log('Generated credential encryption key 🔑')
+  }
+  return credentialKey
+}
+
+async function importAESKey() {
+  return crypto.subtle.importKey('raw', loadEncryptionKey(), 'AES-GCM', false, ['encrypt', 'decrypt'])
+}
+
+async function encryptCredentialValue(value) {
+  if (value === undefined || value === null || value === '') return value
+  const str = String(value)
+  if (str.startsWith(ENC_PREFIX)) return str
+  try {
+    const key = await importAESKey()
+    const iv = crypto.getRandomValues(new Uint8Array(12))
+    const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, Buffer.from(str, 'utf-8'))
+    return ENC_PREFIX + Buffer.concat([Buffer.from(iv), Buffer.from(encrypted)]).toString('base64')
+  } catch (err) {
+    console.error('Credential encryption failed:', err)
+    return str
+  }
+}
+
+async function decryptCredentialValue(value) {
+  if (typeof value !== 'string' || !value.startsWith(ENC_PREFIX)) return value
+  try {
+    const raw = Buffer.from(value.slice(ENC_PREFIX.length), 'base64')
+    const iv = raw.subarray(0, 12)
+    const ciphertext = raw.subarray(12)
+    const key = await importAESKey()
+    const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext)
+    return new TextDecoder().decode(decrypted)
+  } catch (err) {
+    console.error('Credential decryption failed:', err)
+    return value
+  }
+}
 
 function normalizeNoteType(type) {
   const allowedTypes = ['standard', 'dev', 'reminder', 'spreadsheet']
@@ -157,26 +222,55 @@ function initializeCredentialsDatabase() {
   }
 }
 
-// Helper to read credentials
-function readCredentials() {
+// Helper to read & decrypt credentials
+async function readCredentials() {
   try {
     initializeCredentialsDatabase()
     const data = fs.readFileSync(CREDENTIALS_FILE, 'utf-8')
     const parsed = JSON.parse(data)
-    return Array.isArray(parsed) ? parsed : []
+    const list = Array.isArray(parsed) ? parsed : []
+    return await Promise.all(list.map(async cred => {
+      const out = { ...cred }
+      for (const field of SENSITIVE_FIELDS) out[field] = await decryptCredentialValue(out[field])
+      return out
+    }))
   } catch (err) {
     console.error('Error reading credentials database:', err)
     return []
   }
 }
 
-// Helper to write credentials
-function writeCredentials(credentials) {
+// Helper to encrypt & write credentials
+async function writeCredentials(credentials) {
   try {
     initializeCredentialsDatabase()
-    fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(credentials, null, 2), 'utf-8')
+    const encrypted = await Promise.all(credentials.map(async cred => {
+      const out = { ...cred }
+      for (const field of SENSITIVE_FIELDS) out[field] = await encryptCredentialValue(out[field])
+      return out
+    }))
+    fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(encrypted, null, 2), 'utf-8')
   } catch (err) {
     console.error('Error writing to credentials database:', err)
+  }
+}
+
+// Encrypt any credentials that were saved as plaintext before encryption existed
+async function secureExistingCredentials() {
+  try {
+    initializeCredentialsDatabase()
+    if (!fs.existsSync(CREDENTIALS_FILE)) return
+    const parsed = JSON.parse(fs.readFileSync(CREDENTIALS_FILE, 'utf-8'))
+    if (!Array.isArray(parsed)) return
+    const needsEncryption = parsed.some(cred =>
+      SENSITIVE_FIELDS.some(field => typeof cred[field] === 'string' && !cred[field].startsWith(ENC_PREFIX))
+    )
+    if (needsEncryption) {
+      await writeCredentials(await readCredentials())
+      console.log('Existing credentials encrypted at rest 🔒')
+    }
+  } catch (err) {
+    console.error('Could not secure existing credentials:', err)
   }
 }
 
@@ -261,14 +355,14 @@ app.delete('/api/notes/:id', (req, res) => {
   res.json({ success: true, message: 'Note deleted permanently 🌸' })
 })
 
-// GET: Retrieve all credentials
-app.get('/api/credentials', (req, res) => {
-  res.json(readCredentials())
+// GET: Retrieve all credentials (sensitive fields decrypted)
+app.get('/api/credentials', async (req, res) => {
+  res.json(await readCredentials())
 })
 
 // POST: Add a new credential
-app.post('/api/credentials', (req, res) => {
-  const credentials = readCredentials()
+app.post('/api/credentials', async (req, res) => {
+  const credentials = await readCredentials()
   const newCredential = normalizeCredential({
     id: req.body.id || 'cred-' + Date.now(),
     site: req.body.site,
@@ -281,15 +375,15 @@ app.post('/api/credentials', (req, res) => {
   })
 
   credentials.unshift(newCredential)
-  writeCredentials(credentials)
+  await writeCredentials(credentials)
   console.log(`Credential created: "${newCredential.site}" (${newCredential.id}) 🔐`)
   res.status(201).json(newCredential)
 })
 
 // PUT: Update an existing credential
-app.put('/api/credentials/:id', (req, res) => {
+app.put('/api/credentials/:id', async (req, res) => {
   const { id } = req.params
-  const credentials = readCredentials()
+  const credentials = await readCredentials()
   const credIndex = credentials.findIndex(c => c.id === id)
 
   if (credIndex === -1)
@@ -306,28 +400,30 @@ app.put('/api/credentials/:id', (req, res) => {
   })
 
   credentials[credIndex] = updatedCredential
-  writeCredentials(credentials)
+  await writeCredentials(credentials)
   console.log(`Credential updated: "${updatedCredential.site}" (${id}) 🔏`)
   res.json(updatedCredential)
 })
 
 // DELETE: Remove a credential permanently
-app.delete('/api/credentials/:id', (req, res) => {
+app.delete('/api/credentials/:id', async (req, res) => {
   const { id } = req.params
-  let credentials = readCredentials()
+  const credentials = await readCredentials()
   const credExists = credentials.some(c => c.id === id)
 
   if (!credExists)
   {return res.status(404).json({ error: 'Credential not found 😿' })}
 
-  credentials = credentials.filter(c => c.id !== id)
-  writeCredentials(credentials)
+  const remaining = credentials.filter(c => c.id !== id)
+  await writeCredentials(remaining)
   console.log(`Credential deleted permanently: (${id}) 🗑️`)
   res.json({ success: true, message: 'Credential deleted permanently 🔐' })
 })
 
 // Start the Express server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  // Encrypt any pre-existing plaintext credentials on boot
+  await secureExistingCredentials()
   console.log(`==================================================`)
   console.log(`  Jot backend server running at:                  `)
   console.log(`  👉 http://localhost:${PORT}                    `)

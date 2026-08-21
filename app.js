@@ -611,15 +611,20 @@ document.addEventListener('DOMContentLoaded', () => {
     })
   }
 
-  function updateTypePopoverUI(type) {
-    const iconMap = {
-      standard: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"></path><path d="M14 2v5a1 1 0 0 0 1 1h5"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>',
-      dev: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 18 6-6-6-6"></path><path d="m8 6-6 6 6 6"></path></svg>',
-      reminder: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>',
-      spreadsheet: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"></path><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M3 9h18"></path><path d="M3 15h18"></path></svg>'
+  // Shared SVG icon for each note type (Lucide-style, matches thumbnail/list toggle)
+  function getTypeIconSVG(type) {
+    const icons = {
+      standard: '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"></path><path d="M14 2v5a1 1 0 0 0 1 1h5"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>',
+      dev: '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 18 6-6-6-6"></path><path d="m8 6-6 6 6 6"></path></svg>',
+      reminder: '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>',
+      spreadsheet: '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"></path><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M3 9h18"></path><path d="M3 15h18"></path></svg>'
     }
+    return icons[type] || icons.standard
+  }
+
+  function updateTypePopoverUI(type) {
     const labelMap = { standard: 'Standard', dev: 'Dev', reminder: 'Reminder', spreadsheet: 'Sheet' }
-    if (typeIconDisplay) typeIconDisplay.innerHTML = iconMap[type] || iconMap.standard
+    if (typeIconDisplay) typeIconDisplay.innerHTML = getTypeIconSVG(type)
     if (typeLabelDisplay) typeLabelDisplay.textContent = labelMap[type] || 'Standard'
     if (typePopover) {
       typePopover.querySelectorAll('.popover-item').forEach(item => {
@@ -1848,7 +1853,7 @@ document.addEventListener('DOMContentLoaded', () => {
       reminder: 'Reminder',
       spreadsheet: 'Sheet'
     }
-    const typeBadgeMarkup = `<span class="note-type-badge type-${noteType}">${typeLabelMap[noteType] || 'Standard'}</span>`
+    const typeIconMarkup = `<button type="button" class="btn-icon action-type type-${noteType}" title="${typeLabelMap[noteType] || 'Standard'} Note">${getTypeIconSVG(noteType)}</button>`
 
     // Pin badge conditional class and marker
     const pinBadgeMarkup = note.pinned
@@ -1893,7 +1898,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ${pinBadgeMarkup}
 
         <div class="note-header">
-          ${typeBadgeMarkup}
           <h3 class="note-title">${escapedTitle}</h3>
         </div>
 
@@ -1905,6 +1909,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         <div class="note-actions">
           <span style="margin-right: auto; align-self: center; font-size: 0.72rem; font-weight: 700; color: rgba(45, 43, 42, 0.45);">${dateText}</span>
+
+          <!-- Note Type Icon -->
+          ${typeIconMarkup}
 
           <!-- Pin Note Action -->
           <button type="button" class="btn-icon action-pin" title="${pinActionTitle}">

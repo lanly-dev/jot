@@ -1228,6 +1228,30 @@ body.note-focus-open {
   border-color: rgba(46, 196, 182, 0.2);
 }
 
+/* Note type indicator icon in the action bar (informational, not clickable) */
+.note-actions .btn-icon.action-type {
+  cursor: default;
+  color: var(--text-muted);
+}
+
+.note-actions .btn-icon.action-type:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
+  transform: none;
+}
+
+.note-actions .btn-icon.action-type.type-dev {
+  color: #6d4aa2;
+}
+
+.note-actions .btn-icon.action-type.type-reminder {
+  color: #1b8f7f;
+}
+
+.note-actions .btn-icon.action-type.type-spreadsheet {
+  color: #8b6a1d;
+}
+
 /* List-view mode transforms sticky cards into compact rows */
 .notes-grid.list-view .note-card {
   flex-direction: row;

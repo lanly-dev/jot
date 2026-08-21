@@ -472,6 +472,52 @@ h4 {
   flex-grow: 1;
 }
 
+/* Save / sync status indicator */
+.sync-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  align-self: center;
+  padding: 0.35rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1.5px solid var(--border-color);
+  transition: all 0.25s ease;
+}
+
+.sync-status .sync-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.sync-status[data-state="saving"] {
+  color: #8a5bb5;
+  border-color: rgba(138, 91, 181, 0.35);
+}
+
+.sync-status[data-state="saving"] .sync-icon svg {
+  animation: sync-spin 1s linear infinite;
+}
+
+.sync-status[data-state="saved"] {
+  color: #1b8f7f;
+  border-color: rgba(27, 143, 127, 0.35);
+}
+
+.sync-status[data-state="error"] {
+  color: #ff4d6d;
+  border-color: rgba(255, 77, 109, 0.4);
+  background: rgba(255, 77, 109, 0.06);
+}
+
+@keyframes sync-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ==========================================================================
    RIGHT PANEL - FILTER BAR & CONTROLS
    ========================================================================== */
@@ -1097,8 +1143,10 @@ body.note-focus-open {
 
 .note-type-badge {
   display: inline-block;
-  font-size: 0.5rem;
-  font-weight: 300;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.35px;
   margin-bottom: 0.25rem;
 }
 

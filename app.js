@@ -179,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function fetchNotes() {
+    setSyncStatus('saving', 'Connecting...')
     try {
       const res = await fetch('/api/notes')
       if (!res.ok) throw new Error('Failed to fetch notes')
@@ -186,29 +187,15 @@ document.addEventListener('DOMContentLoaded', () => {
       notes = Array.isArray(fetchedNotes)
         ? fetchedNotes.map(note => normalizeNote(note))
         : []
-      saveNotesToStorage() // update offline backup
+      setSyncStatus('saved', 'Connected · synced')
     } catch (err) {
       console.error('Error fetching notes from cloud:', err)
-      // Fallback to local storage
-      const savedNotes = localStorage.getItem('jot_notes')
-      if (savedNotes) {
-        const parsedNotes = JSON.parse(savedNotes)
-        notes = Array.isArray(parsedNotes)
-          ? parsedNotes.map(note => normalizeNote(note))
-          : []
-      } else {
-        notes = [...SAMPLE_NOTES].map(note => normalizeNote(note))
-        saveNotesToStorage()
-      }
-      showToast('Running in local offline mode ⚠️', 'warn')
+      notes = [...SAMPLE_NOTES].map(note => normalizeNote(note))
+      setSyncStatus('error', 'Server offline')
+      showToast('Cannot reach server — changes won\'t be saved ⚠️', 'warn')
     }
     renderCreatorTagsUI()
     render()
-  }
-
-  // STATE SAVING (Offline/Backup storage)
-  function saveNotesToStorage() {
-    localStorage.setItem('jot_notes', JSON.stringify(notes))
   }
 
   async function fetchCredentials() {
@@ -221,10 +208,8 @@ document.addEventListener('DOMContentLoaded', () => {
         : []
     } catch (err) {
       console.error('Error fetching credentials from cloud:', err)
-      const savedCredentials = localStorage.getItem('jot_credentials')
-      credentials = savedCredentials
-        ? JSON.parse(savedCredentials).map(cred => normalizeCredential(cred))
-        : []
+      credentials = []
+      setSyncStatus('error', 'Server offline')
     }
   }
 
@@ -261,6 +246,24 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.remove()
       }, 400)
     }, 3000)
+  }
+
+  // SAVE / SYNC STATUS INDICATOR
+  // Reflects whether the note was actually saved/synced with the server.
+  // States: 'saving' | 'saved' | 'error'
+  const syncIcons = {
+    saving: '<svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>',
+    saved: '<svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+    error: '<svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path><path d="m22 22-2-2"></path></svg>'
+  }
+  function setSyncStatus(state, message) {
+    const el = document.getElementById('sync-status')
+    if (!el) return
+    el.setAttribute('data-state', state)
+    const iconEl = el.querySelector('.sync-icon')
+    const textEl = el.querySelector('.sync-text')
+    if (iconEl) iconEl.innerHTML = syncIcons[state] || ''
+    if (textEl) textEl.textContent = message || ''
   }
 
   // SETUP EVENT LISTENERS
@@ -924,6 +927,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (id) {
+      setSyncStatus('saving', 'Saving...')
       try {
         const res = await fetch(`/api/credentials/${id}`, {
           method: 'PUT',
@@ -933,13 +937,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!res.ok) throw new Error('Cloud update failed')
         const updated = await res.json()
         credentials = credentials.map(c => c.id === id ? normalizeCredential({ ...c, ...updated }) : c)
+        setSyncStatus('saved', 'Changes synced')
         showToast('Credential updated! 🔏')
       } catch (err) {
         console.error(err)
-        credentials = credentials.map(c => c.id === id ? normalizeCredential({ ...c, ...credentialData }) : c)
-        showToast('Updated locally ⚠️', 'warn')
+        setSyncStatus('error', 'Not synced — offline')
+        showToast('Could not save — server offline ⚠️', 'warn')
       }
     } else {
+      setSyncStatus('saving', 'Saving...')
       try {
         const res = await fetch('/api/credentials', {
           method: 'POST',
@@ -949,15 +955,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!res.ok) throw new Error('Cloud save failed')
         const saved = await res.json()
         credentials.unshift(normalizeCredential(saved))
+        setSyncStatus('saved', 'Changes synced')
         showToast('Credential saved! 🔐')
       } catch (err) {
         console.error(err)
-        credentials.unshift(normalizeCredential({ ...credentialData, id: 'cred-' + Date.now() }))
-        showToast('Saved locally ⚠️', 'warn')
+        setSyncStatus('error', 'Not saved — offline')
+        showToast('Could not save — server offline ⚠️', 'warn')
       }
     }
 
-    localStorage.setItem('jot_credentials', JSON.stringify(credentials))
     closeCredentialModal()
     render()
   }
@@ -1021,17 +1027,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (target.closest('.action-delete')) {
       card.classList.add('card-poof')
       setTimeout(async () => {
+        const removedCred = credentials.find(c => c.id === credId)
         credentials = credentials.filter(c => c.id !== credId)
         if (credentialIdInput.value === credId) resetCredentialForm()
-        localStorage.setItem('jot_credentials', JSON.stringify(credentials))
         render()
         try {
           const res = await fetch(`/api/credentials/${credId}`, { method: 'DELETE' })
           if (!res.ok) throw new Error('Cloud delete failed')
+          setSyncStatus('saved', 'Changes synced')
           showToast('Credential deleted permanently! 🗑️')
         } catch (err) {
           console.error(err)
-          showToast('Deleted locally ⚠️', 'warn')
+          if (removedCred) credentials.push(removedCred)
+          render()
+          setSyncStatus('error', 'Delete failed — offline')
+          showToast('Could not delete — server offline ⚠️', 'warn')
         }
       }, 300)
       return
@@ -1089,6 +1099,7 @@ document.addEventListener('DOMContentLoaded', () => {
         spreadsheetData
       }
 
+      setSyncStatus('saving', 'Saving...')
       try {
         const res = await fetch(`/api/notes/${id}`, {
           method: 'PUT',
@@ -1098,11 +1109,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!res.ok) throw new Error('Cloud update failed')
         const updatedNote = await res.json()
         notes = notes.map(n => n.id === id ? normalizeNote(updatedNote, updatedFields) : n)
+        setSyncStatus('saved', 'Changes synced')
         showToast('Jot updated! ✏️')
       } catch (err) {
         console.error(err)
-        notes = notes.map(n => n.id === id ? normalizeNote({ ...n, ...updatedFields }) : n)
-        showToast('Updated locally ⚠️', 'warn')
+        setSyncStatus('error', 'Not synced — offline')
+        showToast('Could not save — server offline ⚠️', 'warn')
       }
     } else {
       // NEW NOTE CREATION
@@ -1119,6 +1131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         createdAt: new Date().toISOString()
       }
 
+      setSyncStatus('saving', 'Saving...')
       try {
         const res = await fetch('/api/notes', {
           method: 'POST',
@@ -1128,19 +1141,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!res.ok) throw new Error('Cloud save failed')
         const savedNote = await res.json()
         notes.unshift(normalizeNote(savedNote, newNote))
+        setSyncStatus('saved', 'Saved · synced')
         showToast('Jot saved successfully! ✨')
       } catch (err) {
         console.error(err)
-        const localNote = {
-          ...newNote,
-          id: 'note-' + Date.now()
-        }
-        notes.unshift(normalizeNote(localNote))
-        showToast('Saved locally ⚠️', 'warn')
+        setSyncStatus('error', 'Not saved — offline')
+        showToast('Could not save — server offline ⚠️', 'warn')
       }
     }
 
-    saveNotesToStorage()
     resetForm()
     render()
     scheduleReminderNotifications()
@@ -1213,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Helper to sync minor updates silently
-  async function updateNoteOnServerSilent(id, fields) {
+  async function updateNoteOnServerSilent(id, fields, onFail) {
     try {
       const res = await fetch(`/api/notes/${id}`, {
         method: 'PUT',
@@ -1223,10 +1232,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error('Cloud sync failed')
       const updatedNote = await res.json()
       notes = notes.map(n => n.id === id ? normalizeNote(updatedNote, fields) : n)
-      saveNotesToStorage()
+      setSyncStatus('saved', 'Changes synced')
     } catch (err) {
       console.error('Silent update sync failed:', err)
-      saveNotesToStorage()
+      setSyncStatus('error', 'Not synced — offline')
+      showToast('Could not sync change — server offline ⚠️', 'warn')
+      if (typeof onFail === 'function') onFail()
     }
   }
 
@@ -1253,22 +1264,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. PIN TOGGLE ACTION (Click on pin badge or header pin indicator)
     if (target.closest('.action-pin') || target.closest('.pin-badge')) {
-      const nextPinned = !note.pinned
+      const prevPinned = note.pinned
+      const nextPinned = !prevPinned
       note.pinned = nextPinned
       render()
-      updateNoteOnServerSilent(note.id, { pinned: nextPinned })
+      updateNoteOnServerSilent(note.id, { pinned: nextPinned }, () => { note.pinned = prevPinned; render() })
       return
     }
 
     // 2. ARCHIVE TOGGLE ACTION
     if (target.closest('.action-archive')) {
-      const nextArchived = !note.archived
-      const nextPinned = nextArchived ? false : note.pinned
+      const prevArchived = note.archived
+      const prevPinned = note.pinned
+      const nextArchived = !prevArchived
+      const nextPinned = nextArchived ? false : prevPinned
       note.archived = nextArchived
       if (nextArchived) note.pinned = false
 
       render()
-      updateNoteOnServerSilent(note.id, { archived: nextArchived, pinned: nextPinned })
+      updateNoteOnServerSilent(note.id, { archived: nextArchived, pinned: nextPinned }, () => {
+        note.archived = prevArchived
+        note.pinned = prevPinned
+        render()
+      })
       return
     }
 
@@ -1277,6 +1295,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.classList.add('card-poof')
 
       setTimeout(async () => {
+        const removedNote = notes.find(n => n.id === noteId)
         notes = notes.filter(n => n.id !== noteId)
         if (noteIdInput.value === noteId) resetForm()
         render()
@@ -1284,12 +1303,14 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
           const res = await fetch(`/api/notes/${noteId}`, { method: 'DELETE' })
           if (!res.ok) throw new Error('Cloud delete failed')
-          saveNotesToStorage()
+          setSyncStatus('saved', 'Changes synced')
           showToast('Jot deleted permanently! 🗑️')
         } catch (err) {
           console.error(err)
-          saveNotesToStorage()
-          showToast('Deleted locally ⚠️', 'warn')
+          if (removedNote) notes.unshift(removedNote)
+          render()
+          setSyncStatus('error', 'Delete failed — offline')
+          showToast('Could not delete — server offline ⚠️', 'warn')
         }
       }, 300)
       return
@@ -1550,6 +1571,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function saveNoteFromFocus(note, fields) {
+    setSyncStatus('saving', 'Saving...')
     try {
       const res = await fetch(`/api/notes/${note.id}`, {
         method: 'PUT',
@@ -1559,13 +1581,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error('Cloud update failed')
       const updatedNote = await res.json()
       notes = notes.map(n => n.id === note.id ? normalizeNote(updatedNote, fields) : n)
+      setSyncStatus('saved', 'Changes synced')
       showToast('Jot updated! ✏️')
     } catch (err) {
       console.error(err)
-      notes = notes.map(n => n.id === note.id ? normalizeNote({ ...n, ...fields }) : n)
-      showToast('Updated locally ⚠️', 'warn')
+      setSyncStatus('error', 'Not synced — offline')
+      showToast('Could not save — server offline ⚠️', 'warn')
     }
-    saveNotesToStorage()
     render()
     // Dismiss the focus editor modal
     closeFocusedNote()

@@ -13,7 +13,7 @@ Jot is built as a lightweight full-stack application using Vanilla HTML, CSS, Ja
 * **Full Note Operations:** Create, edit, and permanently delete notes (with a playful "poof" animation).
 * **Organize & Prioritize:** Pin important notes to the top of your board, archive notes you are finished with, and search by keywords or tags.
 * **Dynamic Toast Notifications:** Colorful bottom-right toast alerts keep you informed when notes are saved, updated, or deleted.
-* **Bulletproof Offline Fallback:** If the backend server is stopped, Jot automatically saves your notes in the browser's `localStorage` and alerts you with warning toasts, syncing back smoothly when you are ready.
+* **Live Save/Sync Indicator:** A status pill in the editor shows exactly when a note has been saved & synced to the server (and warns with a 🔴 "not synced / offline" state whenever the server can't be reached).
 * **Credential Encryption at Rest:** Sensitive vault fields (`password` & `notes`) are encrypted with AES-256-GCM before they are written to disk, so `data/credentials.json` never contains plaintext secrets. Decryption happens automatically on read, so the rest of the app works unchanged.
 
 ---

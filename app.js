@@ -264,6 +264,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const textEl = el.querySelector('.sync-text')
     if (iconEl) iconEl.innerHTML = syncIcons[state] || ''
     if (textEl) textEl.textContent = message || ''
+
+    // Show the indicator. For the connected/synced state, treat it as a
+    // notification: pop in after the action, then auto-hide shortly after.
+    // Saving and error states stay visible so users always see pending or
+    // failed sync / connection problems.
+    el.classList.add('sync-show')
+    if (el._syncHideTimer) clearTimeout(el._syncHideTimer)
+    if (state === 'saved') {
+      el._syncHideTimer = setTimeout(() => el.classList.remove('sync-show'), 2600)
+    } else {
+      el._syncHideTimer = undefined
+    }
   }
 
   // SETUP EVENT LISTENERS

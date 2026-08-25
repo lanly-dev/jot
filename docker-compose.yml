@@ -1,0 +1,40 @@
+# =============================================================================
+# Jot — Docker Compose deployment
+# -----------------------------------------------------------------------------
+# Usage:
+#   1. Edit .env (copy from .env.example first)            <- optional
+#   2. docker compose up -d
+#   3. Open http://<host-ip>:3000
+#
+# The `data` volume persists notes, credentials, and the encryption key
+# across container restarts and upgrades.
+# =============================================================================
+
+services:
+  jot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/lanly-dev/jot:latest
+    container_name: jot
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      # Set JOT_SECRET_KEY to a base64-encoded 32-byte key to make your
+      # encrypted vault portable across machines (see .env.example).
+      JOT_SECRET_KEY: "${JOT_SECRET_KEY:-}"
+    volumes:
+      - jot-data:/app/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "const http=require('http');const s=http.get('http://127.0.0.1:3000/api/notes',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1));s.setTimeout(5000,()=>{s.destroy();process.exit(1)})"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  jot-data:
+    name: jot-data
+

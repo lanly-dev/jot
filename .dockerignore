@@ -1,0 +1,19 @@
+# Version control
+.git
+.gitignore
+
+# Dependencies
+node_modules
+
+# Runtime data (do NOT ship — it is generated/mounted at runtime)
+data
+
+# Dev / editor config
+.vscode
+*.log
+.env
+.env.local
+
+# OS files
+Thumbs.db
+.DS_Store

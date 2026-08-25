@@ -23,7 +23,7 @@ Jot is built as a lightweight full-stack application using Vanilla HTML, CSS, Ja
 Follow these simple steps to get Jot running on your local machine:
 
 ### Prerequisites
-Make sure you have [Node.js](https://nodejs.org/) installed (version 14 or higher recommended).
+Make sure you have [Node.js](https://nodejs.org/) installed (version 22 LTS or higher is recommended — the app uses the Web Crypto API).
 
 ### 1. Install Dependencies
 Open your terminal in the project directory and run:
@@ -40,6 +40,83 @@ npm start
 ### 3. Open in Browser
 Once the server starts, open your web browser and navigate to:
 👉 **[http://localhost:3000](http://localhost:3000)**
+
+---
+
+## 🐳 Docker Deployment
+
+A multi-stage `Dockerfile` and `docker-compose.yml` are included for easy
+deployment — ideal for **Proxmox VE**, Portainer, or any other Docker host.
+
+### Quick Start
+
+```bash
+# Build & start with a single command
+docker compose up -d
+
+# Check health
+docker compose ps
+
+# View logs
+docker compose logs -f
+```
+
+Then open `http://<your-host-ip>:3000` in your browser.
+
+### Proxmox VE Deployment
+
+The most common Proxmox workflow is an **LXC container** running Docker:
+
+1. **Create an LXC container**
+   - Template: *Ubuntu 22.04* (or Debian 12)
+   - Disk: ≥ 4 GB · RAM: ≥ 512 MB · CPU: 1 core
+   - Enable *Nesting* and *Keyctl* in the container options.
+
+2. **Install Docker inside the container**
+
+   ```bash
+   apt update && apt install -y docker.io docker-compose-v2
+   ```
+
+3. **Copy the project files** to the container (e.g. via `scp` or `rsync`).
+
+4. **(Optional)** Create a `.env` file for environment overrides:
+
+   ```bash
+   cp .env.example .env
+   # Edit .env if you want a custom port or a pre-generated JOT_SECRET_KEY
+   ```
+
+5. **Start the app**
+
+   ```bash
+   docker compose up -d
+   ```
+
+   The server listens on port **3000** inside the container; adjust the
+   `ports` mapping in `docker-compose.yml` if you want a different host port.
+
+6. **Access** `http://<LXC-IP>:3000` from your browser.
+
+### Environment Variables
+
+| Variable          | Default | Description |
+|-------------------|---------|-------------|
+| `PORT`            | `3000`  | Port the Express server listens on |
+| `NODE_ENV`        | `production` | Disables dev-only live-reload |
+| `JOT_SECRET_KEY`  | *(empty)* | Base64-encoded 32-byte AES-256-GCM key. Set this for portable encrypted credentials. If unset, a random key is generated inside the container on first start. |
+
+> **⚠️ Important:** When `JOT_SECRET_KEY` is not set, a random encryption key is
+> generated inside the container and stored in `data/.jot-secret.key`. Deleting
+> the container **without** a volume backup will permanently lock encrypted
+> credentials. Either set `JOT_SECRET_KEY` explicitly or keep the named volume
+> (`jot-data`) — docker-compose preserves it across restarts automatically.
+
+### Data Persistence
+
+`docker-compose.yml` mounts a named volume (`jot-data`) at `/app/data`, so
+your notes, credentials, and encryption key survive container restarts,
+upgrades, and `docker compose down`.
 
 ---
 
@@ -61,13 +138,20 @@ Vault credentials (the `password` and `notes` fields) are encrypted at rest with
 
 ```text
 jot/
-├── data/
-│   └── notes.json       # Auto-generated database storage file
-├── app.js               # Frontend note engine & sync coordinator
-├── index.html           # Main layout structure
-├── package.json         # Dependencies & scripts configuration
-├── server.js            # Express server & REST API backend
-└── styles.css           # Styling rules & custom keyframe animations
+├── data/                          # Auto-generated database (git-ignored)
+│   ├── notes.json                 # Notes storage
+│   ├── credentials.json           # Encrypted credentials storage
+│   └── .jot-secret.key            # AES-256-GCM encryption key
+├── Dockerfile                     # Multi-stage Docker image build
+├── docker-compose.yml             # One-command Docker deployment
+├── .dockerignore                  # Docker build context exclusions
+├── .env.example                   # Environment variable template
+├── .gitignore
+├── app.js                         # Frontend note engine & sync coordinator
+├── index.html                     # Main layout structure
+├── package.json                   # Dependencies & scripts
+├── server.js                      # Express server & REST API backend
+└── styles.css                     # Styling rules & keyframe animations
 ```
 
 ---

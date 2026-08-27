@@ -98,6 +98,38 @@ The most common Proxmox workflow is an **LXC container** running Docker:
 
 6. **Access** `http://<LXC-IP>:3000` from your browser.
 
+### ⚡ One-Command Helper Script
+
+For a fully automated, `pct`-driven install (the same idea as the
+[community "Proxmox VE Helper Scripts"](https://github.com/community-scripts/ProxmoxVE-scripts)),
+run [`install-jot-ve.sh`](install-jot-ve.sh) **as root on the Proxmox host**:
+
+```bash
+# From the Proxmox node (fetches the script from this repo):
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/lanly-dev/jot/main/install-jot-ve.sh)"
+
+# Or run it straight from your checkout:
+sudo bash install-jot-ve.sh
+```
+
+It will:
+
+1. Download the `debian-12-standard` template if missing.
+2. Prompt for (or auto-pick) a free container ID and storage, then create an
+   **unprivileged LXC** container (with `nesting` + `keyctl` enabled so Docker
+   works).
+3. Install **Docker** inside, clone this repo, generate a fresh
+   `JOT_SECRET_KEY`, and start Jot with `docker compose up -d`.
+4. Print the access URL, e.g. `http://<LXC-IP>:3000`.
+
+Customize it via environment variables before running:
+`CT_ID=130 RAM_SIZE=4096 DISK_SIZE=8 CORE_COUNT=4 sudo bash install-jot-ve.sh`
+
+> **Offline / air-gapped host?** Drop the pre-built
+> [`jot-docker-image.tar`](jot-docker-image.tar) file next to the script and it
+> will `docker load` it into the container instead of pulling/building from the
+> internet.
+
 ### Environment Variables
 
 | Variable          | Default | Description |
@@ -144,6 +176,7 @@ jot/
 │   └── .jot-secret.key            # AES-256-GCM encryption key
 ├── Dockerfile                     # Multi-stage Docker image build
 ├── docker-compose.yml             # One-command Docker deployment
+├── install-jot-ve.sh              # Proxmox VE helper script (one-command LXC + Docker install)
 ├── .dockerignore                  # Docker build context exclusions
 ├── .env.example                   # Environment variable template
 ├── .gitignore

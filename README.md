@@ -207,6 +207,12 @@ The Compose configuration mounts a named Docker volume at `/app/data` so that th
 
 The project also includes `install-jot-ve.sh`, a helper script designed to bootstrap an unprivileged LXC container on Proxmox and run the app via Node directly instead of Docker. This keeps the runtime environment light and avoids a Docker daemon dependency.
 
+One-line deployment from a Proxmox VE host as root:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/lanly-dev/jot/main/install-jot-ve.sh)"
+```
+
 ---
 
 ## Security considerations

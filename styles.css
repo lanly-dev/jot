@@ -397,18 +397,6 @@ h4 {
 }
 
 /* Color Picker Styling */
-.color-picker-container {
-  margin-bottom: 1.5rem;
-}
-
-.color-picker-label {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  margin-bottom: 0.5rem;
-  display: block;
-}
-
 .color-options {
   display: flex;
   gap: 0.65rem;
@@ -605,30 +593,6 @@ h4 {
   align-items: center;
   gap: 0.85rem;
   flex-wrap: wrap;
-}
-
-.btn-toggle {
-  background: transparent;
-  border: none;
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: var(--text-muted);
-  padding: 0;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.btn-toggle:hover {
-  color: var(--color-primary-hover);
-}
-
-.btn-toggle.active {
-  color: var(--text-main);
-  text-decoration: underline;
-  text-decoration-color: var(--color-primary);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 0.3rem;
 }
 
 /* Status filter - radio-style segmented control with icons (underline tabs) */
@@ -848,18 +812,6 @@ body.note-focus-open {
   align-items: center;
   justify-content: flex-end;
   padding: 0.75rem 1rem 0.25rem;
-}
-
-.note-focus-header-label {
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.focus-sparkle {
-  color: var(--color-primary);
 }
 
 .note-focus-close {
@@ -1423,34 +1375,6 @@ body.note-focus-open {
 }
 
 /* KEYFRAMES FOR TRANSITIONS & DELIGHTFUL BOUNCES */
-@keyframes wiggle {
-
-  0%,
-  100% {
-    transform: rotate(0deg);
-  }
-
-  15% {
-    transform: rotate(-8deg);
-  }
-
-  30% {
-    transform: rotate(8deg);
-  }
-
-  45% {
-    transform: rotate(-4deg);
-  }
-
-  60% {
-    transform: rotate(4deg);
-  }
-
-  75% {
-    transform: rotate(0deg);
-  }
-}
-
 @keyframes bounce {
 
   0%,
@@ -1732,15 +1656,6 @@ body.note-focus-open {
 /* ==========================================================================
    VAULT (CREDENTIALS)
    ========================================================================== */
-.vault-stats {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
 .password-input-wrap {
   position: relative;
   display: flex;

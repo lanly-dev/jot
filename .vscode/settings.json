@@ -4,8 +4,27 @@
     "akazas-love.typingDriven": false,
     "seekdf.showDetail": true,
     "cSpell.words": [
+        "addgroup",
+        "adduser",
+        "appgroup",
+        "appuser",
+        "ciphertext",
+        "Eeuo",
         "efix",
         "lanly",
-        "Stylesheet"
-    ]
+        "NETLINE",
+        "nologin",
+        "normalise",
+        "onboot",
+        "pveam",
+        "pvesm",
+        "rootdir",
+        "rootfs",
+        "Stylesheet",
+        "TMPSETUP",
+        "turnkeylinux",
+        "vmbr",
+        "vztmpl"
+    ],
+    "editor.rulers": [120]
 }

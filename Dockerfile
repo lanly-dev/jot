@@ -5,23 +5,29 @@
 
 # ---- Deps stage ------------------------------------------------------------
 # Install only production node_modules for a lean, reproducible layer.
-FROM node:22-slim AS deps
+FROM node:lts-alpine AS deps
+
+# Pull the latest patched Alpine packages into the dependency layer.
+RUN apk upgrade --no-cache
 
 ENV npm_config_audit=false \
     npm_config_fund=false
 
 WORKDIR /app
 
-# Copy lockfile + manifest first to maximise Docker layer caching.
+# Copy lockfile + manifest first to maximize Docker layer caching.
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev
 
 # ---- Runtime stage ---------------------------------------------------------
-FROM node:22-slim AS runtime
+FROM node:lts-alpine AS runtime
+
+# Pull the latest patched Alpine packages into the runtime layer.
+RUN apk upgrade --no-cache
 
 # Create a non-root user/group for security.
-RUN groupadd --system --gid 1001 appgroup \
- && useradd  --system --uid 1001 --gid appgroup --create-home appuser
+RUN addgroup -S -g 1001 appgroup \
+ && adduser  -S -D -u 1001 -G appgroup -h /home/appuser appuser
 
 WORKDIR /app
 

@@ -40,7 +40,7 @@ NAMESERVER="${NAMESERVER:-1.1.1.1}"
 TZ_RAW="$(cat /etc/timezone 2>/dev/null || echo 'Etc/UTC')"
 
 # ---------------------------------------------------------------------------
-# Colour helpers
+# Color helpers
 # ---------------------------------------------------------------------------
 function msg_info()  { echo -e "\e[1;34m [INFO]\e[0m $*"; }
 function msg_ok()    { echo -e "\e[1;32m [ OK ]\e[0m $*"; }

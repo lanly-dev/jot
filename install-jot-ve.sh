@@ -122,6 +122,18 @@ normalise_template() {
   esac
 }
 
+# pveam available lists downloadable templates (full filenames like
+# debian-12-standard_12.7-1_amd64.tar.zst). Match our short TEMPLATE_NAME and
+# return the exact .tar* filename needed by `pveam download`.
+get_available_template() {
+  pveam available 2>/dev/null | awk -v c="$TEMPLATE_NAME" '
+    {
+      n=split($0, f, "[ \t]+")
+      for (i=1;i<=n;i++)
+        if (f[i] ~ c && f[i] ~ /\.tar/) { print f[i]; exit }
+    }'
+}
+
 msg_info "Ensuring the '$TEMPLATE_NAME' template is available"
 TPL_FILE=""
 for s in "$TEMPLATE_STORAGE" local; do
@@ -134,16 +146,32 @@ for s in "$TEMPLATE_STORAGE" local; do
 done
 
 if [ -z "$TPL_FILE" ]; then
-  msg_warn "Template not found. Downloading '$TEMPLATE_NAME' to '$TEMPLATE_STORAGE'..."
+  msg_warn "Template not found locally. Updating the template index..."
   pveam update >/dev/null 2>&1 || true
-  pveam download "$TEMPLATE_STORAGE" "$TEMPLATE_NAME" >/dev/null 2>&1 || {
-    msg_error "Automatic download failed. You can fetch it yourself with:"
-    msg_error "  pveam update && pveam download $TEMPLATE_STORAGE $TEMPLATE_NAME"
+
+  # pveam download needs the *exact* filename (e.g. debian-12-standard_12.7-1_amd64.tar.zst).
+  EXACT_TEMPLATE="$(get_available_template)"
+  if [ -n "$EXACT_TEMPLATE" ]; then
+    msg_info "Downloading '$EXACT_TEMPLATE' to '$TEMPLATE_STORAGE'..."
+    if pveam download "$TEMPLATE_STORAGE" "$EXACT_TEMPLATE" >/dev/null 2>&1; then
+      RAW="$(get_template_file "$TEMPLATE_STORAGE")"
+      TPL_FILE="$(normalise_template "$RAW")"
+    else
+      msg_error "pveam download failed for '$EXACT_TEMPLATE'. Check the host has internet"
+      msg_error "access to turnkeylinux.org (or your proxy)."
+    fi
+  else
+    msg_error "Could not find a '$TEMPLATE_NAME' template in 'pveam available'. This usually"
+    msg_error "means there is no internet access to the Proxmox template repository."
+  fi
+
+  if [ -z "$TPL_FILE" ]; then
+    msg_error "Automatic download did not complete. To do it manually:"
+    msg_error "  pveam update && pveam available | grep debian-12"
+    msg_error "  pveam download $TEMPLATE_STORAGE <exact template name from the list>"
+    msg_error "then re-run this script."
     exit 1
-  }
-  RAW="$(get_template_file "$TEMPLATE_STORAGE")"
-  TPL_FILE="$(normalise_template "$RAW")"
-  [ -z "$TPL_FILE" ] && { msg_error "Template still missing after download. Aborting."; exit 1; }
+  fi
 fi
 msg_ok "Template ready: $TPL_FILE"
 # ---------------------------------------------------------------------------

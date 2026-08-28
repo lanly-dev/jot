@@ -116,19 +116,19 @@ It will:
 
 1. Download the `debian-12-standard` template if missing.
 2. Prompt for (or auto-pick) a free container ID and storage, then create an
-   **unprivileged LXC** container (with `nesting` + `keyctl` enabled so Docker
-   works).
-3. Install **Docker** inside, clone this repo, generate a fresh
-   `JOT_SECRET_KEY`, and start Jot with `docker compose up -d`.
+   **unprivileged LXC** container.
+3. Install **Node.js 22 LTS** inside, clone this repo, install production
+   dependencies, generate a fresh `JOT_SECRET_KEY`, and run Jot **natively**
+   as a `systemd` service — **no Docker daemon**, so overhead stays minimal.
 4. Print the access URL, e.g. `http://<LXC-IP>:3000`.
 
 Customize it via environment variables before running:
 `CT_ID=130 RAM_SIZE=4096 DISK_SIZE=8 CORE_COUNT=4 sudo bash install-jot-ve.sh`
 
-> **Offline / air-gapped host?** Drop the pre-built
-> [`jot-docker-image.tar`](jot-docker-image.tar) file next to the script and it
-> will `docker load` it into the container instead of pulling/building from the
-> internet.
+> **Why native instead of Docker?** Jot is a single light Express app, so running
+> it directly under Node keeps the container tiny and avoids a Docker daemon.
+> The app is managed by systemd (`systemctl status jot`) and restarts
+> automatically.
 
 ### Environment Variables
 

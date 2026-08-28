@@ -4,8 +4,8 @@
 # Jot — Proxmox VE Helper Script
 # -----------------------------------------------------------------------------
 # One-command installer that spins up a brand-new LXC container on your
-# Proxmox VE node and deploys Jot (the cute note-taking app) inside it using
-# Docker.
+# Proxmox VE node and deploys Jot (the cute note-taking app) inside it,
+# running natively under Node.js (no Docker daemon, minimal overhead).
 #
 # Modelled on the community "Proxmox VE Helper Scripts":
 #   https://github.com/community-scripts/ProxmoxVE-scripts
@@ -21,11 +21,6 @@
 
 set -Eeuo pipefail
 shopt -s nullglob
-
-# -- Local pre-built image (optional): place jot-docker-image.tar here -------#
-# If a file named jot-docker-image.tar sits next to this script, it is loaded
-# into Docker inside the container (useful on offline/air-gapped hosts).
-LOCAL_IMAGE_TAR="$(dirname "$(readlink -f "$0")")/jot-docker-image.tar"
 
 # -- Template: Debian 12 is a lean, stable base for Jot ----------------------#
 TEMPLATE_NAME="debian-12-standard"
@@ -191,7 +186,6 @@ if ! pct create "$CT_ID" "$TPL_FILE" \
   --unprivileged 1 \
   --net0 "$NETLINE" \
   --nameserver "$NAMESERVER" \
-  --features nesting=1,keyctl=1 \
   --timezone "$TZ_RAW" \
   --onboot 1 >/dev/null 2>&1; then
   msg_error "pct create failed. Check the CT ID is free and storage is writable."
@@ -227,25 +221,13 @@ cat > "$TMPSETUP" <<'STARTUP_EOF'
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
-os_arch="$(dpkg --print-architecture)"
-
 echo " >> Updating package lists ..."
 apt-get update -y >/dev/null 2>&1
-apt-get install -y curl ca-certificates lsb-release git openssl >/dev/null 2>&1
+apt-get install -y curl ca-certificates git openssl build-essential >/dev/null 2>&1
 
-echo " >> Installing Docker Engine ..."
-install -m 0755 -d /etc/apt/keyrings
-if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
-  curl -fsSL "https://download.docker.com/linux/debian/gpg" -o /etc/apt/keyrings/docker.gpg
-  chmod a+r /etc/apt/keyrings/docker.gpg
-fi
-os_id="$(. /etc/os-release && echo "${ID}")"
-os_codename="$(. /etc/os-release && echo "${VERSION_CODENAME}")"
-echo "deb [arch=${os_arch} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/${os_id} ${os_codename} stable" \
-  > /etc/apt/sources.list.d/docker.list
-apt-get update -y >/dev/null 2>&1
-apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin >/dev/null 2>&1
-systemctl enable --now docker >/dev/null 2>&1
+echo " >> Installing Node.js 22 LTS ..."
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash - >/dev/null 2>&1
+apt-get install -y nodejs >/dev/null 2>&1
 
 echo " >> Fetching Jot ..."
 cd /opt
@@ -253,30 +235,51 @@ rm -rf jot
 git clone --depth 1 https://github.com/lanly-dev/jot.git jot >/dev/null 2>&1
 cd /opt/jot
 
+echo " >> Installing production dependencies ..."
+npm install --omit=dev --no-audit --no-fund >/dev/null 2>&1
+
+echo " >> Creating a dedicated 'jot' user ..."
+useradd -r -d /opt/jot -s /usr/sbin/nologin jot 2>/dev/null || true
+chown -R jot:jot /opt/jot
+
 echo " >> Generating JOT_SECRET_KEY (AES-256-GCM) ..."
 SECRET_KEY="$(openssl rand -base64 32)"
-cat > .env <<EOF
+cat > /opt/jot/.env <<EOF
 PORT=3000
 NODE_ENV=production
 JOT_SECRET_KEY=${SECRET_KEY}
 EOF
+chmod 600 /opt/jot/.env
+chown jot:jot /opt/jot/.env
 
-echo " >> Starting Jot with Docker Compose ..."
-docker compose up -d >/dev/null 2>&1
-docker compose ps
+echo " >> Installing the Jot systemd service ..."
+cat > /etc/systemd/system/jot.service <<'SVC_EOF'
+[Unit]
+Description=Jot note-taking app
+After=network.target
+
+[Service]
+Type=simple
+User=jot
+Group=jot
+WorkingDirectory=/opt/jot
+EnvironmentFile=/opt/jot/.env
+ExecStart=/usr/bin/node /opt/jot/server.js
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+SVC_EOF
+
+systemctl daemon-reload
+systemctl enable --now jot >/dev/null 2>&1
+systemctl is-active --quiet jot
 
 echo "BOOTSTRAP_DONE"
 STARTUP_EOF
 pct push "$CT_ID" "$TMPSETUP" /root/jot-setup.sh
 rm -f "$TMPSETUP"
-
-# If a local pre-built image tarball is present, ship it in (offline installs).
-if [ -f "$LOCAL_IMAGE_TAR" ]; then
-  msg_info "Found 'jot-docker-image.tar' next to this script - loading it into Docker"
-  pct push "$CT_ID" "$LOCAL_IMAGE_TAR" /root/jot-docker-image.tar
-  pct exec "$CT_ID" -- sh -c "docker load -i /root/jot-docker-image.tar && rm -f /root/jot-docker-image.tar" \
-    && msg_ok "Pre-built image loaded"
-fi
 
 # ---------------------------------------------------------------------------
 # 5. Run the bootstrap for real (this can take several minutes).
@@ -298,5 +301,6 @@ PORT="${PORT:-3000}"
 msg_ok "Jot is installed and running!"
 msg_info "Manage the container with:  pct enter $CT_ID"
 msg_info "Open Jot at:  http://${IP_INFO}:${PORT}"
-msg_warn "JOT_SECRET_KEY is stored in /opt/jot/.env. Back that file up along with the
-         'jot-data' Docker volume so your encrypted credentials survive a reinstall."
+msg_info "Service is managed by systemd:  systemctl status jot"
+msg_warn "Notes & credentials live in /opt/jot/data, and JOT_SECRET_KEY is in /opt/jot/.env."
+msg_warn "Back those up so your encrypted credentials survive a reinstall."

@@ -38,6 +38,9 @@ NET="${NET:-dhcp}"
 IPV6="${IPV6:-auto}"
 NAMESERVER="${NAMESERVER:-1.1.1.1}"
 TZ_RAW="$(cat /etc/timezone 2>/dev/null || echo 'Etc/UTC')"
+# Guest appearance in the PVE web UI (pink circle/icon + a "note" tag).
+COLOR="${COLOR:-ffd1d9}"   # pastel brand pink (hex WITHOUT the #)
+TAGS="${TAGS:-notes}"
 
 # ---------------------------------------------------------------------------
 # Color helpers
@@ -187,6 +190,8 @@ if ! pct create "$CT_ID" "$TPL_FILE" \
   --net0 "$NETLINE" \
   --nameserver "$NAMESERVER" \
   --timezone "$TZ_RAW" \
+  --color "${COLOR:-ffd1d9}" \
+  --tags "${TAGS:-note}" \
   --onboot 1 >/dev/null 2>&1; then
   msg_error "pct create failed. Check the CT ID is free and storage is writable."
   exit 1

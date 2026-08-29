@@ -76,6 +76,7 @@ jot/
 ├── Dockerfile                    # Container image definition
 ├── docker-compose.yml            # Container orchestration config
 ├── install-jot-ve.sh             # Proxmox LXC helper script
+├── update-jot.sh                 # Proxmox update helper (pull + restart)
 ├── data/
 │   ├── notes.json                # Notes storage
 │   ├── credentials.json          # Credential storage, encrypted at rest
@@ -211,6 +212,16 @@ One-line deployment from a Proxmox VE host as root:
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/lanly-dev/jot/main/install-jot-ve.sh)"
+```
+
+**Updating** — a companion `update-jot.sh` pulls the latest code, reinstalls
+production dependencies, and restarts the systemd service inside the existing
+Jot container. It auto-detects the container by name (`jot`) and is data-safe
+(never touches your `.env` or `data/`):
+
+```bash
+sudo bash update-jot.sh            # auto-detect the "jot" container
+sudo bash update-jot.sh 110        # or target a specific container ID
 ```
 
 ---

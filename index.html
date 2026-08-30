@@ -284,10 +284,19 @@
             </span>
           </div>
           <div style="display: flex; gap: 1rem;">
-            <div class="header-stats-collapsed">
-              <span title="Total Notes">📝 <span id="stat-total-notes">0</span></span>
-              <span title="Pinned Notes">📌 <span id="stat-pinned-notes">0</span></span>
-              <span title="Archived Notes" style="display: none;">📦 <span id="stat-archived-notes">0</span></span>
+            <div class="header-stats-collapsed" aria-label="Note stats">
+              <span class="stat-pill" title="Total Notes">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"></path><path d="M14 2v5a1 1 0 0 0 1 1h5"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>
+                <span id="stat-total-notes">0</span>
+              </span>
+              <span class="stat-pill" title="Pinned Notes">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24Z"></path></svg>
+                <span id="stat-pinned-notes">0</span>
+              </span>
+              <span class="stat-pill" title="Archived Notes" style="display: none;">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+                <span id="stat-archived-notes">0</span>
+              </span>
             </div>
             <div class="display-control-group" aria-label="Layout view mode">
               <button type="button" class="btn-layout-toggle" id="btn-layout-toggle" title="Switch to list view"

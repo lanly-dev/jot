@@ -2154,7 +2154,6 @@ body.note-focus-open {
 .creator-row-2 {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
   width: 100%;
 }
 

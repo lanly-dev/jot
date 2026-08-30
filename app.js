@@ -1653,9 +1653,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         <div class="note-focus-actions">
           <button type="button" class="btn btn-secondary" id="focus-action-close">Close</button>
-          <button type="button" class="btn btn-primary" id="focus-action-save">
-            <span class="btn-sparkle">💾</span> Save Changes
-          </button>
+          <button type="button" class="btn btn-primary" id="focus-action-save">Save Changes</button>
         </div>
       </article>
     `

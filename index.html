@@ -356,9 +356,8 @@
           </form>
         </div>
         <div id="vault-content">
-          <!-- Trigger Row to Open Credential Modal -->
           <div class="note-creator-wrapper">
-            <div class="note-creator creator-modal-trigger" id="vault-creator-trigger">
+            <div class="note-creator" id="vault-credential-creator">
               <div class="creator-collapsed" id="vault-creator-collapsed">
                 <div class="creator-trigger-row">
                   <div class="creator-trigger-left">
@@ -366,6 +365,119 @@
                     <span class="placeholder-text">Add a new credential... 🔐</span>
                   </div>
                 </div>
+              </div>
+
+              <div class="creator-expanded" id="vault-creator-expanded" style="display: none;">
+                <form id="credential-form" class="note-form">
+                  <input type="hidden" id="credential-id" value="">
+
+                  <div class="creator-row-1">
+                    <input type="text" id="credential-site" placeholder="Site / App name (e.g. GitHub, Netflix)" maxlength="100" required>
+                  </div>
+
+                  <div class="creator-row-2">
+                    <div class="input-group" style="margin-bottom: 0.5rem;">
+                      <label for="credential-username" class="sr-only">Username or Email</label>
+                      <input type="text" id="credential-username" placeholder="Username or email" maxlength="150" required>
+                    </div>
+
+                    <div class="input-group" style="margin-bottom: 0.5rem;">
+                      <label for="credential-password" class="sr-only">Password</label>
+                      <div class="password-input-wrap">
+                        <input type="password" id="credential-password" placeholder="Password" required>
+                        <button type="button" class="btn-icon password-reveal-toggle" id="btn-toggle-form-password"
+                          title="Show password" aria-label="Show or hide password">
+                          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8Z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="input-group" style="margin-bottom: 0.25rem;">
+                      <label for="credential-notes" class="sr-only">Notes</label>
+                      <textarea id="credential-notes" placeholder="Notes (optional)" rows="2"></textarea>
+                    </div>
+                  </div>
+
+                  <div class="creator-row-3">
+                    <div class="options-toolbar">
+                      <select id="credential-type" style="display: none;" aria-label="Credential Type">
+                        <option value="login">Login</option>
+                        <option value="payment">Payment</option>
+                        <option value="secure-note">Secure Note</option>
+                      </select>
+
+                      <div class="popover-wrapper">
+                        <button type="button" class="btn-popover-trigger" id="btn-cred-type-popup" title="Select Credential Type" aria-expanded="false">
+                          <span class="trigger-icon" id="cred-type-icon-display">🔑</span>
+                          <span class="trigger-label" id="cred-type-label-display">Login</span>
+                          <span class="trigger-arrow">▾</span>
+                        </button>
+                        <div class="popover-menu" id="cred-type-popover">
+                          <div class="popover-title">Credential Type</div>
+                          <button type="button" class="popover-item active" data-type="login">
+                            <span class="popover-item-icon">🔑</span>
+                            <span class="popover-item-text">Login</span>
+                          </button>
+                          <button type="button" class="popover-item" data-type="payment">
+                            <span class="popover-item-icon">💳</span>
+                            <span class="popover-item-text">Payment</span>
+                          </button>
+                          <button type="button" class="popover-item" data-type="secure-note">
+                            <span class="popover-item-icon">🔒</span>
+                            <span class="popover-item-text">Secure Note</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div class="popover-wrapper">
+                        <button type="button" class="btn-popover-trigger" id="btn-cred-color-popup" title="Choose Card Color" aria-expanded="false">
+                          <span class="color-dot-swatch" id="cred-color-swatch-display" style="background-color: #ffd1d9;"></span>
+                          <span class="trigger-arrow">▾</span>
+                        </button>
+                        <div class="popover-menu color-popover-menu" id="cred-color-popover">
+                          <div class="popover-title">Card Color</div>
+                          <div class="color-options" id="credential-color-options">
+                            <label class="color-option-label current" style="--option-color: #ffd1d9;" title="Strawberry Soft Pink">
+                              <input type="radio" name="credential-color" value="#ffd1d9" checked>
+                              <span class="color-dot"></span>
+                            </label>
+                            <label class="color-option-label" style="--option-color: #d0f0c6;" title="Mint Green">
+                              <input type="radio" name="credential-color" value="#d0f0c6">
+                              <span class="color-dot"></span>
+                            </label>
+                            <label class="color-option-label" style="--option-color: #e6e8fa;" title="Lavender Light Purple">
+                              <input type="radio" name="credential-color" value="#e6e8fa">
+                              <span class="color-dot"></span>
+                            </label>
+                            <label class="color-option-label" style="--option-color: #fff1ba;" title="Banana Pastel Yellow">
+                              <input type="radio" name="credential-color" value="#fff1ba">
+                              <span class="color-dot"></span>
+                            </label>
+                            <label class="color-option-label" style="--option-color: #ffd9c5;" title="Peach Orange">
+                              <input type="radio" name="credential-color" value="#ffd9c5">
+                              <span class="color-dot"></span>
+                            </label>
+                            <label class="color-option-label" style="--option-color: #bfe5f2;" title="Sky Soft Blue">
+                              <input type="radio" name="credential-color" value="#bfe5f2">
+                              <span class="color-dot"></span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="form-actions">
+                      <button type="button" class="btn btn-secondary" id="btn-cancel-credential-modal">Cancel</button>
+                      <button type="submit" class="btn btn-primary" id="btn-save-credential">
+                        <span class="btn-text">Save Credential</span>
+                      </button>
+                    </div>
+                  </div>
+                </form>
               </div>
             </div>
           </div>
@@ -454,150 +566,6 @@
       </button>
     </header>
     <div class="note-focus-content" id="note-focus-content"></div>
-  </section>
-
-  <!-- CREDENTIAL CREATOR MODAL -->
-  <div class="credential-modal-backdrop" id="credential-modal-backdrop" aria-hidden="true"></div>
-  <section class="credential-modal-panel" id="credential-modal-panel" aria-hidden="true"
-    aria-label="Credential Editor Modal">
-    <div class="credential-modal-inner" id="credential-modal-card">
-      <header class="credential-modal-header">
-        <div class="modal-title-group">
-          <span class="modal-title-icon">🔐</span>
-          <h2 id="credential-editor-title">Add a New Credential</h2>
-        </div>
-        <button type="button" class="modal-close-btn" id="btn-close-credential-modal" aria-label="Close modal">
-          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
-            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </header>
-
-      <form id="credential-form" class="note-form">
-        <!-- Hidden input for editing mode -->
-        <input type="hidden" id="credential-id" value="">
-
-        <!-- 1st ROW: Label / Site Name Input -->
-        <div class="creator-row-1">
-          <input type="text" id="credential-site" placeholder="Site / App name (e.g. GitHub, Netflix)" maxlength="100"
-            required>
-        </div>
-
-        <!-- 2nd ROW: Content (Username, Password, Notes - Expandable depend on content) -->
-        <div class="creator-row-2">
-          <div class="input-group" style="margin-bottom: 0.5rem;">
-            <label for="credential-username" class="sr-only">Username or Email</label>
-            <input type="text" id="credential-username" placeholder="Username or email" maxlength="150" required>
-          </div>
-
-          <div class="input-group" style="margin-bottom: 0.5rem;">
-            <label for="credential-password" class="sr-only">Password</label>
-            <div class="password-input-wrap">
-              <input type="password" id="credential-password" placeholder="Password" required>
-              <button type="button" class="btn-icon password-reveal-toggle" id="btn-toggle-form-password"
-                title="Show password" aria-label="Show or hide password">
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8Z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <div class="input-group" style="margin-bottom: 0.25rem;">
-            <label for="credential-notes" class="sr-only">Notes</label>
-            <textarea id="credential-notes" placeholder="Notes (optional)" rows="2"></textarea>
-          </div>
-        </div>
-
-        <!-- 3rd ROW: Options Bar (Credential Type Icon, Color Icon with popups) & Actions -->
-        <div class="creator-row-3">
-          <div class="options-toolbar">
-            <!-- Hidden Select Element synced with Credential Type Popover -->
-            <select id="credential-type" style="display: none;" aria-label="Credential Type">
-              <option value="login">Login</option>
-              <option value="payment">Payment</option>
-              <option value="secure-note">Secure Note</option>
-            </select>
-
-            <!-- Credential Type Popover Icon Trigger -->
-            <div class="popover-wrapper">
-              <button type="button" class="btn-popover-trigger" id="btn-cred-type-popup" title="Select Credential Type"
-                aria-expanded="false">
-                <span class="trigger-icon" id="cred-type-icon-display">🔑</span>
-                <span class="trigger-label" id="cred-type-label-display">Login</span>
-                <span class="trigger-arrow">▾</span>
-              </button>
-              <div class="popover-menu" id="cred-type-popover">
-                <div class="popover-title">Credential Type</div>
-                <button type="button" class="popover-item active" data-type="login">
-                  <span class="popover-item-icon">🔑</span>
-                  <span class="popover-item-text">Login</span>
-                </button>
-                <button type="button" class="popover-item" data-type="payment">
-                  <span class="popover-item-icon">💳</span>
-                  <span class="popover-item-text">Payment</span>
-                </button>
-                <button type="button" class="popover-item" data-type="secure-note">
-                  <span class="popover-item-icon">🔒</span>
-                  <span class="popover-item-text">Secure Note</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Credential Color Popover Icon Trigger -->
-            <div class="popover-wrapper">
-              <button type="button" class="btn-popover-trigger" id="btn-cred-color-popup" title="Choose Card Color"
-                aria-expanded="false">
-                <span class="color-dot-swatch" id="cred-color-swatch-display" style="background-color: #ffd1d9;"></span>
-                <span class="trigger-arrow">▾</span>
-              </button>
-              <div class="popover-menu color-popover-menu" id="cred-color-popover">
-                <div class="popover-title">Card Color</div>
-                <div class="color-options" id="credential-color-options">
-                  <label class="color-option-label current" style="--option-color: #ffd1d9;"
-                    title="Strawberry Soft Pink">
-                    <input type="radio" name="credential-color" value="#ffd1d9" checked>
-                    <span class="color-dot"></span>
-                  </label>
-                  <label class="color-option-label" style="--option-color: #d0f0c6;" title="Mint Green">
-                    <input type="radio" name="credential-color" value="#d0f0c6">
-                    <span class="color-dot"></span>
-                  </label>
-                  <label class="color-option-label" style="--option-color: #e6e8fa;" title="Lavender Light Purple">
-                    <input type="radio" name="credential-color" value="#e6e8fa">
-                    <span class="color-dot"></span>
-                  </label>
-                  <label class="color-option-label" style="--option-color: #fff1ba;" title="Banana Pastel Yellow">
-                    <input type="radio" name="credential-color" value="#fff1ba">
-                    <span class="color-dot"></span>
-                  </label>
-                  <label class="color-option-label" style="--option-color: #ffd9c5;" title="Peach Orange">
-                    <input type="radio" name="credential-color" value="#ffd9c5">
-                    <span class="color-dot"></span>
-                  </label>
-                  <label class="color-option-label" style="--option-color: #bfe5f2;" title="Sky Soft Blue">
-                    <input type="radio" name="credential-color" value="#bfe5f2">
-                    <span class="color-dot"></span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Form Action Buttons -->
-          <div class="form-actions">
-            <button type="button" class="btn btn-secondary" id="btn-cancel-credential-modal">Cancel</button>
-            <button type="submit" class="btn btn-primary" id="btn-save-credential">
-              <span class="btn-text">Save Credential</span>
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>
   </section>
 
   <!-- Main logic script -->

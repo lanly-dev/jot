@@ -880,12 +880,16 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleBtn.classList.toggle('revealed', !showing)
   }
 
-  // CREDENTIAL CREATOR MODAL UI
+  // CREDENTIAL CREATOR UI (inline, note-style)
   function openCredentialModal() {
     closeFocusedNote()
-    if (credentialModalBackdrop) credentialModalBackdrop.classList.add('active')
-    if (credentialModalPanel) credentialModalPanel.classList.add('active')
-    document.body.classList.add('note-focus-open')
+
+    const creator = document.getElementById('vault-credential-creator')
+    const expanded = document.getElementById('vault-creator-expanded')
+    if (creator) creator.classList.add('active')
+    if (expanded) expanded.style.display = 'block'
+    if (vaultCreatorCollapsed) vaultCreatorCollapsed.style.display = 'none'
+
     setTimeout(() => {
       if (credentialSiteInput) credentialSiteInput.focus()
     }, 50)
@@ -893,9 +897,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function closeCredentialModal() {
     closeAllPopovers()
-    if (credentialModalBackdrop) credentialModalBackdrop.classList.remove('active')
-    if (credentialModalPanel) credentialModalPanel.classList.remove('active')
-    document.body.classList.remove('note-focus-open')
+
+    const creator = document.getElementById('vault-credential-creator')
+    const expanded = document.getElementById('vault-creator-expanded')
+    if (creator) creator.classList.remove('active')
+    if (expanded) expanded.style.display = 'none'
+    if (vaultCreatorCollapsed) vaultCreatorCollapsed.style.display = 'flex'
+
     resetCredentialForm()
   }
 
@@ -915,12 +923,17 @@ document.addEventListener('DOMContentLoaded', () => {
       pinkRadio.closest('.color-option-label')?.classList.add('current')
       if (credColorSwatchDisplay) credColorSwatchDisplay.style.backgroundColor = '#ffd1d9'
     }
-    if (credentialModalPanel) credentialModalPanel.style.borderColor = 'var(--border-color)'
+    const creator = document.getElementById('vault-credential-creator')
+    if (creator) creator.style.borderColor = 'var(--border-color)'
     credentialPasswordInput.type = 'password'
-    btnToggleFormPassword.classList.remove('revealed')
-    btnToggleFormPassword.title = 'Show password'
-    credentialEditorTitle.textContent = 'Add a New Credential'
-    btnSaveCredential.querySelector('.btn-text').textContent = 'Save Credential'
+    if (btnToggleFormPassword) {
+      btnToggleFormPassword.classList.remove('revealed')
+      btnToggleFormPassword.title = 'Show password'
+    }
+    const heading = document.getElementById('credential-editor-title')
+    if (heading) heading.textContent = 'Add a New Credential'
+    const saveLabel = btnSaveCredential?.querySelector('.btn-text')
+    if (saveLabel) saveLabel.textContent = 'Save Credential'
   }
 
   async function handleCredentialFormSubmit(e) {
@@ -999,11 +1012,14 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('#credential-color-options .color-option-label').forEach(label => label.classList.remove('current'))
       radioToSelect.closest('.color-option-label')?.classList.add('current')
       if (credColorSwatchDisplay) credColorSwatchDisplay.style.backgroundColor = credColor
-      if (credentialModalPanel) credentialModalPanel.style.borderColor = credColor
+      const creator = document.getElementById('vault-credential-creator')
+    if (creator) creator.style.borderColor = credColor
     }
 
-    credentialEditorTitle.textContent = 'Edit Credential'
-    btnSaveCredential.querySelector('.btn-text').textContent = 'Save Changes'
+    const heading = document.getElementById('credential-editor-title')
+    if (heading) heading.textContent = 'Edit Credential'
+    const saveLabel = btnSaveCredential?.querySelector('.btn-text')
+    if (saveLabel) saveLabel.textContent = 'Save Changes'
     openCredentialModal()
   }
 

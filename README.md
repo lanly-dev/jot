@@ -216,12 +216,14 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/lanly-dev/jot/main/insta
 
 **Updating** — a companion `update-jot.sh` pulls the latest code, reinstalls
 production dependencies, and restarts the systemd service inside the existing
-Jot container. It auto-detects the container by name (`jot`) and is data-safe
-(never touches your `.env` or `data/`):
+Jot container. Run it from the Proxmox VE host shell as root; it auto-detects
+the container by name (`jot`) and is data-safe (never touches your `.env` or
+`data/`):
 
 ```bash
-sudo bash update-jot.sh            # auto-detect the "jot" container
-sudo bash update-jot.sh 110        # or target a specific container ID
+bash -c "curl -fsSL https://raw.githubusercontent.com/lanly-dev/jot/main/update-jot.sh -o /tmp/update-jot.sh && chmod +x /tmp/update-jot.sh && /tmp/update-jot.sh"
+# or with a specific container ID
+bash -c "curl -fsSL https://raw.githubusercontent.com/lanly-dev/jot/main/update-jot.sh -o /tmp/update-jot.sh && chmod +x /tmp/update-jot.sh && /tmp/update-jot.sh 110"
 ```
 
 ---

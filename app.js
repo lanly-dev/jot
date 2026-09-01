@@ -1456,8 +1456,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const note = notes.find(n => n.id === noteId)
     if (!note) return
 
-    // 1. PIN TOGGLE ACTION (Click on pin badge or header pin indicator)
-    if (target.closest('.action-pin') || target.closest('.pin-badge')) {
+    // 1. PIN TOGGLE ACTION (Click on the pin action button)
+    if (target.closest('.action-pin')) {
       const prevPinned = note.pinned
       const nextPinned = !prevPinned
       note.pinned = nextPinned
@@ -2069,11 +2069,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const typeIconMarkup = `<button type="button" class="btn-icon action-type type-${noteType}" title="${typeLabelMap[noteType] || 'Standard'} Note">${getTypeIconSVG(noteType)}</button>`
 
-    // Pin badge conditional class and marker
-    const pinBadgeMarkup = note.pinned
-      ? `<div class="pin-badge" title="Pinned to Top">📌</div>`
-      : ''
-
     // Formatted timestamp text (e.g. "Just now", "2 mins ago", or neat date)
     const dateText = formatDate(note.createdAt)
 
@@ -2109,7 +2104,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     return `
       <article class="note-card ${note.pinned ? 'pinned-card' : ''}" data-id="${note.id}" style="--note-color: ${note.color};">
-        ${pinBadgeMarkup}
 
         <div class="note-header">
           <h3 class="note-title">${escapedTitle}</h3>

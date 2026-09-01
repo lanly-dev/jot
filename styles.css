@@ -1411,6 +1411,158 @@ body.note-focus-open {
   margin-top: 3rem;
 }
 
+/* ---- Footer "Update" button ---- */
+.app-footer-update {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+  background: #ffffff;
+  color: var(--text-muted);
+  border: 1px dashed rgba(45, 43, 42, 0.25);
+  border-radius: 999px;
+  padding: 0.35rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.app-footer-update:hover {
+  color: var(--color-primary);
+  border-color: rgba(255, 117, 143, 0.45);
+  background: var(--color-primary-light);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   UPDATE MODAL (mirrors the credential creator modal styling)
+   ========================================================================== */
+.update-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(25, 22, 20, 0.4);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  z-index: 40;
+}
+
+.update-modal-backdrop.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.update-modal-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -46%) scale(0.96);
+  width: min(560px, calc(100vw - 2rem));
+  max-height: calc(100vh - 3rem);
+  background: #ffffff;
+  border: 2px solid var(--border-color);
+  border-radius: 24px;
+  box-shadow: 0 25px 70px rgba(45, 43, 42, 0.22);
+  z-index: 50;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), visibility 0.25s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.update-modal-panel.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.update-modal-inner {
+  padding: 1.2rem 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.update-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.update-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.update-version-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.update-badge {
+  background: #faf8f5;
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  padding: 0.2rem 0.6rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  color: var(--text-main);
+}
+
+.update-status-hint {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.update-notice {
+  font-size: 0.9rem;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.update-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.update-note code {
+  background: #faf8f5;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  padding: 0.05rem 0.3rem;
+  font-family: 'Courier New', monospace;
+}
+
+.update-modal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  border-top: 1px dashed var(--border-color);
+  padding-top: 0.9rem;
+}
+
+.update-modal-footer .btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 /* KEYFRAMES FOR TRANSITIONS & DELIGHTFUL BOUNCES */
 @keyframes bounce {
 

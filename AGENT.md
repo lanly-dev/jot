@@ -67,6 +67,12 @@ npm run efix
 - `PUT /api/credentials/:id`
 - `DELETE /api/credentials/:id`
 
+### Updates (self-update, git installs only)
+
+- `GET /api/update/status` — reports whether in-app updates are supported and the current commit
+- `POST /api/update/check` — fetches remote refs and compares against the local commit
+- `POST /api/update` — pulls latest code, reinstalls production deps, restarts the service
+
 ## Deployment notes
 
 - Default app port is `3000`.

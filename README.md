@@ -234,6 +234,13 @@ argument, so the script is staged to `/tmp` first:
 curl -fsSL https://raw.githubusercontent.com/lanly-dev/jot/main/update-jot.sh -o /tmp/update-jot.sh && bash /tmp/update-jot.sh 110
 ```
 
+**In-app updates** — when Jot is installed from a git clone (the Proxmox LXC
+helper keeps one at `/opt/jot`), the web UI exposes an **Update** button in the
+footer. It checks the running commit against the remote, and can pull the latest
+code, reinstall production dependencies, and restart itself under systemd —
+without touching `.env` or `data/`. Use the host-shell one-liners above if you
+prefer updating from SSH instead.
+
 ---
 
 ## Security considerations

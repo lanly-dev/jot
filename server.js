@@ -6,6 +6,7 @@ const express = require('express')
 const cors = require('cors')
 const fs = require('fs')
 const path = require('path')
+const { execFile } = require('child_process')
 // const nodeCrypto = require('crypto')
 // const crytpo = require('crypto')
 
@@ -419,6 +420,122 @@ app.delete('/api/credentials/:id', async (req, res) => {
   console.log(`Credential deleted permanently: (${id}) 🗑️`)
   res.json({ success: true, message: 'Credential deleted permanently 🔐' })
 })
+
+/* ==========================================================================
+   SELF-UPDATE (UI-triggered)
+   Fetches the latest Jot code from git and reinstalls production dependencies,
+   then restarts the service so systemd (Restart=always) brings it back up with
+   the new code. Only available when the app was installed from a git clone
+   (e.g. the Proxmox LXC helper, which keeps a shallow clone at /opt/jot).
+   Docker / release installs have no .git dir and report `supported: false`.
+   ========================================================================== */
+const APP_DIR = __dirname
+let updateInProgress = false
+
+function isGitRepo() {
+  return fs.existsSync(path.join(APP_DIR, '.git'))
+}
+
+// Run a git command inside the app checkout. `safe.directory` is passed inline
+// so this works regardless of HOME/global git config for the runtime user.
+function runGit(args) {
+  return new Promise((resolve, reject) => {
+    execFile(
+      'git',
+      ['-C', APP_DIR, '-c', `safe.directory=${APP_DIR}`, ...args],
+      { timeout: 120000, maxBuffer: 4 * 1024 * 1024 },
+      (err, stdout, stderr) => {
+        if (err) reject(new Error((stderr || '').trim() || err.message))
+        else resolve(String(stdout).trim())
+      }
+    )
+  })
+}
+
+function runNpm(args) {
+  return new Promise((resolve, reject) => {
+    execFile(
+      'npm',
+      args,
+      { cwd: APP_DIR, timeout: 300000, maxBuffer: 4 * 1024 * 1024 },
+      (err, stdout, stderr) => {
+        if (err) reject(new Error((stderr || '').trim() || err.message))
+        else resolve(String(stdout).trim())
+      }
+    )
+  })
+}
+
+function appShortHash() {
+  return runGit(['rev-parse', '--short', 'HEAD']).catch(() => '')
+}
+
+// GET: lightweight update availability (no network). Used to decide whether the
+// UI should offer in-app updates at all.
+app.get('/api/update/status', async (req, res) => {
+  if (!isGitRepo()) {
+    return res.json({ supported: false })
+  }
+  try {
+    const current = await appShortHash()
+    res.json({ supported: true, running: updateInProgress, current })
+  } catch {
+    res.json({ supported: false })
+  }
+})
+
+// POST: fetch remote refs and compare them against the local checkout.
+app.post('/api/update/check', async (req, res) => {
+  if (!isGitRepo()) {
+    return res.status(400).json({ error: 'This deployment was not installed from git, so it cannot self-update.' })
+  }
+  if (updateInProgress) {
+    return res.status(409).json({ error: 'An update is already running — please wait.' })
+  }
+  try {
+    await runGit(['fetch', '--depth', '1', 'origin', 'main'])
+    const current = await appShortHash()
+    const latest = await runGit(['rev-parse', '--short', 'FETCH_HEAD'])
+    res.json({ current, latest, upToDate: current === latest, available: current !== latest })
+  } catch (err) {
+    res.status(502).json({ error: 'Could not reach the git remote. ' + (err.message || '') })
+  }
+})
+
+// POST: pull the latest code, reinstall dependencies, then restart the service.
+app.post('/api/update', async (req, res) => {
+  if (!isGitRepo()) {
+    return res.status(400).json({ error: 'This deployment was not installed from git, so it cannot self-update.' })
+  }
+  if (updateInProgress) {
+    return res.status(409).json({ error: 'An update is already running — please wait.' })
+  }
+  updateInProgress = true
+  try {
+    await runGit(['pull', '--ff-only', 'origin', 'main'])
+    await runNpm(['install', '--omit=dev', '--no-audit', '--no-fund'])
+    // Send the response before killing the process so the client is aware.
+    res.json({ success: true, message: 'Update applied.' })
+    scheduleServiceRestart()
+  } catch (err) {
+    updateInProgress = false
+    res.status(500).json({ error: 'Update failed. ' + (err.message || '') })
+  }
+})
+
+function scheduleServiceRestart() {
+  // Under systemd (the Proxmox LXC deployment): just exit and let
+  // Restart=always relaunch with the freshly pulled code.
+  if (fs.existsSync('/run/systemd/system')) {
+    console.log('Self-update applied — restarting service via systemd (Restart=always)…')
+    setTimeout(() => process.exit(0), 800)
+    return
+  }
+  // Otherwise (local dev, plain node): don't kill ourselves; tell the operator
+  // to restart manually so we never leave the app silently down.
+  console.warn('Self-update applied — not running under systemd; restart the process to load the new code.')
+  setTimeout(() => { updateInProgress = false }, 1000)
+}
 
 // Start the Express server
 app.listen(PORT, async () => {

@@ -135,6 +135,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnToggleUnlockPassword = document.getElementById('btn-toggle-unlock-password')
   const btnVaultUnlock = document.getElementById('btn-vault-unlock')
 
+  // Update / self-update UI elements
+  const updateModalBackdrop = document.getElementById('update-modal-backdrop')
+  const updateModalPanel = document.getElementById('update-modal-panel')
+  const updateModalBody = document.getElementById('update-modal-body')
+  const btnOpenUpdate = document.getElementById('btn-open-update')
+  const btnCloseUpdateModal = document.getElementById('btn-close-update-modal')
+  const btnUpdateClose = document.getElementById('btn-update-close')
+  const btnUpdateCheck = document.getElementById('btn-update-check')
+  const btnDoUpdate = document.getElementById('btn-do-update')
+
   // Popover selectors
   const btnTypePopup = document.getElementById('btn-type-popup')
   const typePopover = document.getElementById('type-popover')
@@ -278,6 +288,150 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Self-update panel helpers
+  // ---------------------------------------------------------------------------
+  function setUpdateBody(html) {
+    if (updateModalBody) updateModalBody.innerHTML = html
+  }
+
+  function setUpdateButtons(checkEnabled, doEnabled) {
+    if (btnUpdateCheck) btnUpdateCheck.disabled = !checkEnabled
+    if (btnDoUpdate) btnDoUpdate.disabled = !doEnabled
+  }
+
+  function openUpdatePanel() {
+    if (updateModalBackdrop) updateModalBackdrop.classList.add('active')
+    if (updateModalPanel) {
+      updateModalPanel.classList.add('active')
+      updateModalPanel.setAttribute('aria-hidden', 'false')
+    }
+    if (updateModalBackdrop) updateModalBackdrop.setAttribute('aria-hidden', 'false')
+    refreshUpdateStatus()
+  }
+
+  function closeUpdatePanel() {
+    if (updateModalBackdrop) {
+      updateModalBackdrop.classList.remove('active')
+      updateModalBackdrop.setAttribute('aria-hidden', 'true')
+    }
+    if (updateModalPanel) {
+      updateModalPanel.classList.remove('active')
+      updateModalPanel.setAttribute('aria-hidden', 'true')
+    }
+  }
+
+  // Lightweight status check: is this install capable of in-app updates?
+  async function refreshUpdateStatus() {
+    if (!updateModalBody) return
+    setUpdateBody('<p class="update-status-hint">Checking your installation…</p>')
+    try {
+      const res = await fetch('/api/update/status')
+      const data = await res.json()
+      if (!data.supported) {
+        setUpdateBody(`
+          <p class="update-notice">This deployment doesn't support in-app updates. 🛠️</p>
+          <p class="update-note">In-app updates require a git-based install (available via the Proxmox LXC helper, which keeps a clone at <code>/opt/jot</code>). For this build, please update using the <code>update-jot.sh</code> helper on the Proxmox host shell.</p>
+        `)
+        setUpdateButtons(false, false)
+        return
+      }
+      setUpdateBody(`
+        <div class="update-version-row"><span>Current version</span><span class="update-badge">${escapeHTML(data.current || 'unknown')}</span></div>
+        <p class="update-note">Press “Check for updates” to compare against the latest release.</p>
+      `)
+      setUpdateButtons(true, false)
+    } catch (err) {
+      console.error('Update status check failed:', err)
+      setUpdateBody('<p class="update-notice">Couldn\'t check for updates — server unreachable. ⚠️</p>')
+      setUpdateButtons(false, false)
+    }
+  }
+
+  async function handleCheckForUpdates() {
+    if (!updateModalBody) return
+    if (btnUpdateCheck) {
+      btnUpdateCheck.disabled = true
+      btnUpdateCheck.textContent = 'Checking…'
+    }
+    setUpdateBody('<p class="update-status-hint">Checking for updates…</p>')
+    try {
+      const res = await fetch('/api/update/check', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok || !data) {
+        setUpdateBody(`<p class="update-notice">${escapeHTML((data && data.error) || 'Could not check for updates.')} ⚠️</p>`)
+        setUpdateButtons(true, false)
+        return
+      }
+      if (data.upToDate) {
+        setUpdateBody(`
+          <div class="update-version-row"><span>Current version</span><span class="update-badge">${escapeHTML(data.current)}</span></div>
+          <div class="update-version-row"><span>Latest version</span><span class="update-badge">${escapeHTML(data.latest)}</span></div>
+          <p class="update-note">You're fully up to date — nothing to do! 🎉</p>
+        `)
+        setUpdateButtons(true, false)
+      } else {
+        setUpdateBody(`
+          <div class="update-version-row"><span>Current version</span><span class="update-badge">${escapeHTML(data.current)}</span></div>
+          <div class="update-version-row"><span>Latest version</span><span class="update-badge">${escapeHTML(data.latest)}</span></div>
+          <p class="update-note">A newer version is available. Updating pulls the latest code, reinstalls dependencies, and restarts the app briefly. Your notes, credentials, and settings are safe. 🌸</p>
+        `)
+        setUpdateButtons(true, true)
+      }
+    } catch (err) {
+      console.error('Update check failed:', err)
+      setUpdateBody('<p class="update-notice">Couldn\'t reach the update service. ⚠️</p>')
+      setUpdateButtons(true, false)
+    } finally {
+      if (btnUpdateCheck) {
+        btnUpdateCheck.disabled = false
+        btnUpdateCheck.textContent = 'Check for updates'
+      }
+    }
+  }
+
+  // Poll the server until it is back up after the self-restart, then reload.
+  function reloadWhenReady(attempts) {
+    fetch('/api/update/status')
+      .then((r) => {
+        if (r.ok) {
+          window.location.reload()
+        } else if (attempts > 0) {
+          setTimeout(() => reloadWhenReady(attempts - 1), 1500)
+        }
+      })
+      .catch(() => {
+        if (attempts > 0) setTimeout(() => reloadWhenReady(attempts - 1), 1500)
+      })
+  }
+
+  async function handleDoUpdate() {
+    if (!btnDoUpdate || btnDoUpdate.disabled) return
+    btnDoUpdate.disabled = true
+    const originalLabel = btnDoUpdate.textContent
+    btnDoUpdate.textContent = 'Updating…'
+    if (btnUpdateCheck) btnUpdateCheck.disabled = true
+    setUpdateBody('<p class="update-status-hint">Pulling the latest code and installing dependencies…</p>')
+    try {
+      const res = await fetch('/api/update', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) {
+        setUpdateBody(`<p class="update-notice">${escapeHTML((data && data.error) || 'Update failed.')} ⚠️</p>`)
+        btnDoUpdate.textContent = originalLabel
+        setUpdateButtons(true, false)
+        return
+      }
+      setUpdateBody('<p class="update-status-hint">✅ Update applied — restarting the app…</p>')
+      if (btnUpdateCheck) btnUpdateCheck.disabled = true
+      reloadWhenReady(30)
+    } catch (err) {
+      console.error('Update failed:', err)
+      setUpdateBody('<p class="update-notice">Update request failed. ⚠️</p>')
+      btnDoUpdate.textContent = originalLabel
+      setUpdateButtons(true, false)
+    }
+  }
+
   // SETUP EVENT LISTENERS
   function setupEventListeners() {
     // Auto-expanding content textareas
@@ -295,6 +449,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Form submission (Save Note)
     noteForm.addEventListener('submit', handleFormSubmit)
+
+    // Self-update panel
+    if (btnOpenUpdate) btnOpenUpdate.addEventListener('click', openUpdatePanel)
+    if (btnCloseUpdateModal) btnCloseUpdateModal.addEventListener('click', closeUpdatePanel)
+    if (btnUpdateClose) btnUpdateClose.addEventListener('click', closeUpdatePanel)
+    if (btnUpdateCheck) btnUpdateCheck.addEventListener('click', handleCheckForUpdates)
+    if (btnDoUpdate) btnDoUpdate.addEventListener('click', handleDoUpdate)
+    if (updateModalBackdrop) {
+      updateModalBackdrop.addEventListener('click', (e) => {
+        if (e.target === updateModalBackdrop) closeUpdatePanel()
+      })
+    }
 
     // Editor Pin toggle
     editorPinBtn.addEventListener('click', () => {

@@ -556,6 +556,9 @@
     <!-- FOOTER -->
     <footer class="app-footer">
       <p>Jot &copy; 2026.</p>
+      <button type="button" class="app-footer-update" id="btn-open-update" title="Check for updates">
+        <span aria-hidden="true">🚀</span> Update
+      </button>
     </footer>
   </div>
 
@@ -571,6 +574,37 @@
       </button>
     </header>
     <div class="note-focus-content" id="note-focus-content"></div>
+  </section>
+
+  <!-- UPDATE MODAL -->
+  <div class="update-modal-backdrop" id="update-modal-backdrop" aria-hidden="true"></div>
+  <section class="update-modal-panel" id="update-modal-panel" role="dialog" aria-modal="true"
+    aria-labelledby="update-modal-title" aria-hidden="true">
+    <div class="update-modal-inner">
+      <header class="update-modal-header">
+        <div class="modal-title-group">
+          <span class="modal-title-icon">🚀</span>
+          <h2 id="update-modal-title">Update Jot</h2>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-update-modal" aria-label="Close update panel">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </header>
+
+      <div class="update-modal-body" id="update-modal-body">
+        <p class="update-status-hint">Checking your installation…</p>
+      </div>
+
+      <footer class="update-modal-footer">
+        <button type="button" class="btn-secondary" id="btn-update-close">Close</button>
+        <button type="button" class="btn-secondary" id="btn-update-check">Check for updates</button>
+        <button type="button" class="btn-primary" id="btn-do-update" disabled>Update now 🚀</button>
+      </footer>
+    </div>
   </section>
 
   <!-- Main logic script -->

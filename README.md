@@ -241,6 +241,17 @@ code, reinstall production dependencies, and restart itself under systemd —
 without touching `.env` or `data/`. Use the host-shell one-liners above if you
 prefer updating from SSH instead.
 
+> **Troubleshooting: `cannot open '.git/FETCH_HEAD': Permission denied`**
+> The app runs as the non-root `jot` user. If a host-side `update-jot.sh` was
+> previously run, its `git pull` executed as **root** and left root-owned files
+> inside `.git`, so the in-app updater can no longer write there. Restore
+> ownership from the Proxmox host shell:
+> ```bash
+> pct enter <CTID> -- chown -R jot:jot /opt/jot
+> ```
+> Current `update-jot.sh` restores ownership automatically, preventing this
+> from recurring.
+
 ---
 
 ## Security considerations

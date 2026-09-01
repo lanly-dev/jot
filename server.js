@@ -470,6 +470,22 @@ function appShortHash() {
   return runGit(['rev-parse', '--short', 'HEAD']).catch(() => '')
 }
 
+// The app runs as a non-root service user (`jot` in the Proxmox LXC deployment).
+// git only needs read access to check the commit, but `fetch`/`pull` must write
+// to the .git directory. If any .git files are owned by root (a host-side
+// `update-jot.sh` runs `git pull` as root), that write fails with "Permission
+// denied". Detect that and return actionable guidance instead of the raw error.
+function friendlyGitError(rawError) {
+  const msg = String((rawError && rawError.message) || rawError)
+  if (/permission denied|cannot open|read-only|EACCES/i.test(msg)) {
+    return 'The app user cannot write to the container’s git directory (.git). ' +
+      'This usually happens after a host-side `update-jot.sh` leaves root-owned files. ' +
+      'Fix it from the Proxmox host shell with: ' +
+      'pct enter <CTID> -- chown -R jot:jot /opt/jot'
+  }
+  return msg
+}
+
 // GET: lightweight update availability (no network). Used to decide whether the
 // UI should offer in-app updates at all.
 app.get('/api/update/status', async (req, res) => {
@@ -498,7 +514,7 @@ app.post('/api/update/check', async (req, res) => {
     const latest = await runGit(['rev-parse', '--short', 'FETCH_HEAD'])
     res.json({ current, latest, upToDate: current === latest, available: current !== latest })
   } catch (err) {
-    res.status(502).json({ error: 'Could not reach the git remote. ' + (err.message || '') })
+    res.status(502).json({ error: 'Could not reach the git remote. ' + friendlyGitError(err) })
   }
 })
 
@@ -519,7 +535,7 @@ app.post('/api/update', async (req, res) => {
     scheduleServiceRestart()
   } catch (err) {
     updateInProgress = false
-    res.status(500).json({ error: 'Update failed. ' + (err.message || '') })
+    res.status(500).json({ error: 'Update failed. ' + friendlyGitError(err) })
   }
 })
 

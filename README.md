@@ -220,10 +220,18 @@ Jot container. Run it from the Proxmox VE host shell as root; it auto-detects
 the container by name (`jot`) and is data-safe (never touches your `.env` or
 `data/`):
 
+Default update (auto-detects the container named `jot`) — paste this straight
+into the Proxmox VE host shell:
+
 ```bash
-bash -c "curl -fsSL https://raw.githubusercontent.com/lanly-dev/jot/main/update-jot.sh -o /tmp/update-jot.sh && chmod +x /tmp/update-jot.sh && /tmp/update-jot.sh"
-# or with a specific container ID
-bash -c "curl -fsSL https://raw.githubusercontent.com/lanly-dev/jot/main/update-jot.sh -o /tmp/update-jot.sh && chmod +x /tmp/update-jot.sh && /tmp/update-jot.sh 110"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/lanly-dev/jot/main/update-jot.sh)"
+```
+
+To target a specific container ID instead (e.g. `110`), you need to pass an
+argument, so the script is staged to `/tmp` first:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lanly-dev/jot/main/update-jot.sh -o /tmp/update-jot.sh && bash /tmp/update-jot.sh 110
 ```
 
 ---

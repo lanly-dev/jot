@@ -58,7 +58,9 @@ npm run efix
 - `GET /api/notes`
 - `POST /api/notes`
 - `PUT /api/notes/:id`
-- `DELETE /api/notes/:id`
+- `DELETE /api/notes/:id` — soft-delete (to trash); `?permanent=1` hard-deletes
+- `POST /api/notes/:id/restore` — restore a trashed note
+- `DELETE /api/notes/trash` — empty the trash (hard-delete all trashed notes)
 
 ### Credentials
 

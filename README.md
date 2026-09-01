@@ -104,6 +104,8 @@ The app does not use a database server. Instead, it writes JSON files directly t
 - `tags`
 - `pinned`
 - `archived`
+- `deleted` — when `true`, the note is in the trash
+- `deletedAt` — timestamp of when the note was trashed
 - `type`
 - `reminderAt`
 - `spreadsheetData`
@@ -163,7 +165,14 @@ Important operational note: if the key file is lost and `JOT_SECRET_KEY` is not 
 - Preserves unspecified fields unless a replacement is provided
 
 `DELETE /api/notes/:id`
-- Removes the note by ID and rewrites the JSON file
+- Moves the note to the trash (soft delete: sets `deleted`/`deletedAt`)
+- Pass `?permanent=1` to delete it permanently instead
+
+`POST /api/notes/:id/restore`
+- Restores a trashed note (clears `deleted`/`deletedAt`)
+
+`DELETE /api/notes/trash`
+- Empties the trash (permanently removes every trashed note)
 
 ### Credentials API
 

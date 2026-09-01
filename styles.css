@@ -577,6 +577,37 @@ h4 {
   outline-offset: 2px;
 }
 
+/* Empty trash button (shown only in trash view) */
+.btn-empty-trash {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #ff4d6d;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-empty-trash:hover {
+  color: #ff4d6d;
+  border-bottom-color: rgba(255, 77, 109, 0.5);
+}
+
+.btn-empty-trash svg {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .btn-empty-trash .status-text {
+    display: none;
+  }
+}
+
 /* Display Controls */
 .display-controls {
   display: flex;
@@ -1269,6 +1300,22 @@ body.note-focus-open {
 .note-actions .btn-icon.action-archive:hover {
   color: #2ec4b6;
   border-color: rgba(46, 196, 182, 0.2);
+}
+
+.note-actions .btn-icon.action-restore:hover {
+  color: #2ec4b6;
+  border-color: rgba(46, 196, 182, 0.2);
+}
+
+.note-actions .btn-icon.action-delete-permanent:hover {
+  color: #ff4d6d;
+  background-color: #ffeef1;
+  border-color: rgba(255, 77, 109, 0.35);
+}
+
+/* Trashed notes look slightly faded and desaturated */
+.notes-grid .note-card.trashed-note {
+  filter: saturate(0.55) opacity(0.82);
 }
 
 /* Note type indicator icon in the action bar (informational, not clickable) */

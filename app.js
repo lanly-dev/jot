@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let notes = []
   let credentials = []
   let currentMode = 'notes' // 'notes' or 'vault'
-  let currentView = 'active' // 'active' or 'archived'
+  let currentView = 'active' // 'active', 'archived' or 'trash'
   let currentLayoutView = localStorage.getItem('jot_layout_view') || 'thumbnail' // 'thumbnail' or 'list'
   let isFormPinned = false // whether the note-in-creation is pinned
   let focusedNoteId = null
@@ -76,6 +76,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const btnFilterActive = document.getElementById('status-active')
   const btnFilterArchived = document.getElementById('status-archived')
+  const btnFilterTrash = document.getElementById('status-trash')
+  const btnEmptyTrash = document.getElementById('btn-empty-trash')
   const btnLayoutToggle = document.getElementById('btn-layout-toggle')
   const notesSearchInput = document.getElementById('notes-search-input')
 
@@ -500,20 +502,27 @@ document.addEventListener('DOMContentLoaded', () => {
       })
     }
 
-    // Active vs. Archived View filter toggles (radio style with icons)
-    btnFilterActive.addEventListener('change', () => {
-      currentView = 'active'
-      btnFilterActive.closest('.status-option').classList.add('active')
-      btnFilterArchived.closest('.status-option').classList.remove('active')
+    // Active / Archived / Trash view filter toggles (radio style with icons)
+    const noteStatusRadios = [btnFilterActive, btnFilterArchived, btnFilterTrash]
+    function setNoteView() {
+      const checked = noteStatusRadios.find(r => r && r.checked)
+      if (checked) currentView = checked.value
+      noteStatusRadios.forEach(r => {
+        if (r) r.closest('.status-option')?.classList.toggle('active', r.checked)
+      })
+      if (currentView !== 'trash') {
+        currentTagFilter = null
+      }
       render()
+    }
+    noteStatusRadios.forEach(r => {
+      if (r) r.addEventListener('change', setNoteView)
     })
 
-    btnFilterArchived.addEventListener('change', () => {
-      currentView = 'archived'
-      btnFilterArchived.closest('.status-option').classList.add('active')
-      btnFilterActive.closest('.status-option').classList.remove('active')
-      render()
-    })
+    // Empty trash (permanent delete of all trashed notes)
+    if (btnEmptyTrash) {
+      btnEmptyTrash.addEventListener('click', handleEmptyTrash)
+    }
 
     // Vault category filter toggles
     document.querySelectorAll('input[name="vault-filter"]').forEach(radio => {
@@ -1435,6 +1444,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Restore a note from the trash
+  async function restoreNote(id) {
+    try {
+      const res = await fetch(`/api/notes/${id}/restore`, { method: 'POST' })
+      if (!res.ok) throw new Error('Cloud restore failed')
+      notes = notes.map(n => n.id === id ? { ...n, deleted: false, deletedAt: null } : n)
+      setSyncStatus('saved', 'Changes synced')
+      showToast('Jot restored! 🌱')
+      render()
+    } catch (err) {
+      console.error(err)
+      setSyncStatus('error', 'Restore failed — offline')
+      showToast('Could not restore — server offline ⚠️', 'warn')
+    }
+  }
+
+  // Move a note to the trash (soft delete). Throws on failure so the caller can revert.
+  async function moveNoteToTrash(id) {
+    const res = await fetch(`/api/notes/${id}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error('Cloud delete failed')
+    setSyncStatus('saved', 'Changes synced')
+    showToast('Jot moved to trash 🗑️')
+  }
+
+  // Permanently delete a single note. Throws on failure so the caller can revert.
+  async function deleteNotePermanently(id) {
+    const res = await fetch(`/api/notes/${id}?permanent=1`, { method: 'DELETE' })
+    if (!res.ok) throw new Error('Cloud delete failed')
+    setSyncStatus('saved', 'Changes synced')
+    showToast('Jot deleted permanently! 🗑️')
+  }
+
+  // Empty the trash (permanently delete all trashed notes)
+  async function handleEmptyTrash() {
+    const confirmed = window.confirm('Permanently delete ALL notes in the trash? This cannot be undone.')
+    if (!confirmed) return
+    const trashedCount = notes.filter(n => n.deleted).length
+    try {
+      const res = await fetch('/api/notes/trash', { method: 'DELETE' })
+      if (!res.ok) throw new Error('Empty trash failed')
+      notes = notes.filter(n => !n.deleted)
+      render()
+      setSyncStatus('saved', 'Changes synced')
+      showToast(`Trash emptied! Removed ${trashedCount} jot(s) 🗑️`)
+    } catch (err) {
+      console.error(err)
+      setSyncStatus('error', 'Empty trash failed')
+      showToast('Could not empty trash — server offline ⚠️', 'warn')
+    }
+  }
+
   function normalizeNote(note, fallback = {}) {
     const merged = { ...fallback, ...(note || {}) }
     return {
@@ -1442,7 +1502,9 @@ document.addEventListener('DOMContentLoaded', () => {
       type: merged.type || 'standard',
       reminderAt: merged.reminderAt || null,
       spreadsheetData: Array.isArray(merged.spreadsheetData) ? merged.spreadsheetData : null,
-      tags: Array.isArray(merged.tags) ? merged.tags : []
+      tags: Array.isArray(merged.tags) ? merged.tags : [],
+      deleted: !!merged.deleted,
+      deletedAt: merged.deletedAt || null
     }
   }
 
@@ -1484,24 +1546,42 @@ document.addEventListener('DOMContentLoaded', () => {
       return
     }
 
-    // 3. DELETE ACTION
+    // 2.5 RESTORE ACTION (only for trashed notes)
+    if (target.closest('.action-restore')) {
+      restoreNote(noteId)
+      return
+    }
+
+    // 3. DELETE ACTION (move to trash, or permanently delete if in trash view)
     if (target.closest('.action-delete')) {
+      const isTrashView = currentView === 'trash'
       card.classList.add('card-poof')
 
       setTimeout(async () => {
-        const removedNote = notes.find(n => n.id === noteId)
-        notes = notes.filter(n => n.id !== noteId)
+        const removedNoteRef = notes.find(n => n.id === noteId)
+        if (isTrashView) {
+          notes = notes.filter(n => n.id !== noteId)
+        } else {
+          note.deleted = true
+          note.deletedAt = new Date().toISOString()
+        }
         if (noteIdInput.value === noteId) resetForm()
         render()
 
         try {
-          const res = await fetch(`/api/notes/${noteId}`, { method: 'DELETE' })
-          if (!res.ok) throw new Error('Cloud delete failed')
-          setSyncStatus('saved', 'Changes synced')
-          showToast('Jot deleted permanently! 🗑️')
+          if (isTrashView) {
+            await deleteNotePermanently(noteId)
+          } else {
+            await moveNoteToTrash(noteId)
+          }
         } catch (err) {
           console.error(err)
-          if (removedNote) notes.unshift(removedNote)
+          if (isTrashView) {
+            if (removedNoteRef) notes.unshift(removedNoteRef)
+          } else {
+            note.deleted = false
+            note.deletedAt = null
+          }
           render()
           setSyncStatus('error', 'Delete failed — offline')
           showToast('Could not delete — server offline ⚠️', 'warn')
@@ -1526,9 +1606,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // UPDATE STATS DASHBOARD VALUES
   function updateStatsDashboard() {
-    const totalActive = notes.filter(n => !n.archived).length
-    const totalPinned = notes.filter(n => n.pinned && !n.archived).length
-    const totalArchived = notes.filter(n => n.archived).length
+    const totalActive = notes.filter(n => !n.archived && !n.deleted).length
+    const totalPinned = notes.filter(n => n.pinned && !n.archived && !n.deleted).length
+    const totalArchived = notes.filter(n => n.archived && !n.deleted).length
 
     // Populate with nice numeric animations if values changed
     animateValue(statTotalNotes, parseInt(statTotalNotes.textContent) || 0, totalActive, 400)
@@ -1606,14 +1686,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Update stats dashboard
     updateStatsDashboard()
 
-    // 2. Filter notes based on active state and tag filter
+    // 2. Filter notes based on active/archived/trash state, tag and search
+    const isTrashView = currentView === 'trash'
     let filteredNotes = notes.filter(note => {
-      const statusMatch = note.archived === (currentView === 'archived')
-      const tagMatch = !currentTagFilter || (Array.isArray(note.tags) && note.tags.map(t => t.toLowerCase()).includes(currentTagFilter.toLowerCase()))
+      const deletedMatch = !!note.deleted === isTrashView
+      const statusMatch = isTrashView || note.archived === (currentView === 'archived')
+      const tagMatch = isTrashView || !currentTagFilter ||
+        (Array.isArray(note.tags) && note.tags.map(t => t.toLowerCase()).includes(currentTagFilter.toLowerCase()))
       const searchMatch = !currentSearchQuery || 
         (note.title && note.title.toLowerCase().includes(currentSearchQuery)) || 
         (note.content && note.content.toLowerCase().includes(currentSearchQuery))
-      return statusMatch && tagMatch && searchMatch
+      return deletedMatch && statusMatch && tagMatch && searchMatch
     })
 
     // Update active tag filter chip display
@@ -1626,8 +1709,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // 3. Sort notes: Pinned notes bubble to top, then sorted by createdAt descending
+    // Toggle the "Empty trash" button: only in trash view when something is there
+    if (btnEmptyTrash) {
+      const hasTrash = notes.some(n => n.deleted)
+      btnEmptyTrash.style.display = isTrashView && hasTrash ? 'inline-flex' : 'none'
+    }
+
+    // 3. Sort notes: trashed by deletion time; otherwise pinned bubble to top,
+    //    then sorted by createdAt descending
     filteredNotes.sort((a, b) => {
+      if (isTrashView) {
+        return new Date(b.deletedAt || 0) - new Date(a.deletedAt || 0)
+      }
       if (a.pinned && !b.pinned) return -1
       if (!a.pinned && b.pinned) return 1
       return new Date(b.createdAt) - new Date(a.createdAt)
@@ -1646,7 +1739,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const emptyPara = emptyState.querySelector('p')
       const emptyMascot = emptyState.querySelector('.empty-mascot')
 
-      if (currentView === 'archived') {
+      if (currentView === 'trash') {
+        emptyMascot.textContent = '🗑️'
+        emptyTitle.textContent = 'Trash is empty'
+        emptyPara.textContent = 'Deleted jots land here so you can restore them. They are only gone for good when you empty the trash.'
+      } else if (currentView === 'archived') {
         emptyMascot.textContent = '📦'
         emptyTitle.textContent = 'Your archive is empty'
         emptyPara.textContent = 'When you have a jot that you are finished with, tap its Archive box to tuck it away here!'
@@ -2082,6 +2179,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const pinActionTitle = note.pinned ? 'Unpin Note' : 'Pin Note'
     const pinActionSVG = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="${note.pinned ? 'var(--color-primary)' : 'none'}" stroke-linecap="round" stroke-linejoin="round" class="svg-pin ${note.pinned ? 'is-pinned' : ''}"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24Z"></path></svg>`
 
+    // Trash-specific actions (only for notes that have been deleted)
+    const isTrashNote = !!note.deleted
+    const restoreMarkup = isTrashNote
+      ? `<button type="button" class="btn-icon action-restore" title="Restore note">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+        </button>`
+      : ''
+    const deleteIconSVG = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`
+    const deleteTitle = isTrashNote ? 'Delete Permanently' : 'Move to Trash'
+    const deleteMarkup = `<button type="button" class="btn-icon action-delete ${isTrashNote ? 'action-delete-permanent' : ''}" title="${deleteTitle}">${deleteIconSVG}</button>`
+
     // Title and Content escaping to avoid XSS injections while maintaining layout spacing
     const escapedTitle = escapeHTML(note.title)
     const escapedContent = escapeHTML(note.content)
@@ -2103,7 +2211,7 @@ document.addEventListener('DOMContentLoaded', () => {
       : ''
 
     return `
-      <article class="note-card ${note.pinned ? 'pinned-card' : ''}" data-id="${note.id}" style="--note-color: ${note.color};">
+      <article class="note-card ${note.pinned ? 'pinned-card' : ''} ${isTrashNote ? 'trashed-note' : ''}" data-id="${note.id}" style="--note-color: ${note.color};">
 
         <div class="note-header">
           <h3 class="note-title">${escapedTitle}</h3>
@@ -2118,7 +2226,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="note-actions">
           <span style="margin-right: auto; align-self: center; font-size: 0.72rem; font-weight: 700; color: rgba(45, 43, 42, 0.45);">${dateText}</span>
 
-          <!-- Note Type Icon -->
+          ${isTrashNote ? '' : `<!-- Note Type Icon -->
           ${typeIconMarkup}
 
           <!-- Pin Note Action -->
@@ -2129,12 +2237,13 @@ document.addEventListener('DOMContentLoaded', () => {
           <!-- Archive Note Action -->
           <button type="button" class="btn-icon action-archive" title="${archiveTitle}">
             ${archiveIconSVG}
-          </button>
+          </button>`}
+
+          <!-- Restore Note Action (trash only) -->
+          ${restoreMarkup}
 
           <!-- Delete Note Action -->
-          <button type="button" class="btn-icon action-delete" title="Delete Note Permanently">
-            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-          </button>
+          ${deleteMarkup}
         </div>
       </article>
     `

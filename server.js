@@ -296,6 +296,8 @@ app.post('/api/notes', (req, res) => {
     tags: Array.isArray(req.body.tags) ? req.body.tags : [],
     pinned: !!req.body.pinned,
     archived: !!req.body.archived,
+    deleted: false,
+    deletedAt: null,
     type: normalizeNoteType(req.body.type),
     reminderAt: req.body.reminderAt || null,
     spreadsheetData: normalizeSpreadsheetData(req.body.spreadsheetData),
@@ -340,20 +342,54 @@ app.put('/api/notes/:id', (req, res) => {
   res.json(updatedNote)
 })
 
-// DELETE: Remove a note permanently
+// DELETE: Empty the trash (permanently remove all deleted notes). Declared
+// before the :id route so "trash" is not matched as a note id.
+app.delete('/api/notes/trash', (req, res) => {
+  let notes = readNotes()
+  const kept = notes.filter(n => !n.deleted)
+  const removedCount = notes.length - kept.length
+  writeNotes(kept)
+  console.log(`Trash emptied: removed ${removedCount} note(s) 🗑️`)
+  res.json({ success: true, message: 'Trash emptied 🌸', removed: removedCount })
+})
+
+// DELETE: Move a note to the trash (soft delete). Pass ?permanent=1 to remove
+// it for good instead.
 app.delete('/api/notes/:id', (req, res) => {
   const { id } = req.params
+  const permanent = req.query.permanent === '1'
   let notes = readNotes()
-  const noteExists = notes.some(n => n.id === id)
+  const noteIndex = notes.findIndex(n => n.id === id)
 
-  if (!noteExists)
+  if (noteIndex === -1)
   {return res.status(404).json({ error: 'Note not found 😿' })}
 
+  if (permanent) {
+    notes = notes.filter(n => n.id !== id)
+    writeNotes(notes)
+    console.log(`Note deleted permanently: (${id}) 🗑️`)
+    return res.json({ success: true, message: 'Note deleted permanently 🌸' })
+  }
 
-  notes = notes.filter(n => n.id !== id)
+  notes[noteIndex] = { ...notes[noteIndex], deleted: true, deletedAt: new Date().toISOString() }
   writeNotes(notes)
-  console.log(`Note deleted permanently: (${id}) 🗑️`)
-  res.json({ success: true, message: 'Note deleted permanently 🌸' })
+  console.log(`Note moved to trash: (${id}) 🗑️`)
+  res.json({ success: true, message: 'Note moved to trash 🌸' })
+})
+
+// POST: Restore a note from the trash
+app.post('/api/notes/:id/restore', (req, res) => {
+  const { id } = req.params
+  let notes = readNotes()
+  const noteIndex = notes.findIndex(n => n.id === id)
+
+  if (noteIndex === -1)
+  {return res.status(404).json({ error: 'Note not found 😿' })}
+
+  notes[noteIndex] = { ...notes[noteIndex], deleted: false, deletedAt: null }
+  writeNotes(notes)
+  console.log(`Note restored: (${id}) 🌱`)
+  res.json(notes[noteIndex])
 })
 
 // GET: Retrieve all credentials (sensitive fields decrypted)

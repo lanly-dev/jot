@@ -1970,6 +1970,139 @@ body.note-focus-open {
   .notes-grid.list-view .note-title {
     font-size: 0.75rem;
   }
+
+  /* Focus panel - proper proportions on mobile */
+  .note-focus-panel {
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    top: 0;
+    left: 0;
+    transform: none;
+    border-radius: 0;
+    border: none;
+  }
+
+  .note-focus-panel.active {
+    transform: none;
+  }
+
+  .note-focus-content {
+    padding: 0.5rem 0.75rem 1rem;
+    height: calc(100vh - 50px);
+  }
+
+  .note-focus-title {
+    font-size: 1.1rem;
+  }
+
+  .note-focus-title-input {
+    font-size: 1.1rem;
+    padding: 0.4rem 0;
+  }
+
+  .note-focus-body-input {
+    min-height: 150px;
+    font-size: 0.9rem;
+  }
+
+  .note-focus-header {
+    padding: 0.5rem 0.75rem 0.25rem;
+  }
+
+  /* Note creator - smaller options on mobile */
+  .creator-row-1 {
+    gap: 0.4rem;
+  }
+
+  .creator-row-1 input[type="text"] {
+    font-size: 0.9rem;
+  }
+
+  .creator-row-2 textarea {
+    font-size: 0.85rem;
+    min-height: 50px;
+  }
+
+  .creator-row-3 {
+    padding-top: 0.5rem;
+    gap: 0.3rem;
+  }
+
+  .creator-row-3 .options-toolbar {
+    gap: 0.25rem;
+  }
+
+  .btn-popover-trigger {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.7rem;
+    gap: 0.25rem;
+  }
+
+  .trigger-icon {
+    font-size: 0.85rem;
+  }
+
+  .trigger-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .color-dot-swatch {
+    width: 10px;
+    height: 10px;
+  }
+
+  .form-actions {
+    gap: 0.4rem;
+  }
+
+  .form-actions button {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  /* Hide button labels on mobile - icons only */
+  .trigger-label {
+    display: none;
+  }
+
+  .btn-popover-trigger {
+    padding: 0.35rem;
+  }
+
+  .trigger-arrow {
+    display: none;
+  }
+
+  /* Form action buttons - icon only on mobile */
+  .form-actions .btn-text {
+    display: none;
+  }
+
+  .form-actions button {
+    padding: 0.4rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 0;
+    color: transparent;
+  }
+
+  /* Note creator buttons */
+  .form-actions button#btn-close-creator::before,
+  .form-actions button#btn-cancel-credential-modal::before {
+    content: '✕';
+    font-size: 1rem;
+    color: var(--text-muted);
+  }
+
+  .form-actions button#btn-save-note::before,
+  .form-actions button#btn-save-credential::before {
+    content: '✓';
+    font-size: 1rem;
+    color: #ffffff;
+  }
 }
 
 /* ==========================================================================

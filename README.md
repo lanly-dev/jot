@@ -110,6 +110,7 @@ The app does not use a database server. Instead, it writes JSON files directly t
 - `reminderAt`
 - `spreadsheetData`
 - `createdAt`
+- `updatedAt` — timestamp of the last edit (falls back to `createdAt` for notes persisted before the field was introduced)
 
 The backend initializes a sample note set if the file does not exist.
 

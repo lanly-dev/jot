@@ -2083,7 +2083,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Render card templates
       notesGrid.innerHTML = filteredNotes.map(note => renderNoteCardHTML(note)).join('')
-      if (!isListView) applyMasonryLayout()
+      if (!isListView) {
+        applyMasonryLayout()
+      } else {
+        // Clear the masonry-set height so the flex list view can size naturally
+        notesGrid.style.height = ''
+      }
     }
 
     applyFocusedNoteState()
@@ -2306,7 +2311,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <article class="note-focus-article" style="--note-color: ${note.color};" data-id="${note.id}">
         <div class="note-focus-meta-row">
           <span class="note-type-badge type-${noteType}">${typeLabel}</span>
-          <span class="note-focus-meta">${escapeHTML(formatDate(note.createdAt))}</span>
+          <span class="note-focus-meta">${escapeHTML(formatDate(note.updatedAt || note.createdAt))}</span>
         </div>
         ${reminderText}
         <input type="text" class="note-focus-title-input" value="${escapedTitle}"
@@ -2565,8 +2570,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const typeIconMarkup = `<button type="button" class="btn-icon action-type type-${noteType}" title="${typeLabelMap[noteType] || 'Standard'} Note">${getTypeIconSVG(noteType)}</button>`
 
-    // Formatted timestamp text (e.g. "Just now", "2 mins ago", or neat date)
-    const dateText = formatDate(note.createdAt)
+    // Formatted timestamp text (e.g. "Just now", "2 mins ago", or neat date).
+    // Prefer updatedAt so the card reflects the last edit, falling back to
+    // createdAt for notes created before the field existed.
+    const dateText = formatDate(note.updatedAt || note.createdAt)
 
     // Archive button icon conditional based on state
     const archiveTitle = note.archived ? 'Send back to Active Jots' : 'Archive Note'

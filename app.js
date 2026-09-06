@@ -1638,6 +1638,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!res.ok) throw new Error('Cloud save failed')
         const savedNote = await res.json()
         notes.unshift(normalizeNote(savedNote, newNote))
+        clearActiveFilters() // make sure the new note is not hidden by a stale tag/search filter
         setSyncStatus('saved', 'Saved · synced')
         showToast('Jot saved successfully! ✨')
       } catch (err) {
@@ -1677,6 +1678,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (creatorExpanded) creatorExpanded.style.display = 'none'
   }
 
+  // Clear any active tag/search filters so that a newly created note is always
+  // visible on the board. The search input UI is kept in sync (value + highlight).
+  function clearActiveFilters() {
+    currentTagFilter = null
+    currentSearchQuery = ''
+    if (notesSearchInput) {
+      notesSearchInput.value = ''
+      const container = notesSearchInput.closest('.search-option')
+      if (container) container.classList.remove('active')
+    }
+  }
+
   // RESET FORM TO CREATE STATE
   function resetForm() {
     closeAllPopovers()
@@ -1714,8 +1727,9 @@ document.addEventListener('DOMContentLoaded', () => {
     editorPinBtn.title = 'Pin Note to Top'
 
     // Reset buttons to Create state
-    editorTitleHeading.textContent = 'Create a New Jot'
-    btnSaveNote.querySelector('.btn-text').textContent = 'Save Note'
+    if (editorTitleHeading) editorTitleHeading.textContent = 'Create a New Jot'
+    const saveLabel = btnSaveNote?.querySelector('.btn-text')
+    if (saveLabel) saveLabel.textContent = 'Save Note'
   }
 
   // Helper to sync minor updates silently

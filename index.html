@@ -580,9 +580,31 @@
     <!-- FOOTER -->
     <footer class="app-footer">
       <p>Jot &copy; 2026.</p>
-      <button type="button" class="app-footer-update" id="btn-open-update" title="Check for updates">
-        <span aria-hidden="true">🚀</span> Update
-      </button>
+      <div class="app-footer-dropdown">
+        <button type="button" class="app-footer-dropdown-toggle" id="btn-footer-dropdown-toggle" aria-haspopup="true" aria-expanded="false">
+          <span aria-hidden="true">⚙️</span> Options
+          <svg class="dropdown-arrow" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="app-footer-dropdown-menu" id="footer-dropdown-menu" role="menu">
+          <button type="button" class="dropdown-item" id="btn-export-data" role="menuitem">
+            <span class="dropdown-item-icon" aria-hidden="true">📦</span>
+            <span class="dropdown-item-text">Export Notes</span>
+            <span class="dropdown-item-hint">Download as JSON</span>
+          </button>
+          <button type="button" class="dropdown-item" id="btn-import-data" role="menuitem">
+            <span class="dropdown-item-icon" aria-hidden="true">📥</span>
+            <span class="dropdown-item-text">Import Notes</span>
+            <span class="dropdown-item-hint">Merge from file</span>
+          </button>
+          <div class="dropdown-divider"></div>
+          <button type="button" class="dropdown-item" id="btn-open-update" role="menuitem">
+            <span class="dropdown-item-icon" aria-hidden="true">🚀</span>
+            <span class="dropdown-item-text">Update Jot</span>
+            <span class="dropdown-item-hint">Check for updates</span>
+          </button>
+        </div>
+      </div>
+      <input type="file" id="import-file-input" accept=".json" style="display: none;">
     </footer>
   </div>
 

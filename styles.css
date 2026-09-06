@@ -1443,12 +1443,17 @@ body.note-focus-open {
   margin-top: 3rem;
 }
 
-/* ---- Footer "Update" button ---- */
-.app-footer-update {
+/* ---- Footer dropdown ---- */
+.app-footer-dropdown {
+  position: relative;
+  display: inline-block;
+  margin-top: 0.6rem;
+}
+
+.app-footer-dropdown-toggle {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  margin-top: 0.6rem;
   background: #ffffff;
   color: var(--text-muted);
   border: 1px dashed rgba(45, 43, 42, 0.25);
@@ -1461,11 +1466,243 @@ body.note-focus-open {
   transition: all 0.18s ease;
 }
 
-.app-footer-update:hover {
+.app-footer-dropdown-toggle:hover {
   color: var(--color-primary);
   border-color: rgba(255, 117, 143, 0.45);
   background: var(--color-primary-light);
   transform: translateY(-1px);
+}
+
+.app-footer-dropdown-toggle .dropdown-arrow {
+  transition: transform 0.2s ease;
+}
+
+.app-footer-dropdown.open .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.app-footer-dropdown-menu {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 50%;
+  transform: translateX(-50%) scale(0.95);
+  min-width: 200px;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.35rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.18s ease;
+  z-index: 100;
+}
+
+.app-footer-dropdown.open .app-footer-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) scale(1);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background: rgba(255, 117, 143, 0.08);
+}
+
+.dropdown-item-icon {
+  font-size: 1rem;
+  width: 20px;
+  text-align: center;
+}
+
+.dropdown-item-text {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.dropdown-item-hint {
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 0.25rem 0.5rem;
+}
+
+/* ==========================================================================
+   IMPORT CONFIRM MODAL
+   ========================================================================== */
+.import-confirm-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.import-confirm-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(25, 22, 20, 0.4);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.import-confirm-modal.active .import-confirm-backdrop {
+  opacity: 1;
+}
+
+.import-confirm-panel {
+  position: relative;
+  width: min(400px, calc(100vw - 2rem));
+  background: #ffffff;
+  border: 2px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  transform: scale(0.95);
+  opacity: 0;
+  transition: all 0.25s ease;
+}
+
+.import-confirm-modal.active .import-confirm-panel {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.import-confirm-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.import-confirm-icon {
+  font-size: 1.5rem;
+}
+
+.import-confirm-header h3 {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.import-confirm-summary {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0 0 1rem;
+}
+
+.import-stats {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.import-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem 0.5rem;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.import-stat-new {
+  background: rgba(46, 125, 50, 0.1);
+}
+
+.import-stat-update {
+  background: rgba(255, 152, 0, 0.1);
+}
+
+.import-stat-duplicate {
+  background: rgba(117, 117, 117, 0.1);
+}
+
+.import-stat-number {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.import-stat-new .import-stat-number {
+  color: #2e7d32;
+}
+
+.import-stat-update .import-stat-number {
+  color: #f57c00;
+}
+
+.import-stat-duplicate .import-stat-number {
+  color: #757575;
+}
+
+.import-stat-label {
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.import-confirm-creds {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 117, 143, 0.08);
+  border-radius: 8px;
+}
+
+.import-confirm-warning {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 152, 0, 0.08);
+  border-radius: 8px;
+  border-left: 3px solid #f57c00;
+}
+
+.import-confirm-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.import-confirm-footer .btn-secondary,
+.import-confirm-footer .btn-primary {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.85rem;
 }
 
 /* ==========================================================================

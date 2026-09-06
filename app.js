@@ -147,6 +147,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnUpdateCheck = document.getElementById('btn-update-check')
   const btnDoUpdate = document.getElementById('btn-do-update')
 
+  // Dropdown elements
+  const footerDropdown = document.querySelector('.app-footer-dropdown')
+  const btnFooterDropdownToggle = document.getElementById('btn-footer-dropdown-toggle')
+  const footerDropdownMenu = document.getElementById('footer-dropdown-menu')
+  const btnExportData = document.getElementById('btn-export-data')
+  const btnImportData = document.getElementById('btn-import-data')
+  const importFileInput = document.getElementById('import-file-input')
+
   // Popover selectors
   const btnTypePopup = document.getElementById('btn-type-popup')
   const typePopover = document.getElementById('type-popover')
@@ -434,6 +442,253 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // FOOTER DROPDOWN
+  function toggleFooterDropdown() {
+    if (!footerDropdown) return
+    const isOpen = footerDropdown.classList.contains('open')
+    if (isOpen) {
+      closeFooterDropdown()
+    } else {
+      openFooterDropdown()
+    }
+  }
+
+  function openFooterDropdown() {
+    if (!footerDropdown) return
+    footerDropdown.classList.add('open')
+    if (btnFooterDropdownToggle) btnFooterDropdownToggle.setAttribute('aria-expanded', 'true')
+  }
+
+  function closeFooterDropdown() {
+    if (!footerDropdown) return
+    footerDropdown.classList.remove('open')
+    if (btnFooterDropdownToggle) btnFooterDropdownToggle.setAttribute('aria-expanded', 'false')
+  }
+
+  // EXPORT DATA
+  function handleExportData() {
+    const exportData = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      notes: notes,
+      credentials: credentials.length > 0 ? credentials : []
+    }
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `jot-backup-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+
+    showToast(`Exported ${notes.length} notes successfully! 📦`, 'success')
+  }
+
+  // IMPORT DATA - Smart merge with comparison
+  function handleImportFileSelect(e) {
+    const file = e.target.files[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const importData = JSON.parse(event.target.result)
+        showImportPreview(importData)
+      } catch (err) {
+        console.error('Import parse error:', err)
+        showToast('Invalid file format — please select a valid Jot backup file ⚠️', 'error')
+      }
+    }
+    reader.readAsText(file)
+
+    // Reset file input so same file can be selected again
+    e.target.value = ''
+  }
+
+  function showImportPreview(importData) {
+    const importNotes = Array.isArray(importData.notes) ? importData.notes : []
+    const importCreds = Array.isArray(importData.credentials) ? importData.credentials : []
+
+    // Compare notes by ID
+    const existingIds = new Set(notes.map(n => n.id))
+    const duplicateIds = new Set()
+
+    // Check for duplicates by content similarity (title + content)
+    const existingSignatures = new Set(
+      notes.map(n => `${n.title?.toLowerCase().trim()}|${n.content?.toLowerCase().trim()}`)
+    )
+
+    let newCount = 0
+    let duplicateCount = 0
+    let updatedCount = 0
+
+    importNotes.forEach(importNote => {
+      const signature = `${importNote.title?.toLowerCase().trim()}|${importNote.content?.toLowerCase().trim()}`
+
+      if (existingIds.has(importNote.id)) {
+        // Same ID - check if content changed
+        const existingNote = notes.find(n => n.id === importNote.id)
+        const existingSignature = `${existingNote?.title?.toLowerCase().trim()}|${existingNote?.content?.toLowerCase().trim()}`
+        if (existingSignature !== signature) {
+          updatedCount++
+        } else {
+          duplicateCount++
+        }
+        duplicateIds.add(importNote.id)
+      } else if (existingSignatures.has(signature)) {
+        duplicateCount++
+      } else {
+        newCount++
+      }
+    })
+
+    // Count new credentials
+    const existingCredIds = new Set(credentials.map(c => c.id))
+    const newCreds = importCreds.filter(c => !existingCredIds.has(c.id))
+
+    // Build preview modal
+    showImportConfirmModal(importData, {
+      newCount,
+      duplicateCount,
+      updatedCount,
+      newCreds: newCreds.length,
+      totalImport: importNotes.length
+    })
+  }
+
+  function showImportConfirmModal(importData, stats) {
+    // Remove any existing modal
+    const existingModal = document.getElementById('import-confirm-modal')
+    if (existingModal) existingModal.remove()
+
+    const modal = document.createElement('div')
+    modal.id = 'import-confirm-modal'
+    modal.className = 'import-confirm-modal'
+    modal.innerHTML = `
+      <div class="import-confirm-backdrop"></div>
+      <div class="import-confirm-panel">
+        <div class="import-confirm-header">
+          <span class="import-confirm-icon">📥</span>
+          <h3>Import Notes</h3>
+        </div>
+        <div class="import-confirm-body">
+          <p class="import-confirm-summary">We found the following in your backup file:</p>
+          <div class="import-stats">
+            <div class="import-stat import-stat-new">
+              <span class="import-stat-number">${stats.newCount}</span>
+              <span class="import-stat-label">New notes</span>
+            </div>
+            <div class="import-stat import-stat-update">
+              <span class="import-stat-number">${stats.updatedCount}</span>
+              <span class="import-stat-label">Updated notes</span>
+            </div>
+            <div class="import-stat import-stat-duplicate">
+              <span class="import-stat-number">${stats.duplicateCount}</span>
+              <span class="import-stat-label">Duplicates (skip)</span>
+            </div>
+          </div>
+          ${stats.newCreds > 0 ? `<p class="import-confirm-creds">Plus ${stats.newCreds} credential(s) will be added.</p>` : ''}
+          <p class="import-confirm-warning">Existing notes won't be removed. This action cannot be undone.</p>
+        </div>
+        <div class="import-confirm-footer">
+          <button type="button" class="btn-secondary" id="btn-import-cancel">Cancel</button>
+          <button type="button" class="btn-primary" id="btn-import-confirm">Import ${stats.newCount + stats.updatedCount} notes</button>
+        </div>
+      </div>
+    `
+
+    document.body.appendChild(modal)
+
+    // Animate in
+    requestAnimationFrame(() => {
+      modal.classList.add('active')
+    })
+
+    // Event handlers
+    const backdrop = modal.querySelector('.import-confirm-backdrop')
+    const cancelBtn = modal.querySelector('#btn-import-cancel')
+    const confirmBtn = modal.querySelector('#btn-import-confirm')
+
+    function closeModal() {
+      modal.classList.remove('active')
+      setTimeout(() => modal.remove(), 250)
+    }
+
+    backdrop.addEventListener('click', closeModal)
+    cancelBtn.addEventListener('click', closeModal)
+    confirmBtn.addEventListener('click', () => {
+      closeModal()
+      performImport(importData)
+    })
+  }
+
+  function performImport(importData) {
+    const importNotes = Array.isArray(importData.notes) ? importData.notes : []
+    const importCreds = Array.isArray(importData.credentials) ? importData.credentials : []
+
+    const existingIds = new Set(notes.map(n => n.id))
+    const existingSignatures = new Set(
+      notes.map(n => `${n.title?.toLowerCase().trim()}|${n.content?.toLowerCase().trim()}`)
+    )
+    const existingCredIds = new Set(credentials.map(c => c.id))
+
+    let addedCount = 0
+    let updatedCount = 0
+
+    // Merge notes
+    importNotes.forEach(importNote => {
+      const signature = `${importNote.title?.toLowerCase().trim()}|${importNote.content?.toLowerCase().trim()}`
+      const normalizedNote = normalizeNote(importNote)
+
+      if (existingIds.has(importNote.id)) {
+        // Same ID - check if content changed
+        const existingNote = notes.find(n => n.id === importNote.id)
+        const existingSignature = `${existingNote?.title?.toLowerCase().trim()}|${existingNote?.content?.toLowerCase().trim()}`
+        if (existingSignature !== signature) {
+          // Update existing note
+          const index = notes.findIndex(n => n.id === importNote.id)
+          if (index !== -1) {
+            notes[index] = normalizedNote
+            updatedCount++
+          }
+        }
+      } else if (!existingSignatures.has(signature)) {
+        // New note - add it
+        notes.push(normalizedNote)
+        addedCount++
+        // Update tracking sets
+        existingSignatures.add(signature)
+      }
+    })
+
+    // Merge credentials
+    let credsAdded = 0
+    importCreds.forEach(cred => {
+      if (!existingCredIds.has(cred.id)) {
+        credentials.push(cred)
+        credsAdded++
+      }
+    })
+
+    // Re-render
+    render()
+
+    // Show success stats
+    const messages = []
+    if (addedCount > 0) messages.push(`${addedCount} new note${addedCount !== 1 ? 's' : ''}`)
+    if (updatedCount > 0) messages.push(`${updatedCount} updated`)
+    if (credsAdded > 0) messages.push(`${credsAdded} credential${credsAdded !== 1 ? 's' : ''}`)
+
+    if (messages.length > 0) {
+      showToast(`Import complete: ${messages.join(', ')} added! 📥`, 'success')
+    } else {
+      showToast('No new notes to import — everything was already up to date! ✓', 'success')
+    }
+  }
+
   // SETUP EVENT LISTENERS
   function setupEventListeners() {
     // Auto-expanding content textareas
@@ -453,7 +708,10 @@ document.addEventListener('DOMContentLoaded', () => {
     noteForm.addEventListener('submit', handleFormSubmit)
 
     // Self-update panel
-    if (btnOpenUpdate) btnOpenUpdate.addEventListener('click', openUpdatePanel)
+    if (btnOpenUpdate) btnOpenUpdate.addEventListener('click', () => {
+      closeFooterDropdown()
+      openUpdatePanel()
+    })
     if (btnCloseUpdateModal) btnCloseUpdateModal.addEventListener('click', closeUpdatePanel)
     if (btnUpdateClose) btnUpdateClose.addEventListener('click', closeUpdatePanel)
     if (btnUpdateCheck) btnUpdateCheck.addEventListener('click', handleCheckForUpdates)
@@ -462,6 +720,42 @@ document.addEventListener('DOMContentLoaded', () => {
       updateModalBackdrop.addEventListener('click', (e) => {
         if (e.target === updateModalBackdrop) closeUpdatePanel()
       })
+    }
+
+    // Footer dropdown toggle
+    if (btnFooterDropdownToggle) {
+      btnFooterDropdownToggle.addEventListener('click', (e) => {
+        e.stopPropagation()
+        toggleFooterDropdown()
+      })
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (footerDropdown && !footerDropdown.contains(e.target)) {
+        closeFooterDropdown()
+      }
+    })
+
+    // Export data button
+    if (btnExportData) {
+      btnExportData.addEventListener('click', () => {
+        closeFooterDropdown()
+        handleExportData()
+      })
+    }
+
+    // Import data button
+    if (btnImportData) {
+      btnImportData.addEventListener('click', () => {
+        closeFooterDropdown()
+        if (importFileInput) importFileInput.click()
+      })
+    }
+
+    // File input change handler
+    if (importFileInput) {
+      importFileInput.addEventListener('change', handleImportFileSelect)
     }
 
     // Editor Pin toggle

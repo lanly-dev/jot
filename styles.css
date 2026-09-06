@@ -2,6 +2,10 @@
    Jot - Cute & Colorful Note-Taking App Stylesheet
    ========================================================================== */
 
+/* ==========================================================================
+   🖥️ DESKTOP STYLES (Default - 601px and above)
+   ========================================================================== */
+
 /* Design Tokens & Theme Variables */
 :root {
   --bg-main: #fbf9f6;
@@ -602,6 +606,7 @@ h4 {
   display: block;
 }
 
+/* Tablet: Hide empty trash text label */
 @media (max-width: 768px) {
   .btn-empty-trash .status-text {
     display: none;
@@ -715,7 +720,7 @@ h4 {
   opacity: 0.7;
 }
 
-/* Responsive adjustments for display controls */
+/* Tablet: Compact display controls with icon-only status filters */
 @media (max-width: 768px) {
   .display-controls {
     flex-direction: row;
@@ -1879,8 +1884,10 @@ body.note-focus-open {
 }
 
 /* ==========================================================================
-   RESPONSIVE DESIGN MEDIA QUERIES
+   📱 MOBILE & TABLET RESPONSIVE STYLES
    ========================================================================== */
+
+/* Mobile navigation - full width tabs */
 @media (max-width: 600px) {
   .app-container {
     padding: .7rem;
@@ -2525,6 +2532,7 @@ body.note-focus-open {
   min-height: 1.2em;
 }
 
+/* Mobile navigation and table adjustments */
 @media (max-width: 600px) {
   .app-nav {
     width: 100%;

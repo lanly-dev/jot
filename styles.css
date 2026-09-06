@@ -817,11 +817,12 @@ h4 {
    NOTES GRID & NOTE CARDS
    ========================================================================== */
 .notes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: .5rem;
-  width: 100%;
+  /* Masonry container: cards are positioned absolutely by applyMasonryLayout()
+     so they can keep their own natural height while filling gaps. The list view
+     switches to flex via the .list-view class / JS. */
+  display: block;
   position: relative;
+  width: 100%;
 }
 
 .notes-grid.list-view {
@@ -1892,11 +1893,6 @@ body.note-focus-open {
   .app-container {
     padding: .7rem;
     gap: .5rem;
-  }
-
-  .notes-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.35rem;
   }
 
   .note-card {

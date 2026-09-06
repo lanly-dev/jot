@@ -301,7 +301,8 @@ app.post('/api/notes', (req, res) => {
     type: normalizeNoteType(req.body.type),
     reminderAt: req.body.reminderAt || null,
     spreadsheetData: normalizeSpreadsheetData(req.body.spreadsheetData),
-    createdAt: req.body.createdAt || new Date().toISOString()
+    createdAt: req.body.createdAt || new Date().toISOString(),
+    updatedAt: req.body.updatedAt || req.body.createdAt || new Date().toISOString()
   }
 
   notes.unshift(newNote)
@@ -333,7 +334,8 @@ app.put('/api/notes/:id', (req, res) => {
     reminderAt: req.body.reminderAt !== undefined ? (req.body.reminderAt || null) : (notes[noteIndex].reminderAt || null),
     spreadsheetData: req.body.spreadsheetData !== undefined
       ? normalizeSpreadsheetData(req.body.spreadsheetData)
-      : (notes[noteIndex].spreadsheetData || null)
+      : (notes[noteIndex].spreadsheetData || null),
+    updatedAt: new Date().toISOString()
   }
 
   notes[noteIndex] = updatedNote
@@ -371,7 +373,7 @@ app.delete('/api/notes/:id', (req, res) => {
     return res.json({ success: true, message: 'Note deleted permanently 🌸' })
   }
 
-  notes[noteIndex] = { ...notes[noteIndex], deleted: true, deletedAt: new Date().toISOString() }
+  notes[noteIndex] = { ...notes[noteIndex], deleted: true, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
   writeNotes(notes)
   console.log(`Note moved to trash: (${id}) 🗑️`)
   res.json({ success: true, message: 'Note moved to trash 🌸' })
@@ -386,7 +388,7 @@ app.post('/api/notes/:id/restore', (req, res) => {
   if (noteIndex === -1)
   {return res.status(404).json({ error: 'Note not found 😿' })}
 
-  notes[noteIndex] = { ...notes[noteIndex], deleted: false, deletedAt: null }
+  notes[noteIndex] = { ...notes[noteIndex], deleted: false, deletedAt: null, updatedAt: new Date().toISOString() }
   writeNotes(notes)
   console.log(`Note restored: (${id}) 🌱`)
   res.json(notes[noteIndex])

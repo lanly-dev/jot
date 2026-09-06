@@ -837,6 +837,17 @@ document.addEventListener('DOMContentLoaded', () => {
       render()
     })
 
+    // Re-run the masonry when the window is resized so cards re-flow into the
+    // correct number of columns (debounced to avoid heavy work while dragging).
+    let masonryResizeTimer = null
+    window.addEventListener('resize', () => {
+      if (masonryResizeTimer) clearTimeout(masonryResizeTimer)
+      masonryResizeTimer = setTimeout(() => {
+        if (currentLayoutView === 'list' || focusedNoteId) return
+        applyMasonryLayout()
+      }, 120)
+    })
+
     // Search input handler
     if (notesSearchInput) {
       notesSearchInput.addEventListener('input', (e) => {
@@ -1625,7 +1636,8 @@ document.addEventListener('DOMContentLoaded', () => {
         spreadsheetData,
         tags: [...creatorDraftTags],
         archived: false,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       }
 
       setSyncStatus('saving', 'Saving...')
@@ -1812,7 +1824,8 @@ document.addEventListener('DOMContentLoaded', () => {
       spreadsheetData: Array.isArray(merged.spreadsheetData) ? merged.spreadsheetData : null,
       tags: Array.isArray(merged.tags) ? merged.tags : [],
       deleted: !!merged.deleted,
-      deletedAt: merged.deletedAt || null
+      deletedAt: merged.deletedAt || null,
+      updatedAt: merged.updatedAt || merged.createdAt || new Date().toISOString()
     }
   }
 
@@ -2024,14 +2037,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 3. Sort notes: trashed by deletion time; otherwise pinned bubble to top,
-    //    then sorted by createdAt descending
+    //    then sorted by last-modified time descending (most recently created
+    //    or edited notes float to the top)
     filteredNotes.sort((a, b) => {
       if (isTrashView) {
         return new Date(b.deletedAt || 0) - new Date(a.deletedAt || 0)
       }
       if (a.pinned && !b.pinned) return -1
       if (!a.pinned && b.pinned) return 1
-      return new Date(b.createdAt) - new Date(a.createdAt)
+      const aTime = new Date(a.updatedAt || a.createdAt || 0).getTime()
+      const bTime = new Date(b.updatedAt || b.createdAt || 0).getTime()
+      return bTime - aTime
     })
 
     // If focused note is no longer visible due to filters/view, exit focus mode.
@@ -2061,25 +2077,100 @@ document.addEventListener('DOMContentLoaded', () => {
         emptyPara.textContent = 'Write your first sweet note in the panel on the left to start filling your board with color and joy!'
       }
     } else {
-      notesGrid.style.display = currentLayoutView === 'list' ? 'flex' : 'grid'
+      const isListView = currentLayoutView === 'list'
+      notesGrid.style.display = isListView ? 'flex' : 'block'
       emptyState.style.display = 'none'
 
       // Render card templates
       notesGrid.innerHTML = filteredNotes.map(note => renderNoteCardHTML(note)).join('')
+      if (!isListView) applyMasonryLayout()
     }
 
     applyFocusedNoteState()
     scheduleReminderNotifications()
   }
 
+  // ---------------------------------------------------------------------------
+  // Masonry layout (thumbnail view only)
+  // Measures each card's natural height at the current column width, then packs
+  // every card into the shortest column so there is no empty space left beside
+  // a taller card. Used because a plain grid forces every card in a row to the
+  // same height, leaving gaps under shorter cards.
+  // ---------------------------------------------------------------------------
+  function applyMasonryLayout() {
+    if (currentLayoutView === 'list' || focusedNoteId) return
+    const cards = Array.from(notesGrid.querySelectorAll('.note-card'))
+    if (cards.length === 0) return
+
+    const containerW = notesGrid.getBoundingClientRect().width
+    notesGrid.style.width = '100%'
+    if (!containerW || containerW <= 0) return
+
+    // Responsive column count based on the current container width. On narrow
+    // (mobile) screens we force 2 columns so the board shows two compact cards
+    // side-by-side, matching the app's existing 600px breakpoint.
+    const GAP = 16
+    const CARD_WIDTH = 260
+    const isNarrow = window.innerWidth <= 600
+    const cols = isNarrow ? 2 : Math.max(1, Math.floor((containerW + GAP) / (CARD_WIDTH + GAP)))
+    const colW = (containerW - GAP * (cols - 1)) / cols
+
+    // 1) Measure every card at the target column width (normal flow, hidden).
+    // Use offsetHeight (layout size, ignores transform) instead of
+    // getBoundingClientRect().height because the card's `pop-in` animation
+    // scales it below 1 during measurement, which would under-measure long
+    // notes and cause the next card in the column to overlap them.
+    cards.forEach(card => {
+      card.style.position = ''
+      card.style.left = ''
+      card.style.top = ''
+      card.style.width = colW + 'px'
+      card.style.visibility = 'hidden'
+    })
+    const heights = cards.map(card => card.offsetHeight)
+
+    // 2) Pack each card into the currently shortest column (keeps DOM reading order)
+    const tops = new Array(cols).fill(0)
+    cards.forEach((card, i) => {
+      const col = tops.indexOf(Math.min(...tops))
+      card.style.position = 'absolute'
+      card.style.left = (col * (colW + GAP)) + 'px'
+      card.style.top = tops[col] + 'px'
+      card.style.visibility = 'visible'
+      tops[col] += heights[i] + GAP
+    })
+
+    // Keep the container tall enough so cards don't overflow the board
+    notesGrid.style.height = Math.max(...tops) + 'px'
+  }
+
+  // Remove masonry inline positioning (used when opening the focus panel so the
+  // focused card's own `position: fixed` styling wins).
+  function clearMasonryLayout() {
+    notesGrid.style.height = ''
+    notesGrid.querySelectorAll('.note-card').forEach(card => {
+      card.style.position = ''
+      card.style.left = ''
+      card.style.top = ''
+      card.style.width = ''
+      card.style.visibility = ''
+    })
+  }
+
   function openFocusedNote(noteId) {
     focusedNoteId = focusedNoteId === noteId ? null : noteId
-    applyFocusedNoteState()
+    if (focusedNoteId) {
+      clearMasonryLayout()
+      applyFocusedNoteState()
+    } else {
+      render()
+    }
   }
 
   function closeFocusedNote() {
     focusedNoteId = null
     applyFocusedNoteState()
+    render()
   }
 
   function applyFocusedNoteState() {

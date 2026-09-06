@@ -1941,6 +1941,35 @@ body.note-focus-open {
     width: 28px;
     height: 28px;
   }
+
+  /* List view - smaller tags on mobile */
+  .notes-grid.list-view .note-tags-row {
+    gap: 0.1rem;
+    margin-top: 0.1rem;
+    margin-bottom: 0;
+  }
+
+  .notes-grid.list-view .note-tag-chip {
+    font-size: 0.55rem;
+    padding: 0.02rem 0.2rem;
+    border-radius: 3px;
+    gap: 0.05rem;
+  }
+
+  .notes-grid.list-view .note-tag-chip:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* List view - smaller gap on mobile */
+  .notes-grid.list-view {
+    gap: 0.15rem;
+  }
+
+  /* List view - smaller title on mobile */
+  .notes-grid.list-view .note-title {
+    font-size: 0.75rem;
+  }
 }
 
 /* ==========================================================================

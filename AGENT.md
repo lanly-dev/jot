@@ -73,7 +73,7 @@ npm run efix
 
 - `GET /api/update/status` — reports whether in-app updates are supported and the current commit
 - `POST /api/update/check` — fetches remote refs and compares against the local commit
-- `POST /api/update` — pulls latest code, reinstalls production deps, restarts the service
+- `POST /api/update` — fetches latest code, resets to remote, reinstalls production deps, restarts the service
 
 ## Deployment notes
 

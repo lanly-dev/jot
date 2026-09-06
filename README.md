@@ -76,7 +76,7 @@ jot/
 ├── Dockerfile                    # Container image definition
 ├── docker-compose.yml            # Container orchestration config
 ├── install-jot-ve.sh             # Proxmox LXC helper script
-├── update-jot.sh                 # Proxmox update helper (pull + restart)
+├── update-jot.sh                 # Proxmox update helper (fetch + reset + restart)
 ├── data/
 │   ├── notes.json                # Notes storage
 │   ├── credentials.json          # Credential storage, encrypted at rest
@@ -253,14 +253,27 @@ prefer updating from SSH instead.
 
 > **Troubleshooting: `cannot open '.git/FETCH_HEAD': Permission denied`**
 > The app runs as the non-root `jot` user. If a host-side `update-jot.sh` was
-> previously run, its `git pull` executed as **root** and left root-owned files
-> inside `.git`, so the in-app updater can no longer write there. Restore
-> ownership from the Proxmox host shell:
+> previously run, its `git fetch`/`git reset` executed as **root** and left
+> root-owned files inside `.git`, so the in-app updater can no longer write
+> there. Restore ownership from the Proxmox host shell:
 > ```bash
 > pct enter <CTID> -- chown -R jot:jot /opt/jot
 > ```
 > Current `update-jot.sh` restores ownership automatically, preventing this
 > from recurring.
+
+> **Troubleshooting: `fatal: Not possible to fast-forward, aborting`**
+> The Proxmox LXC install creates a **shallow clone** (`git clone --depth 1`).
+> Using `git pull --ff-only` (the old in-app update command) can fail on
+> shallow clones because git cannot always prove the local branch is a direct
+> ancestor of the remote, so the fast-forward is rejected. The update logic now
+> uses `git fetch` + `git reset --hard origin/main`, which always brings the
+> working tree to match the remote exactly — no ancestry proof needed.
+> If you upgraded from an older version and still hit this, force the update
+> manually:
+> ```bash
+> pct enter <CTID> -- su -s /bin/sh jot -c "cd /opt/jot && git fetch && git reset --hard origin/main"
+> ```
 
 ---
 

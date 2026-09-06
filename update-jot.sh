@@ -59,11 +59,13 @@ fi
 if ! pct exec "$CTID" -- sh -c "
   git config --global --add safe.directory /opt/jot 2>/dev/null || true
   cd /opt/jot || exit 1
-  git pull || exit 1
+  git fetch origin main || exit 1
+  git reset --hard origin/main || exit 1
   npm install --omit=dev --no-audit --no-fund || exit 1
-  # `git pull` above ran as root and may have left root-owned files in .git
-  # (writing to .git is how in-app updates fail with 'Permission denied').
-  # Give them back to the runtime user so the in-app updater can keep working.
+  # `git reset --hard` above ran as root and may have left root-owned files
+  # in .git (writing to .git is how in-app updates fail with 'Permission
+  # denied'). Give them back to the runtime user so the in-app updater can
+  # keep working.
   chown -R jot:jot /opt/jot || true
   systemctl restart jot || exit 1
   systemctl is-active --quiet jot

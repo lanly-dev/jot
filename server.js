@@ -509,9 +509,9 @@ function appShortHash() {
 }
 
 // The app runs as a non-root service user (`jot` in the Proxmox LXC deployment).
-// git only needs read access to check the commit, but `fetch`/`pull` must write
+// git only needs read access to check the commit, but `fetch`/`reset` must write
 // to the .git directory. If any .git files are owned by root (a host-side
-// `update-jot.sh` runs `git pull` as root), that write fails with "Permission
+// `update-jot.sh` runs `git fetch`/`git reset` as root), that write fails with "Permission
 // denied". Detect that and return actionable guidance instead of the raw error.
 function friendlyGitError(rawError) {
   const msg = String((rawError && rawError.message) || rawError)
@@ -520,6 +520,13 @@ function friendlyGitError(rawError) {
       'This usually happens after a host-side `update-jot.sh` leaves root-owned files. ' +
       'Fix it from the Proxmox host shell with: ' +
       'pct enter <CTID> -- chown -R jot:jot /opt/jot'
+  }
+  if (/not possible to fast-forward/i.test(msg)) {
+    return 'Git cannot fast-forward the local branch to the remote (the Proxmox ' +
+      'LXC install uses a shallow clone, which can confuse ancestry checks). ' +
+      'This has been fixed in the update logic (it now uses fetch + reset --hard). ' +
+      'If you still see this, reset the checkout manually: ' +
+      'pct enter <CTID> -- su -s /bin/sh jot -c "cd /opt/jot && git fetch && git reset --hard origin/main"'
   }
   return msg
 }
@@ -566,7 +573,14 @@ app.post('/api/update', async (req, res) => {
   }
   updateInProgress = true
   try {
-    await runGit(['pull', '--ff-only', 'origin', 'main'])
+    // Use 'fetch + reset --hard' instead of 'pull --ff-only':
+    // --ff-only aborts on shallow clones (the Proxmox LXC install uses
+    // 'git clone --depth 1') when git cannot prove ancestry, producing
+    // "Not possible to fast-forward, aborting". For a deployment update we
+    // want the working tree to match the remote exactly regardless of any
+    // local divergence, and .env/data/ are gitignored so reset --hard is safe.
+    await runGit(['fetch', 'origin', 'main'])
+    await runGit(['reset', '--hard', 'origin/main'])
     await runNpm(['install', '--omit=dev', '--no-audit', '--no-fund'])
     // Send the response before killing the process so the client is aware.
     res.json({ success: true, message: 'Update applied.' })

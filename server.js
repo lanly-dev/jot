@@ -579,8 +579,24 @@ app.post('/api/update', async (req, res) => {
     // "Not possible to fast-forward, aborting". For a deployment update we
     // want the working tree to match the remote exactly regardless of any
     // local divergence, and .env/data/ are gitignored so reset --hard is safe.
-    await runGit(['fetch', 'origin', 'main'])
-    await runGit(['reset', '--hard', 'origin/main'])
+    // Fetch with --depth 1 (matching /api/update/check) so shallow clones
+    // never need ancestry proof, and reset to FETCH_HEAD which the fetch
+    // just wrote — no dependence on origin/main being resolvable locally.
+    try {
+      await runGit(['fetch', '--depth', '1', 'origin', 'main'])
+    } catch (fetchErr) {
+      // A corrupted/shallow repo can reject even a depth-1 fetch (e.g. a
+      // stale shallow boundary). Re-clone the git metadata in place as a
+      // last resort: wipe .git and re-init from the remote. .env and data/
+      // live outside git so they are untouched.
+      const remoteUrl = await runGit(['remote', 'get-url', 'origin'])
+      const rimraf = (p) => fs.rmSync(p, { recursive: true, force: true })
+      rimraf(path.join(APP_DIR, '.git'))
+      await runGit(['init'])
+      await runGit(['remote', 'add', 'origin', remoteUrl])
+      await runGit(['fetch', '--depth', '1', 'origin', 'main'])
+    }
+    await runGit(['reset', '--hard', 'FETCH_HEAD'])
     await runNpm(['install', '--omit=dev', '--no-audit', '--no-fund'])
     // Send the response before killing the process so the client is aware.
     res.json({ success: true, message: 'Update applied.' })

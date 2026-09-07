@@ -2114,7 +2114,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Responsive column count based on the current container width. On narrow
     // (mobile) screens we force 2 columns so the board shows two compact cards
     // side-by-side, matching the app's existing 600px breakpoint.
-    const GAP = 16
+    const GAP = 5
     const CARD_WIDTH = 260
     const isNarrow = window.innerWidth <= 600
     const cols = isNarrow ? 2 : Math.max(1, Math.floor((containerW + GAP) / (CARD_WIDTH + GAP)))

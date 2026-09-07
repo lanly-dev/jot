@@ -187,12 +187,10 @@ h4 {
 
 /* Inputs & Form Groups */
 .input-group {
-  margin-bottom: 0.85rem;
   width: 100%;
 }
 
 .input-group input,
-.input-group textarea,
 .input-group select {
   width: 100%;
   background-color: rgba(255, 255, 255, 0.8);
@@ -214,7 +212,7 @@ h4 {
 }
 
 .input-group input:focus,
-.input-group textarea:focus,
+
 .input-group select:focus {
   border-color: var(--color-primary);
   background-color: #ffffff;
@@ -2321,11 +2319,13 @@ body.note-focus-open {
 }
 
 /* ==========================================================================
-   CREDENTIAL MODAL - match Username/Email & Password fields to the
-   Notes/content field style (softer body-style input)
+   CREDENTIAL - match Username/Email & Password fields to the
+   Notes/content field style (softer body-style input).
+   The IDs are unique, so plain ID selectors cover both the credential
+   editor modal and the new-credential creator form (#vault-creator-expanded).
    ========================================================================== */
-.credential-modal-panel #credential-username,
-.credential-modal-panel #credential-password {
+#credential-username,
+#credential-password {
   border: none;
   background: rgba(255, 255, 255, 0.9);
   box-shadow: none;
@@ -2336,21 +2336,10 @@ body.note-focus-open {
   line-height: 1.5;
   color: var(--text-main);
   outline: none;
+  padding: .5rem 0 0 0;
 }
 
-.credential-modal-panel #credential-username {
-  padding: 0.55rem 0.2rem;
-}
 
-.credential-modal-panel #credential-password {
-  padding: 0.55rem 3rem 0.55rem 0.2rem;
-}
-
-.credential-modal-panel #credential-username:focus,
-.credential-modal-panel #credential-password:focus {
-  border-bottom: 1px solid var(--color-primary);
-  background: rgba(255, 255, 255, 0.9);
-}
 
 .credentials-table-wrap {
   background-color: #ffffff;
@@ -2716,6 +2705,7 @@ body.note-focus-open {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   outline: none;
   line-height: 1.5;
+  padding: 0.5rem 0;
 }
 
 .creator-row-3 {

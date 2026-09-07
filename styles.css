@@ -57,39 +57,6 @@ body {
   position: relative;
 }
 
-/* Background Cute Decorators */
-.bg-decor {
-  position: absolute;
-  border-radius: 50%;
-  z-index: -1;
-  filter: blur(80px);
-  opacity: 0.4;
-}
-
-.bg-decor-1 {
-  top: -10%;
-  left: -10%;
-  width: 40vw;
-  height: 40vw;
-  background-color: var(--pastel-pink);
-}
-
-.bg-decor-2 {
-  bottom: -10%;
-  right: -10%;
-  width: 45vw;
-  height: 45vw;
-  background-color: var(--pastel-blue);
-}
-
-.bg-decor-3 {
-  top: 40%;
-  right: 15%;
-  width: 25vw;
-  height: 25vw;
-  background-color: var(--pastel-yellow);
-  opacity: 0.3;
-}
 
 /* Typography Custom Styling */
 h1,
@@ -528,7 +495,9 @@ h4 {
 }
 
 @keyframes sync-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ==========================================================================

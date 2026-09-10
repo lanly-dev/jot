@@ -1251,6 +1251,32 @@ body.note-focus-open {
   margin-top: auto;
 }
 
+/* Desktop: hide actions by default, show on card hover */
+@media (min-width: 769px) {
+  .note-actions {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+  }
+
+  .note-card:hover .note-actions {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* List-view desktop: hide actions by default, show on card hover */
+  .notes-grid.list-view .note-actions {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+  }
+
+  .notes-grid.list-view .note-card:hover .note-actions {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
 .note-actions .btn-icon {
   width: 32px;
   height: 32px;

@@ -1923,14 +1923,8 @@ body.note-focus-open {
     height: 28px;
   }
 
-  /* List view - smaller tags on mobile */
-  .notes-grid.list-view .note-tags-row {
-    gap: 0.1rem;
-    margin-top: 0.1rem;
-    margin-bottom: 0;
-  }
-
-  .notes-grid.list-view .note-tag-chip {
+  /* List view - smaller inline hashtags on mobile */
+  .notes-grid.list-view .note-tag-inline {
     font-size: 0.55rem;
     padding: 0.02rem 0.2rem;
     border-radius: 3px;
@@ -2880,108 +2874,9 @@ body.note-focus-open {
     padding: 0.4rem 0.2rem;
     justify-content: center;
   }
-
-  .tags-popover-menu {
-    min-width: 230px;
-    max-width: 280px;
-  }
-
-  .tags-input-row {
-    display: flex;
-    gap: 0.35rem;
-    margin-bottom: 0.45rem;
-  }
-
-  .tags-input-row input {
-    flex: 1;
-    min-width: 0;
-    padding: 0.4rem 0.65rem;
-    border-radius: 10px;
-    border: 1.5px solid var(--border-color);
-    font-family: var(--font-body);
-    font-size: 0.85rem;
-    background: #ffffff;
-    outline: none;
-  }
-
-  .tags-input-row input:focus {
-    border-color: var(--color-primary);
-  }
-
-  .btn-add-tag-inline {
-    padding: 0.2rem 0.65rem;
-    font-size: 1rem;
-    font-weight: 700;
-    border-radius: 10px;
-  }
-
-  .tags-chips-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3rem;
-    margin-bottom: 0.35rem;
-    max-height: 90px;
-    overflow-y: auto;
-  }
-
-  .tags-suggestions-box {
-    margin-top: 0.35rem;
-    padding-top: 0.35rem;
-    border-top: 1px dashed var(--border-color);
-  }
-
-  .tags-suggestions-title {
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 0.25rem;
-  }
-
-  .tags-suggestions-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-  }
-
-  .tag-suggestion-pill {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.18rem 0.5rem;
-    background: #faf8f5;
-    border: 1px dashed var(--border-color);
-    border-radius: 8px;
-    font-size: 0.78rem;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .tag-suggestion-pill:hover {
-    background: var(--color-primary-light);
-    color: var(--color-primary);
-    border-color: var(--color-primary);
-    transform: translateY(-1px);
-  }
 }
 
-/* Creator active tags bar */
-.creator-active-tags-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  padding: 0.35rem 0 0.15rem;
-}
-
-/* Card & General Tag Chips */
-.note-tags-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  margin-top: 0.4rem;
-  margin-bottom: 0.45rem;
-}
-
+/* Card Tag Chips (hashtags rendered inline in the text; chips act as filters) */
 .note-tag-chip {
   display: inline-flex;
   align-items: center;
@@ -3006,23 +2901,7 @@ body.note-focus-open {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
-.btn-tag-remove {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 0.85rem;
-  line-height: 1;
-  padding: 0 0 0 0.15rem;
-  display: inline-flex;
-  align-items: center;
-}
-
-.btn-tag-remove:hover {
-  color: #ff4d6d;
-}
-
-/* Active Tag Filter in Display Controls */
+/* Active Hashtag Filter in Display Controls */
 .active-tag-filter-wrap {
   display: inline-flex;
   align-items: center;
@@ -3062,7 +2941,7 @@ body.note-focus-open {
   background: rgba(255, 117, 143, 0.2);
 }
 
-/* Focus Modal Tags Section */
+/* Focus Modal Hashtags Section (read-only — hashtags are defined inline in the note) */
 .note-focus-tags-section {
   display: flex;
   flex-direction: column;
@@ -3084,29 +2963,20 @@ body.note-focus-open {
   color: var(--text-muted);
 }
 
-.note-focus-tags-input-wrap {
-  display: flex;
-  gap: 0.35rem;
-}
-
-.note-focus-tags-input-wrap input {
-  flex: 1;
-  min-width: 0;
-  padding: 0.35rem 0.6rem;
-  font-family: var(--font-body);
-  font-size: 0.85rem;
-  border-radius: 10px;
-  border: 1.5px solid var(--border-color);
-  background: #ffffff;
-  outline: none;
-}
-
-.note-focus-tags-input-wrap input:focus {
-  border-color: var(--color-primary);
-}
-
 .note-focus-tags-list {
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem;
 }
+/* Inline #hashtags rendered inside note bodies */
+.note-tag-inline {
+  padding: 0 0.35rem;
+  margin: 0 0.1rem;
+  vertical-align: baseline;
+}
+.note-focus-no-tags {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.hashtag-hint { margin-top: 0.35rem; }

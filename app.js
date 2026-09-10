@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let vaultUnlocked = false
   let vaultSetupMode = false
   let currentVaultFilter = 'all' // 'all', 'login', 'payment', 'secure-note'
-  let creatorDraftTags = []
   let currentTagFilter = null
   let currentSearchQuery = ''
   const reminderTimers = new Map()
@@ -26,9 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
     {
       id: 'sample-1',
       title: 'Welcome to Jot! ✨',
-      content: 'Hello! This is your cute, colorful space to jot down sweet thoughts, ideas, plans, or doodles.\n\nHere are some quick tips:\n🌸 Choose custom colors for each card!\n📌 Pin your most important notes so they stay at the top.\n📦 Archive old notes to keep your board tidy!',
+      content: 'Hello! This is your cute, colorful space to jot down sweet thoughts, ideas, plans, or doodles. #welcome\n\nHere are some quick tips:\n🌸 Choose custom colors for each card!\n📌 Pin your most important notes so they stay at the top.\n📦 Archive old notes to keep your board tidy!\n🏷️ Just type #tags anywhere in your note to organize your jots.',
       color: '#ffd1dc', // strawberry pink
-      tags: ['welcome', 'tips', 'sweet'],
+      tags: ['welcome', 'tags'],
       pinned: true,
       archived: false,
       createdAt: new Date(Date.now() - 60000).toISOString()
@@ -36,9 +35,9 @@ document.addEventListener('DOMContentLoaded', () => {
     {
       id: 'sample-2',
       title: 'Cute Ice Cream Shop 🍦',
-      content: 'Must try the lavender honey and strawberry waffle cones next weekend with friends! They also have adorable kitty-shaped sprinkles.',
+      content: 'Must try the lavender honey and strawberry waffle cones next weekend with friends! They also have adorable kitty-shaped sprinkles. #food #weekend',
       color: '#e6e6fa', // lavender
-      tags: ['fun', 'food', 'weekend'],
+      tags: ['food', 'weekend'],
       pinned: false,
       archived: false,
       createdAt: new Date(Date.now() - 120000).toISOString()
@@ -46,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     {
       id: 'sample-3',
       title: 'Dream Journal 🌙',
-      content: 'Had a dream where I was floating in a pastel balloon ride above clouds made of cotton candy. A giant soft cat was the pilot! Must write a story about this.',
+      content: 'Had a dream where I was floating in a pastel balloon ride above clouds made of cotton candy. A giant soft cat was the pilot! Must write a story about this. #dream #story',
       color: '#bfe3f3', // sky blue
       tags: ['dream', 'story'],
       pinned: false,
@@ -164,15 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const colorPopover = document.getElementById('color-popover')
   const colorSwatchDisplay = document.getElementById('color-swatch-display')
 
-  // Tags selectors
-  const btnTagsPopup = document.getElementById('btn-tags-popup')
-  const tagsPopover = document.getElementById('tags-popover')
-  const tagsLabelDisplay = document.getElementById('tags-label-display')
-  const noteTagInput = document.getElementById('note-tag-input')
-  const btnAddTagInline = document.getElementById('btn-add-tag-inline')
-  const creatorTagsChips = document.getElementById('creator-tags-chips')
-  const creatorActiveTagsBar = document.getElementById('creator-active-tags-bar')
-  const tagsSuggestionsChips = document.getElementById('tags-suggestions-chips')
+  // Tag filter selectors
   const activeTagFilterWrap = document.getElementById('active-tag-filter-wrap')
   const activeTagText = document.getElementById('active-tag-text')
   const btnClearTagFilter = document.getElementById('btn-clear-tag-filter')
@@ -214,7 +205,6 @@ document.addEventListener('DOMContentLoaded', () => {
       setSyncStatus('error', 'Server offline')
       showToast('Cannot reach server — changes won\'t be saved ⚠️', 'warn')
     }
-    renderCreatorTagsUI()
     render()
   }
 
@@ -896,69 +886,11 @@ document.addEventListener('DOMContentLoaded', () => {
       })
     }
 
-    // Tags Popover input and chips events
-    if (noteTagInput) {
-      noteTagInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ',') {
-          e.preventDefault()
-          addCreatorTag(noteTagInput.value)
-          noteTagInput.value = ''
-        }
-      })
-    }
-    if (btnAddTagInline) {
-      btnAddTagInline.addEventListener('click', (e) => {
-        e.preventDefault()
-        addCreatorTag(noteTagInput.value)
-        noteTagInput.value = ''
-      })
-    }
-    if (creatorTagsChips) {
-      creatorTagsChips.addEventListener('click', (e) => {
-        const tag = e.target.closest('.btn-tag-remove')?.getAttribute('data-tag')
-        if (tag) removeCreatorTag(tag)
-      })
-    }
-    if (creatorActiveTagsBar) {
-      creatorActiveTagsBar.addEventListener('click', (e) => {
-        const tag = e.target.closest('.btn-tag-remove')?.getAttribute('data-tag')
-        if (tag) removeCreatorTag(tag)
-      })
-    }
-    if (tagsSuggestionsChips) {
-      tagsSuggestionsChips.addEventListener('click', (e) => {
-        const pill = e.target.closest('.tag-suggestion-pill')
-        if (pill) {
-          addCreatorTag(pill.getAttribute('data-tag'))
-        }
-      })
-    }
-
     // Focus mode exit handlers
     noteFocusBackdrop.addEventListener('click', closeFocusedNote)
     noteFocusClose.addEventListener('click', closeFocusedNote)
     noteFocusContent.addEventListener('click', handleFocusNoteActions)
-    noteFocusContent.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && e.target.id === 'focus-tag-input') {
-        e.preventDefault()
-        const input = e.target
-        const newTag = input.value.trim().replace(/^#/, '').toLowerCase()
-        if (newTag) {
-          const list = noteFocusContent.querySelector('#focus-tags-list')
-          if (list) {
-            const existing = Array.from(list.querySelectorAll('.note-tag-chip')).map(c => c.getAttribute('data-tag'))
-            if (!existing.includes(newTag)) {
-              const chip = document.createElement('span')
-              chip.className = 'note-tag-chip active-chip'
-              chip.setAttribute('data-tag', newTag)
-              chip.innerHTML = `#${escapeHTML(newTag)} <button type="button" class="btn-tag-remove" data-tag="${escapeHTML(newTag)}">×</button>`
-              list.appendChild(chip)
-            }
-            input.value = ''
-          }
-        }
-      }
-    })
+
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         closeFocusedNote()
@@ -1026,7 +958,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnTypePopup) btnTypePopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnTypePopup, typePopover) })
     if (btnColorPopup) btnColorPopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnColorPopup, colorPopover) })
-    if (btnTagsPopup) btnTagsPopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnTagsPopup, tagsPopover) })
     if (btnCredTypePopup) btnCredTypePopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnCredTypePopup, credTypePopover) })
     if (btnCredColorPopup) btnCredColorPopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnCredColorPopup, credColorPopover) })
 
@@ -1137,72 +1068,6 @@ document.addEventListener('DOMContentLoaded', () => {
       credTypePopover.querySelectorAll('.popover-item').forEach(item => {
         item.classList.toggle('active', item.getAttribute('data-type') === type)
       })
-    }
-  }
-
-  // TAGS SYSTEM HELPERS
-  function addCreatorTag(tag) {
-    if (!tag) return
-    const cleanTag = tag.trim().replace(/^#/, '').toLowerCase()
-    if (!cleanTag) return
-    if (!creatorDraftTags.includes(cleanTag)) {
-      creatorDraftTags.push(cleanTag)
-      renderCreatorTagsUI()
-    }
-  }
-
-  function removeCreatorTag(tag) {
-    creatorDraftTags = creatorDraftTags.filter(t => t !== tag)
-    renderCreatorTagsUI()
-  }
-
-  function getAllExistingTags() {
-    const set = new Set()
-    notes.forEach(n => {
-      if (Array.isArray(n.tags)) {
-        n.tags.forEach(t => {
-          if (t && typeof t === 'string') set.add(t.trim().replace(/^#/, '').toLowerCase())
-        })
-      }
-    })
-    return Array.from(set)
-  }
-
-  function renderCreatorTagsUI() {
-    if (tagsLabelDisplay) {
-      tagsLabelDisplay.textContent = creatorDraftTags.length > 0 ? `Tags (${creatorDraftTags.length})` : 'Tags'
-    }
-
-    if (creatorActiveTagsBar) {
-      if (creatorDraftTags.length > 0) {
-        creatorActiveTagsBar.style.display = 'flex'
-        creatorActiveTagsBar.innerHTML = creatorDraftTags.map(t =>
-          `<span class="note-tag-chip active-chip">#${escapeHTML(t)} <button type="button" class="btn-tag-remove" data-tag="${escapeHTML(t)}" title="Remove tag">×</button></span>`
-        ).join('')
-      } else {
-        creatorActiveTagsBar.style.display = 'none'
-        creatorActiveTagsBar.innerHTML = ''
-      }
-    }
-
-    if (creatorTagsChips) {
-      creatorTagsChips.innerHTML = creatorDraftTags.map(t =>
-        `<span class="note-tag-chip active-chip">#${escapeHTML(t)} <button type="button" class="btn-tag-remove" data-tag="${escapeHTML(t)}" title="Remove tag">×</button></span>`
-      ).join('')
-    }
-
-    if (tagsSuggestionsChips) {
-      const allTags = getAllExistingTags().filter(t => !creatorDraftTags.includes(t))
-      if (allTags.length > 0) {
-        tagsSuggestionsChips.innerHTML = allTags.slice(0, 6).map(t =>
-          `<button type="button" class="tag-suggestion-pill" data-tag="${escapeHTML(t)}">+ #${escapeHTML(t)}</button>`
-        ).join('')
-        const box = document.getElementById('tags-suggestions-box')
-        if (box) box.style.display = 'block'
-      } else {
-        const box = document.getElementById('tags-suggestions-box')
-        if (box) box.style.display = 'none'
-      }
     }
   }
 
@@ -1603,6 +1468,7 @@ document.addEventListener('DOMContentLoaded', () => {
         color,
         pinned: isFormPinned,
         type: noteType,
+        tags: extractHashtags(title + ' ' + content),
         reminderAt,
         spreadsheetData
       }
@@ -1632,9 +1498,9 @@ document.addEventListener('DOMContentLoaded', () => {
         color,
         pinned: isFormPinned,
         type: noteType,
+        tags: extractHashtags(title + ' ' + content),
         reminderAt,
         spreadsheetData,
-        tags: [...creatorDraftTags],
         archived: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -1717,9 +1583,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTypeSpecificFields()
     renderSpreadsheetGrid()
 
-    // Reset tags
-    creatorDraftTags = []
-    renderCreatorTagsUI()
 
     // Reset color selector to first pink choice
     const pinkRadio = document.querySelector('input[name="note-color"][value="#ffd1dc"]')
@@ -1822,7 +1685,7 @@ document.addEventListener('DOMContentLoaded', () => {
       type: merged.type || 'standard',
       reminderAt: merged.reminderAt || null,
       spreadsheetData: Array.isArray(merged.spreadsheetData) ? merged.spreadsheetData : null,
-      tags: Array.isArray(merged.tags) ? merged.tags : [],
+      tags: Array.from(new Set([...(Array.isArray(merged.tags) ? merged.tags.map(t => String(t).toLowerCase()) : []), ...extractHashtags((merged.title || '') + ' ' + (merged.content || ''))])),
       deleted: !!merged.deleted,
       deletedAt: merged.deletedAt || null,
       updatedAt: merged.updatedAt || merged.createdAt || new Date().toISOString()
@@ -2013,7 +1876,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const deletedMatch = !!note.deleted === isTrashView
       const statusMatch = isTrashView || note.archived === (currentView === 'archived')
       const tagMatch = isTrashView || !currentTagFilter ||
-        (Array.isArray(note.tags) && note.tags.map(t => t.toLowerCase()).includes(currentTagFilter.toLowerCase()))
+        (Array.isArray(note.tags) && note.tags.includes(currentTagFilter.toLowerCase()))
       const searchMatch = !currentSearchQuery || 
         (note.title && note.title.toLowerCase().includes(currentSearchQuery)) || 
         (note.content && note.content.toLowerCase().includes(currentSearchQuery))
@@ -2209,32 +2072,6 @@ document.addEventListener('DOMContentLoaded', () => {
       return
     }
 
-    if (target.closest('#btn-add-focus-tag')) {
-      const input = article.querySelector('#focus-tag-input')
-      if (input) {
-        const newTag = input.value.trim().replace(/^#/, '').toLowerCase()
-        if (newTag) {
-          const list = article.querySelector('#focus-tags-list')
-          if (list) {
-            const existing = Array.from(list.querySelectorAll('.note-tag-chip')).map(c => c.getAttribute('data-tag'))
-            if (!existing.includes(newTag)) {
-              const chip = document.createElement('span')
-              chip.className = 'note-tag-chip active-chip'
-              chip.setAttribute('data-tag', newTag)
-              chip.innerHTML = `#${escapeHTML(newTag)} <button type="button" class="btn-tag-remove" data-tag="${escapeHTML(newTag)}">×</button>`
-              list.appendChild(chip)
-            }
-            input.value = ''
-          }
-        }
-      }
-      return
-    }
-
-    if (target.closest('.btn-tag-remove')) {
-      target.closest('.note-tag-chip')?.remove()
-      return
-    }
 
     if (target.closest('#focus-action-save')) {
       const titleInput = article.querySelector('.note-focus-title-input')
@@ -2247,17 +2084,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return
       }
 
-      const tags = Array.from(article.querySelectorAll('#focus-tags-list .note-tag-chip'))
-        .map(c => c.getAttribute('data-tag'))
-        .filter(Boolean)
-
       const updatedFields = {
         title: nextTitle,
         content: nextContent,
         color: note.color,
         pinned: note.pinned,
         type: note.type || 'standard',
-        tags,
+        tags: extractHashtags(nextTitle + ' ' + nextContent),
         reminderAt: note.reminderAt || null,
         spreadsheetData: note.spreadsheetData || null
       }
@@ -2299,6 +2132,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const escapedTitle = escapeHTML(note.title)
     const escapedContent = escapeHTML(note.content)
+    const focusTags = Array.isArray(note.tags) ? note.tags : extractHashtags((note.title || '') + ' ' + (note.content || ''))
     const reminderText = noteType === 'reminder' && note.reminderAt
       ? `<div class="reminder-chip"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg> ${escapeHTML(formatReminder(note.reminderAt))}</div>`
       : ''
@@ -2322,19 +2156,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         <div class="note-focus-tags-section">
           <div class="note-focus-tags-header">
-            <span>Tags 🏷️</span>
-            <span style="font-size: 0.68rem; color: var(--text-muted); font-weight: 500;">Type tag & press Enter</span>
+            <span>Hashtags detected</span>
+            <span style="font-size: 0.68rem; color: var(--text-muted); font-weight: 500;">Edit them inline in the text with #</span>
           </div>
-          <div class="note-focus-tags-input-wrap">
-            <input type="text" class="note-focus-tag-input" id="focus-tag-input" placeholder="Add tag..." maxlength="25">
-            <button type="button" class="btn btn-secondary btn-add-focus-tag" id="btn-add-focus-tag" style="padding: 0.2rem 0.6rem; font-weight: 700;">+</button>
-          </div>
-          <div class="note-focus-tags-list" id="focus-tags-list">
-            ${(note.tags || []).map(t => `<span class="note-tag-chip active-chip" data-tag="${escapeHTML(t)}">#${escapeHTML(t)} <button type="button" class="btn-tag-remove" data-tag="${escapeHTML(t)}">×</button></span>`).join('')}
+          <div class="note-focus-tags-list">
+            ${(focusTags.map(t => `<span class="note-tag-chip active-chip" data-tag="${escapeHTML(t)}">#${escapeHTML(t)}</span>`).join('') || '<span class="note-focus-no-tags">No #hashtags yet — just type one in the text above</span>')}
           </div>
         </div>
 
-        <div class="note-focus-actions">
+                <div class="note-focus-actions">
           <button type="button" class="btn btn-secondary" id="focus-action-close">Close</button>
           <button type="button" class="btn btn-primary" id="focus-action-save">Save Changes</button>
         </div>
@@ -2535,6 +2365,7 @@ document.addEventListener('DOMContentLoaded', () => {
     html = html.replace(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
     html = html.replace(/^- (.*)$/gm, '<li>$1</li>')
     html = html.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+    html = renderHashtagChips(html)
     html = html.replace(/\n/g, '<br>')
     return html
   }
@@ -2597,8 +2428,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteMarkup = `<button type="button" class="btn-icon action-delete ${isTrashNote ? 'action-delete-permanent' : ''}" title="${deleteTitle}">${deleteIconSVG}</button>`
 
     // Title and Content escaping to avoid XSS injections while maintaining layout spacing
-    const escapedTitle = escapeHTML(note.title)
-    const escapedContent = escapeHTML(note.content)
+    const escapedTitle = renderHashtagChips(escapeHTML(note.title))
     const markdownMarkup = noteType === 'dev'
       ? `<div class="note-body-markdown">${renderMarkdown(note.content || '')}</div>`
       : ''
@@ -2609,11 +2439,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ? `<div class="reminder-chip"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg> ${escapeHTML(formatReminder(note.reminderAt))}</div>`
       : ''
     const standardBodyMarkup = noteType === 'standard' || noteType === 'reminder'
-      ? `<p class="note-body">${escapedContent}</p>`
-      : ''
-
-    const tagsMarkup = Array.isArray(note.tags) && note.tags.length > 0
-      ? `<div class="note-tags-row">${note.tags.map(t => `<button type="button" class="note-tag-chip" data-tag="${escapeHTML(t)}">#${escapeHTML(t)}</button>`).join('')}</div>`
+      ? `<p class="note-body">${renderBodyWithHashtags(note.content || '')}</p>`
       : ''
 
     return `
@@ -2627,7 +2453,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ${standardBodyMarkup}
         ${markdownMarkup}
         ${spreadsheetMarkup}
-        ${tagsMarkup}
 
         <div class="note-actions">
           <span style="margin-right: auto; align-self: center; font-size: 0.72rem; font-weight: 700; color: rgba(45, 43, 42, 0.45);">${dateText}</span>
@@ -2653,6 +2478,31 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </article>
     `
+  }
+
+  // Extract hashtags defined inline in note text, e.g. #work #ideas (letters, numbers, _ -).
+  function extractHashtags(text) {
+    const found = String(text || '').match(/(?:^|\s)#([A-Za-z0-9_-]{1,40})/g) || []
+    const seen = new Set()
+    const out = []
+    found.forEach(m => {
+      const t = m.trim().slice(1).toLowerCase()
+      if (t && !seen.has(t)) { seen.add(t); out.push(t) }
+    })
+    return out
+  }
+
+  // Render body text with inline #hashtags highlighted as clickable filter chips.
+  function renderBodyWithHashtags(text) {
+    var escaped = escapeHTML(text || '').replace(/\n/g, '<br>')
+    return renderHashtagChips(escaped)
+  }
+
+  // Wrap inline #hashtags in already-escaped HTML with clickable chips.
+  function renderHashtagChips(html) {
+    return String(html || '').replace(/(^|\s|>)#([A-Za-z0-9_-]{1,40})/g, function (m, pre, tag) {
+      return pre + '<button type="button" class="note-tag-chip note-tag-inline" data-tag="' + tag.toLowerCase() + '">#' + tag + '</button>'
+    })
   }
 
   // ESCAPE HTML STRINGS TO PREVENT XSS

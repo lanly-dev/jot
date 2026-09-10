@@ -108,8 +108,8 @@
                     <div class="spreadsheet-grid" id="spreadsheet-grid" aria-label="Spreadsheet input grid"></div>
                   </div>
 
-                  <!-- Active tags chips row in creator -->
-                  <div class="creator-active-tags-bar" id="creator-active-tags-bar" style="display: none;"></div>
+                  <!-- Hashtag hint: tags live inline in the note text -->
+                  <p class="note-type-hint hashtag-hint">Tip: type #tags anywhere in your note (e.g. #work #ideas) to organize &amp; filter</p>
                 </div>
 
                 <!-- 3rd ROW: Options Bar (Type Icon, Color Icon, Tags with popups) & Actions -->
@@ -231,36 +231,6 @@
                       </div>
                     </div>
 
-                    <!-- Tags Popover Trigger -->
-                    <div class="popover-wrapper">
-                      <button type="button" class="btn-popover-trigger" id="btn-tags-popup" title="Add Tags"
-                        aria-expanded="false">
-                        <span class="trigger-icon" aria-hidden="true">
-                          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2"
-                            fill="none" stroke-linecap="round" stroke-linejoin="round">
-                            <path
-                              d="M4 7.5A2.5 2.5 0 0 1 6.5 5h5.1a2 2 0 0 1 1.4.6l6.4 6.4a2 2 0 0 1 0 2.8l-5.1 5.1a2 2 0 0 1-2.8 0L5.1 13.1A2 2 0 0 1 4.5 11.7V7.5Z">
-                            </path>
-                            <circle cx="9" cy="9" r="1.4"></circle>
-                          </svg>
-                        </span>
-                        <span class="trigger-label" id="tags-label-display">Tags</span>
-                      </button>
-                      <div class="popover-menu tags-popover-menu" id="tags-popover">
-                        <div class="popover-title">Jot Tags</div>
-                        <div class="tags-input-row">
-                          <input type="text" id="note-tag-input" placeholder="Type tag and press Enter..."
-                            maxlength="25" autocomplete="off">
-                          <button type="button" class="btn btn-secondary btn-add-tag-inline" id="btn-add-tag-inline"
-                            title="Add tag">+</button>
-                        </div>
-                        <div class="tags-chips-list" id="creator-tags-chips"></div>
-                        <div class="tags-suggestions-box" id="tags-suggestions-box">
-                          <div class="tags-suggestions-title">Quick Add:</div>
-                          <div class="tags-suggestions-chips" id="tags-suggestions-chips"></div>
-                        </div>
-                      </div>
-                    </div>
                   </div>
 
                   <!-- Form Action Buttons -->

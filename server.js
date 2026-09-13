@@ -110,7 +110,7 @@ async function decryptCredentialValue(value) {
 }
 
 function normalizeNoteType(type) {
-  const allowedTypes = ['standard', 'dev', 'reminder', 'spreadsheet']
+  const allowedTypes = ['standard', 'dev', 'reminder', 'spreadsheet', 'checkbox']
   return allowedTypes.includes(type) ? type : 'standard'
 }
 

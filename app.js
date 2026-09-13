@@ -59,7 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const noteIdInput = document.getElementById('note-id')
   const noteTitleInput = document.getElementById('note-title')
   const noteContentInput = document.getElementById('note-content')
-  const noteTypeSelect = document.getElementById('note-type')
   const noteReminderAtInput = document.getElementById('note-reminder-at')
   const reminderConfig = document.getElementById('reminder-config')
   const devNoteHint = document.getElementById('devnote-hint')
@@ -155,10 +154,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const importFileInput = document.getElementById('import-file-input')
 
   // Popover selectors
-  const btnTypePopup = document.getElementById('btn-type-popup')
-  const typePopover = document.getElementById('type-popover')
-  const typeIconDisplay = document.getElementById('type-icon-display')
-  const typeLabelDisplay = document.getElementById('type-label-display')
   const btnColorPopup = document.getElementById('btn-color-popup')
   const colorPopover = document.getElementById('color-popover')
   const colorSwatchDisplay = document.getElementById('color-swatch-display')
@@ -850,12 +845,6 @@ document.addEventListener('DOMContentLoaded', () => {
       })
     }
 
-    // Note type and type-specific editors
-    noteTypeSelect.addEventListener('change', () => {
-      updateTypeSpecificFields()
-      updateTypePopoverUI(noteTypeSelect.value)
-    })
-
     const resizeSheet = () => {
       const rows = clampNumber(sheetRowsInput.value, 1, 12, 3)
       const cols = clampNumber(sheetColsInput.value, 1, 8, 3)
@@ -878,6 +867,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // Card Action Delegations (Pin, Edit, Archive, Delete, Tag-Filter Click inside Card)
     notesGrid.addEventListener('click', handleCardActions)
 
+    // Per-card render-format dropdown (radio group). While open, the menu is
+    // portaled to <body> (see handleCardActions), so its 'change' events bubble
+    // up to document — listen here instead of on the grid.
+    document.addEventListener('change', (e) => {
+      const radio = e.target.closest('.note-format-menu input[type="radio"]')
+      if (!radio) return
+      const menu = radio.closest('.note-format-menu')
+      const note = notes.find(n => n.id === menu.getAttribute('data-note-id'))
+      if (!note) return
+      closeFormatMenu(menu)
+      if (radio.value === noteFormatOf(note)) return
+      const typeMap = { text: 'standard', markdown: 'dev', checkbox: 'checkbox', table: 'spreadsheet' }
+      const prevType = note.type
+      note.type = typeMap[radio.value] || 'standard'
+      render()
+      updateNoteOnServerSilent(note.id, { type: note.type }, () => { note.type = prevType; render() })
+    })
+
+    // Close the format dropdown on scroll/resize so it never floats detached
+    window.addEventListener('scroll', () => {
+      document.querySelectorAll('.note-format-menu.open').forEach(closeFormatMenu)
+    }, true)
+
     // Tag filter clear button
     if (btnClearTagFilter) {
       btnClearTagFilter.addEventListener('click', () => {
@@ -895,6 +907,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.key === 'Escape') {
         closeFocusedNote()
         closeCredentialModal()
+        document.querySelectorAll('.note-format-menu.open').forEach(closeFormatMenu)
       }
     })
 
@@ -935,8 +948,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!e.target.closest('.popover-wrapper')) {
         closeAllPopovers()
       }
+      // Close any open per-card format dropdowns clicked outside
+      if (!e.target.closest('.note-format-menu') && !e.target.closest('.action-format')) {
+        document.querySelectorAll('.note-format-menu.open').forEach(closeFormatMenu)
+      }
 
-      if (editorCard && !editorCard.contains(e.target) && !e.target.closest('#btn-expand-creator')) {
+      if (editorCard && !editorCard.contains(e.target) && !e.target.closest('#btn-expand-creator') && !e.target.closest('.note-format-menu')) {
         if (editorCard.classList.contains('active')) {
           if (noteTitleInput.value.trim() === '' && noteContentInput.value.trim() === '') { resetForm() }
           else { noteForm.requestSubmit() }
@@ -956,26 +973,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    if (btnTypePopup) btnTypePopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnTypePopup, typePopover) })
     if (btnColorPopup) btnColorPopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnColorPopup, colorPopover) })
     if (btnCredTypePopup) btnCredTypePopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnCredTypePopup, credTypePopover) })
     if (btnCredColorPopup) btnCredColorPopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnCredColorPopup, credColorPopover) })
 
     // Popover item clicks
-    if (typePopover) {
-      typePopover.addEventListener('click', (e) => {
-        const item = e.target.closest('.popover-item')
-        if (!item) return
-        const type = item.getAttribute('data-type')
-        if (type && noteTypeSelect) {
-          noteTypeSelect.value = type
-          updateTypeSpecificFields()
-          updateTypePopoverUI(type)
-          closeAllPopovers()
-        }
-      })
-    }
-
     if (credTypePopover) {
       credTypePopover.addEventListener('click', (e) => {
         const item = e.target.closest('.popover-item')
@@ -1048,15 +1050,14 @@ document.addEventListener('DOMContentLoaded', () => {
     return icons[type] || icons.standard
   }
 
-  function updateTypePopoverUI(type) {
-    const labelMap = { standard: 'Standard', dev: 'Dev', reminder: 'Reminder', spreadsheet: 'Sheet' }
-    if (typeIconDisplay) typeIconDisplay.innerHTML = getTypeIconSVG(type)
-    if (typeLabelDisplay) typeLabelDisplay.textContent = labelMap[type] || 'Standard'
-    if (typePopover) {
-      typePopover.querySelectorAll('.popover-item').forEach(item => {
-        item.classList.toggle('active', item.getAttribute('data-type') === type)
-      })
-    }
+  // Derive render format from a note's stored type, mapping legacy types to new formats.
+  // Returns one of: text | markdown | checkbox | table.
+  function noteFormatOf(note) {
+    const t = (note.type || 'standard').toLowerCase()
+    if (t === 'dev' || t === 'markdown') return 'markdown'
+    if (t === 'checkbox') return 'checkbox'
+    if (t === 'table' || t === 'spreadsheet') return 'table'
+    return 'text'
   }
 
   function updateCredTypePopoverUI(type) {
@@ -1451,9 +1452,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const id = noteIdInput.value
     const title = noteTitleInput.value.trim()
     const content = noteContentInput.value.trim()
-    const noteType = noteTypeSelect.value
-    const reminderAt = noteType === 'reminder' ? noteReminderAtInput.value || null : null
-    const spreadsheetData = noteType === 'spreadsheet' ? spreadsheetDraft.map(row => row.map(cell => cell.trim())) : null
+    const existingNote = id ? notes.find(n => n.id === id) : null
+    const noteType = existingNote ? existingNote.type : 'standard'
+    const reminderAt = null
+    const spreadsheetData = existingNote && existingNote.spreadsheetData ? existingNote.spreadsheetData : null
 
     ensureNotificationPermissionIfNeeded(noteType)
 
@@ -1574,8 +1576,6 @@ document.addEventListener('DOMContentLoaded', () => {
     collapseCreator()
     noteIdInput.value = ''
     noteForm.reset()
-    noteTypeSelect.value = 'standard'
-    updateTypePopoverUI('standard')
     noteReminderAtInput.value = ''
     sheetRowsInput.value = 3
     sheetColsInput.value = 3
@@ -1692,6 +1692,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Close a per-card format dropdown and return it to its home card wrap.
+  // While open the menu is portaled to <body> so the card's transform/overflow
+  // can't clip or re-anchor it; this moves it back home and resets styles.
+  function closeFormatMenu(menu) {
+    if (!menu) return
+    menu.classList.remove('open')
+    menu.style.position = ''
+    menu.style.top = ''
+    menu.style.left = ''
+    menu.style.bottom = ''
+    menu.style.right = ''
+    menu.style.transform = ''
+    if (menu.parentElement === document.body) {
+      const noteId = menu.getAttribute('data-note-id')
+      const homeWrap = noteId ? document.querySelector(`.note-card[data-id="${noteId}"] .note-format-wrap`) : null
+      if (homeWrap) { homeWrap.appendChild(menu) } else { menu.remove() }
+    }
+  }
+
   // HANDLE NOTE CARD ACTION CLICKS (DELEGATED)
   function handleCardActions(e) {
     const target = e.target
@@ -1774,7 +1793,45 @@ document.addEventListener('DOMContentLoaded', () => {
       return
     }
 
-    // 4. CLICK TAG TO FILTER
+    // 4. FORMAT DROPDOWN (per-card render format)
+    if (target.closest('.action-format')) {
+      const btn = target.closest('.action-format')
+      const wrap = btn.closest('.note-format-wrap')
+      const menu = wrap ? wrap.querySelector('.note-format-menu') : null
+      // Close any other open menus first
+      document.querySelectorAll('.note-format-menu.open').forEach(m => { if (m !== menu) closeFormatMenu(m) })
+      if (menu) {
+        if (menu.classList.contains('open')) {
+          closeFormatMenu(menu)
+        } else {
+          // Portal the menu to <body> while it is open. Note cards carry
+          // transforms (hover lift, focus scale, masonry) which turn
+          // position:fixed into card-relative positioning and let the card's
+          // overflow:hidden clip the menu. Attached to <body>, the menu
+          // positions reliably against the viewport.
+          document.body.appendChild(menu)
+          menu.classList.add('open')
+          const r = btn.getBoundingClientRect()
+          const mw = menu.offsetWidth
+          const mh = menu.offsetHeight
+          // Prefer dropping BELOW the trigger; flip above near the viewport bottom
+          const openBelow = (window.innerHeight - r.bottom) > (mh + 12)
+          let left = r.right - mw // right-align with the trigger button
+          let top = openBelow ? (r.bottom + 8) : (r.top - 8 - mh)
+          left = Math.max(8, Math.min(left, window.innerWidth - mw - 8))
+          top = Math.max(8, top)
+          menu.style.position = 'fixed'
+          menu.style.top = top + 'px'
+          menu.style.left = left + 'px'
+          menu.style.bottom = 'auto'
+          menu.style.right = 'auto'
+          menu.style.transform = 'none'
+        }
+      }
+      return
+    }
+
+    // 6. CLICK TAG TO FILTER
     if (target.closest('.note-tag-chip')) {
       const tag = target.closest('.note-tag-chip').getAttribute('data-tag')
       if (tag) {
@@ -1784,7 +1841,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // 5. CLICK CARD TO FOCUS/EXPAND
+    // 7. CLICK CARD TO FOCUS/EXPAND
     openFocusedNote(noteId)
   }
 
@@ -2089,7 +2146,7 @@ document.addEventListener('DOMContentLoaded', () => {
         content: nextContent,
         color: note.color,
         pinned: note.pinned,
-        type: note.type || 'standard',
+        type: note.type || noteFormatOf(note),
         tags: extractHashtags(nextTitle + ' ' + nextContent),
         reminderAt: note.reminderAt || null,
         spreadsheetData: note.spreadsheetData || null
@@ -2136,10 +2193,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const reminderText = noteType === 'reminder' && note.reminderAt
       ? `<div class="reminder-chip"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg> ${escapeHTML(formatReminder(note.reminderAt))}</div>`
       : ''
-    const spreadsheetMarkup = noteType === 'spreadsheet'
+    const renderFormat = noteFormatOf(note)
+    const spreadsheetMarkup = renderFormat === 'table'
       ? renderSpreadsheetPreview(note.spreadsheetData)
       : ''
-    const typeLabel = typeLabelMap[noteType] || 'Standard'
+    const checklistMarkup = renderFormat === 'checkbox'
+      ? renderChecklist(note.content || '')
+      : ''
+    const typeLabel = typeLabelMap[noteType] || (renderFormat === 'markdown' ? 'Markdown' : renderFormat === 'checkbox' ? 'Checklist' : renderFormat === 'table' ? 'Table' : 'Text')
 
     return `
       <article class="note-focus-article" style="--note-color: ${note.color};" data-id="${note.id}">
@@ -2153,6 +2214,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <textarea class="note-focus-body-input" rows="6" placeholder="Write your note here..."
           aria-label="Note content">${escapedContent}</textarea>
         ${spreadsheetMarkup}
+        ${checklistMarkup}
 
         <div class="note-focus-tags-section">
           <div class="note-focus-tags-header">
@@ -2292,22 +2354,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateTypeSpecificFields() {
-    const type = noteTypeSelect.value
-    devNoteHint.style.display = type === 'dev' ? 'block' : 'none'
-    reminderConfig.style.display = type === 'reminder' ? 'block' : 'none'
-    spreadsheetConfig.style.display = type === 'spreadsheet' ? 'block' : 'none'
-
-    if (type === 'spreadsheet') {
-      noteContentInput.required = false
-      noteContentInput.placeholder = 'Optional summary for this table...'
-      renderSpreadsheetGrid()
-    } else if (type === 'dev') {
-      noteContentInput.required = true
-      noteContentInput.placeholder = 'Write markdown like # Heading, **bold**, `code`, and lists...'
-    } else {
-      noteContentInput.required = true
-      noteContentInput.placeholder = 'Write your thoughts down here... Feel free to be creative!'
-    }
+    // Creator is a plain text note; render format is chosen per-card via its dropdown.
+    devNoteHint.style.display = 'none'
+    reminderConfig.style.display = 'none'
+    spreadsheetConfig.style.display = 'none'
+    noteContentInput.required = true
+    noteContentInput.placeholder = 'Write your thoughts down here... Feel free to be creative!'
   }
 
   function clearReminderTimers() {
@@ -2393,13 +2445,18 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderNoteCardHTML(note) {
     const noteType = note.type || 'standard'
 
-    const typeLabelMap = {
-      standard: 'Standard',
-      dev: 'Dev',
-      reminder: 'Reminder',
-      spreadsheet: 'Sheet'
+    const renderFormat = noteFormatOf(note)
+    const formatLabelMap = { text: 'Text', markdown: 'Markdown', checkbox: 'Checklist', table: 'Table' }
+    const formatIconSVG = {
+      text: '<svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"></path><path d="M14 2v5a1 1 0 0 0 1 1h5"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>',
+      markdown: '<svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6"></path><path d="m8 6-6 6 6 6"></path></svg>',
+      checkbox: '<svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>',
+      table: '<svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"></path><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M3 9h18"></path><path d="M3 15h18"></path></svg>'
     }
-    const typeIconMarkup = `<button type="button" class="btn-icon action-type type-${noteType}" title="${typeLabelMap[noteType] || 'Standard'} Note">${getTypeIconSVG(noteType)}</button>`
+    const formatMenuMarkup = `<div class="note-format-menu" data-note-id="${note.id}">
+      ${['text', 'markdown', 'checkbox', 'table'].map(f => `<label class="note-format-option"><input type="radio" name="note-fmt-${note.id}" value="${f}" ${f === renderFormat ? 'checked' : ''}><span class="fmt-option-icon">${formatIconSVG[f]}</span><span>${formatLabelMap[f]}</span></label>`).join('')}
+    </div>`
+    const formatTriggerMarkup = `<div class="note-format-wrap"><button type="button" class="btn-icon action-format" title="Render format: ${formatLabelMap[renderFormat]}">${formatIconSVG[renderFormat]}</button>${formatMenuMarkup}</div>`
 
     // Formatted timestamp text (e.g. "Just now", "2 mins ago", or neat date).
     // Prefer updatedAt so the card reflects the last edit, falling back to
@@ -2429,16 +2486,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Title and Content escaping to avoid XSS injections while maintaining layout spacing
     const escapedTitle = renderHashtagChips(escapeHTML(note.title))
-    const markdownMarkup = noteType === 'dev'
+    const markdownMarkup = renderFormat === 'markdown'
       ? `<div class="note-body-markdown">${renderMarkdown(note.content || '')}</div>`
       : ''
-    const spreadsheetMarkup = noteType === 'spreadsheet'
+    const spreadsheetMarkup = renderFormat === 'table'
       ? renderSpreadsheetPreview(note.spreadsheetData)
       : ''
-    const reminderText = noteType === 'reminder' && note.reminderAt
+    const checklistMarkup = renderFormat === 'checkbox'
+      ? renderChecklist(note.content || '')
+      : ''
+    const reminderText = note.reminderAt
       ? `<div class="reminder-chip"><svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg> ${escapeHTML(formatReminder(note.reminderAt))}</div>`
       : ''
-    const standardBodyMarkup = noteType === 'standard' || noteType === 'reminder'
+    const standardBodyMarkup = renderFormat === 'text'
       ? `<p class="note-body">${renderBodyWithHashtags(note.content || '')}</p>`
       : ''
 
@@ -2452,13 +2512,14 @@ document.addEventListener('DOMContentLoaded', () => {
         ${reminderText}
         ${standardBodyMarkup}
         ${markdownMarkup}
+        ${checklistMarkup}
         ${spreadsheetMarkup}
 
         <div class="note-actions">
           <span style="margin-right: auto; align-self: center; font-size: 0.72rem; font-weight: 700; color: rgba(45, 43, 42, 0.45);">${dateText}</span>
 
           ${isTrashNote ? '' : `<!-- Note Type Icon -->
-          ${typeIconMarkup}
+          ${formatTriggerMarkup}
 
           <!-- Pin Note Action -->
           <button type="button" class="btn-icon action-pin" title="${pinActionTitle}">
@@ -2496,6 +2557,19 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderBodyWithHashtags(text) {
     var escaped = escapeHTML(text || '').replace(/\n/g, '<br>')
     return renderHashtagChips(escaped)
+  }
+
+  // Render a checklist note: each non-empty line becomes an interactive checkbox row.
+  // Lines starting with "- [x]" (case-insensitive) are pre-checked.
+  function renderChecklist(text) {
+    const lines = String(text || '').split(/\r?\n/)
+    const rows = lines.filter(l => l.trim().length > 0).map(l => {
+      const checkedMatch = l.match(/^\s*-\s*\[xX\]\s*/)
+      const label = checkedMatch ? l.slice(checkedMatch[0].length) : l.replace(/^\s*-\s+/, '')
+      const checked = !!checkedMatch
+      return '<label class="note-checklist-item"><input type="checkbox" ' + (checked ? 'checked ' : '') + '/><span>' + renderHashtagChips(escapeHTML(label)) + '</span></label>'
+    })
+    return rows.length ? '<div class="note-checklist">' + rows.join('') + '</div>' : ''
   }
 
   // Wrap inline #hashtags in already-escaped HTML with clickable chips.

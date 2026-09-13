@@ -1221,6 +1221,42 @@ body.note-focus-open {
   margin-bottom: 0.65rem;
 }
 
+/* Checklist notes: rows with a checkbox + label, each line of a note becomes one item */
+.note-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.35rem 0 0.6rem;
+}
+
+.note-checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: rgba(45, 43, 42, 0.88);
+  cursor: pointer;
+}
+
+.note-checklist-item input[type="checkbox"] {
+  margin-top: 0.2rem;
+  flex: none;
+  width: 15px;
+  height: 15px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.note-checklist-item > span {
+  min-width: 0;
+}
+
+.note-checklist-item input:checked + span {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
 .spreadsheet-preview {
   overflow-x: auto;
   margin-bottom: 0.95rem;
@@ -2980,3 +3016,85 @@ body.note-focus-open {
   font-weight: 600;
 }
 .hashtag-hint { margin-top: 0.35rem; }
+/* Action button + dropdown for choosing a note's render format */
+.note-format-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.note-actions .btn-icon.action-format {
+  border-radius: 50%;
+}
+
+.note-format-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  display: none;
+  flex-direction: column;
+  min-width: 150px;
+  padding: 0.35rem;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.note-format-menu.open {
+  display: flex;
+  opacity: 1 !important;
+  visibility: visible !important;
+  animation: pop-in 0.15s ease;
+}
+
+/* While open, the menu is portaled to <body> (see handleCardActions) so no
+   card transform/overflow can clip or re-anchor it. Keep it above overlays. */
+.note-format-menu.open {
+  position: fixed;
+  z-index: 1000 !important;
+  pointer-events: auto !important;
+}
+
+.note-format-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.note-format-option:hover {
+  background: var(--color-primary-light);
+}
+
+.note-format-option input[type="radio"] {
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 50%;
+  margin: 0;
+  flex: none;
+  cursor: pointer;
+  position: relative;
+}
+
+.note-format-option input[type="radio"]:checked {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  box-shadow: inset 0 0 0 2px #fff;
+}
+
+.fmt-option-icon {
+  display: inline-flex;
+  color: var(--text-muted);
+}
+
+.note-format-option input[type="radio"]:checked ~ span.fmt-option-icon {
+  color: var(--color-primary);
+}

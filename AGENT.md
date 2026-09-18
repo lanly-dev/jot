@@ -15,6 +15,9 @@ This repository contains a lightweight full-stack note-taking app built with Nod
 
 ## Key files
 
+```
+
+- `data/` — Persistence directory for notes and credentials
 - `server.js` — Express API, persistence logic, encryption, file initialization
 - `app.js` — frontend state management, rendering, note/credential interactions, sync logic
 - `index.html` — app shell and modal/layout structure

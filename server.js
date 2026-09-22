@@ -222,6 +222,9 @@ function writeNotes(notes) {
     fs.writeFileSync(DATA_FILE, JSON.stringify(notes, null, 2), 'utf-8')
   } catch (err) {
     console.error('Error writing to notes database:', err)
+    // Re-throw so routes answer 500 instead of reporting success without
+    // persisting (Express 5 turns handler throws into a 500 response).
+    throw err
   }
 }
 
@@ -266,6 +269,9 @@ async function writeCredentials(credentials) {
     fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(encrypted, null, 2), 'utf-8')
   } catch (err) {
     console.error('Error writing to credentials database:', err)
+    // Re-throw so routes answer 500 instead of a fake success — the client
+    // would otherwise show "restored" while the file never changed.
+    throw err
   }
 }
 
@@ -404,7 +410,13 @@ app.post('/api/notes/:id/restore', (req, res) => {
   {return res.status(404).json({ error: 'Note not found 😿' })}
 
   notes[noteIndex] = { ...notes[noteIndex], deleted: false, deletedAt: null, updatedAt: new Date().toISOString() }
-  writeNotes(notes)
+  try {
+    writeNotes(notes)
+  } catch {
+    return res.status(500).json({
+      error: 'Could not save changes — check that data/notes.json is writable (see README)'
+    })
+  }
   console.log(`Note restored: (${id}) 🌱`)
   res.json(notes[noteIndex])
 })
@@ -505,7 +517,13 @@ app.post('/api/credentials/:id/restore', async (req, res) => {
   {return res.status(404).json({ error: 'Credential not found 😿' })}
 
   credentials[credIndex] = { ...credentials[credIndex], deleted: false, deletedAt: null }
-  await writeCredentials(credentials)
+  try {
+    await writeCredentials(credentials)
+  } catch {
+    return res.status(500).json({
+      error: 'Could not save changes — check that data/credentials.json is writable (see README)'
+    })
+  }
   console.log(`Credential restored: (${id}) 🌱`)
   res.json(credentials[credIndex])
 })

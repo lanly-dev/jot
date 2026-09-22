@@ -1397,6 +1397,12 @@ body.note-focus-open {
   background-color: #ffeef1;
 }
 
+/* Disabled while a restore request is in flight (restoreCredential/restoreNote) */
+.btn-icon:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* Note type indicator icon in the action bar (informational, not clickable) */
 .note-actions .btn-icon.action-type {
   cursor: default;

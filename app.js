@@ -1643,7 +1643,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2.5 RESTORE ACTION (only for trashed credentials)
     if (target.closest('.action-restore')) {
-      restoreCredential(credId)
+      restoreCredential(credId, target.closest('.action-restore'))
       return
     }
 
@@ -1858,19 +1858,52 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Restore a note from the trash
-  async function restoreNote(id) {
+  // Restore a note from the trash — same truthful failure handling as credentials
+  async function restoreNote(id, btn) {
+    if (btn) btn.disabled = true
+    setSyncStatus('saving', 'Restoring...')
     try {
-      const res = await fetch(`/api/notes/${id}/restore`, { method: 'POST' })
-      if (!res.ok) throw new Error('Cloud restore failed')
+      const res = await fetch(`/api/notes/${id}/restore`, {
+        method: 'POST',
+        signal: AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined
+      })
+      if (!res.ok) {
+        let detail = ''
+        try {
+          const body = await res.json()
+          detail = (body && body.error) || ''
+        } catch { /* non-JSON error body */ }
+        const err = new Error(detail || `Server responded with ${res.status}`)
+        err.status = res.status
+        err.serverDetail = detail
+        throw err
+      }
       notes = notes.map(n => n.id === id ? { ...n, deleted: false, deletedAt: null } : n)
       setSyncStatus('saved', 'Changes synced')
       showToast('Jot restored! 🌱')
       render()
     } catch (err) {
       console.error(err)
-      setSyncStatus('error', 'Restore failed — offline')
-      showToast('Could not restore — server offline ⚠️', 'warn')
+      if (err && err.status === 404 && err.serverDetail) {
+        setSyncStatus('error', 'Restore failed')
+        showToast('No longer on the server — removed from your list ⚠️', 'warn')
+        notes = notes.filter(n => n.id !== id)
+        render()
+      } else if (err && err.status === 404) {
+        setSyncStatus('error', 'Restore failed')
+        showToast('Restore unsupported — restart Jot so the server matches the app ⚠️', 'warn')
+      } else if (err && err.status) {
+        setSyncStatus('error', 'Restore failed')
+        showToast(`${err.serverDetail || `Could not restore — server error (${err.status})`} ⚠️`, 'warn')
+      } else if (err && (err.name === 'TimeoutError' || err.name === 'AbortError')) {
+        setSyncStatus('error', 'Restore timed out')
+        showToast('Restore timed out — server not responding ⚠️', 'warn')
+      } else {
+        setSyncStatus('error', 'Restore failed — offline')
+        showToast('Could not restore — server offline ⚠️', 'warn')
+      }
+    } finally {
+      if (btn && btn.isConnected) btn.disabled = false
     }
   }
 
@@ -1909,19 +1942,60 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Restore a credential from the vault trash
-  async function restoreCredential(id) {
+  // Restore a credential from the vault trash. Gives immediate feedback while
+  // the request is in flight and maps each failure mode to a truthful message
+  // instead of a blanket "server offline" toast.
+  async function restoreCredential(id, btn) {
+    if (btn) btn.disabled = true
+    setSyncStatus('saving', 'Restoring...')
     try {
-      const res = await fetch(`/api/credentials/${id}/restore`, { method: 'POST' })
-      if (!res.ok) throw new Error('Cloud restore failed')
+      const res = await fetch(`/api/credentials/${id}/restore`, {
+        method: 'POST',
+        signal: AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined
+      })
+      if (!res.ok) {
+        // Surface the server's real reason. Stale servers/proxies may answer
+        // 404 with HTML — then there is no JSON detail to parse.
+        let detail = ''
+        try {
+          const body = await res.json()
+          detail = (body && body.error) || ''
+        } catch { /* non-JSON error body */ }
+        const err = new Error(detail || `Server responded with ${res.status}`)
+        err.status = res.status
+        err.serverDetail = detail
+        throw err
+      }
       credentials = credentials.map(c => c.id === id ? { ...c, deleted: false, deletedAt: null } : c)
       setSyncStatus('saved', 'Changes synced')
       showToast('Credential restored! 🌱')
       render()
     } catch (err) {
       console.error(err)
-      setSyncStatus('error', 'Restore failed — offline')
-      showToast('Could not restore — server offline ⚠️', 'warn')
+      if (err && err.status === 404 && err.serverDetail) {
+        // Server answered but no longer knows this credential (deleted on
+        // another device / imported locally) — drop the stale row.
+        setSyncStatus('error', 'Restore failed')
+        showToast('No longer on the server — removed from your list ⚠️', 'warn')
+        credentials = credentials.filter(c => c.id !== id)
+        render()
+      } else if (err && err.status === 404) {
+        // 404 without JSON detail: the running server predates the restore route
+        setSyncStatus('error', 'Restore failed')
+        showToast('Restore unsupported — restart Jot so the server matches the app ⚠️', 'warn')
+      } else if (err && err.status) {
+        setSyncStatus('error', 'Restore failed')
+        showToast(`${err.serverDetail || `Could not restore — server error (${err.status})`} ⚠️`, 'warn')
+      } else if (err && (err.name === 'TimeoutError' || err.name === 'AbortError')) {
+        setSyncStatus('error', 'Restore timed out')
+        showToast('Restore timed out — server not responding ⚠️', 'warn')
+      } else {
+        // fetch() itself failed — the only genuine "server offline" case
+        setSyncStatus('error', 'Restore failed — offline')
+        showToast('Could not restore — server offline ⚠️', 'warn')
+      }
+    } finally {
+      if (btn && btn.isConnected) btn.disabled = false
     }
   }
 
@@ -2035,7 +2109,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2.5 RESTORE ACTION (only for trashed notes)
     if (target.closest('.action-restore')) {
-      restoreNote(noteId)
+      restoreNote(noteId, target.closest('.action-restore'))
       return
     }
 

@@ -103,21 +103,33 @@ document.addEventListener('DOMContentLoaded', () => {
   const notesMode = document.getElementById('notes-mode')
   const vaultMode = document.getElementById('vault-mode')
 
-  // Credential / Vault UI elements
+  // Credential / Vault UI elements (the inline creator is for NEW credentials only)
+  const vaultCredentialCreator = document.getElementById('vault-credential-creator')
   const vaultCreatorCollapsed = document.getElementById('vault-creator-collapsed')
-  const credentialModalBackdrop = document.getElementById('credential-modal-backdrop')
-  const credentialModalPanel = document.getElementById('credential-modal-panel')
-  const btnCloseCredentialModal = document.getElementById('btn-close-credential-modal')
+  const vaultCreatorExpanded = document.getElementById('vault-creator-expanded')
   const btnCancelCredentialModal = document.getElementById('btn-cancel-credential-modal')
   const credentialForm = document.getElementById('credential-form')
-  const credentialIdInput = document.getElementById('credential-id')
   const credentialSiteInput = document.getElementById('credential-site')
   const credentialUsernameInput = document.getElementById('credential-username')
   const credentialPasswordInput = document.getElementById('credential-password')
   const credentialNotesInput = document.getElementById('credential-notes')
-  const credentialEditorTitle = document.getElementById('credential-editor-title')
-  const btnSaveCredential = document.getElementById('btn-save-credential')
   const btnToggleFormPassword = document.getElementById('btn-toggle-form-password')
+
+  // Credential edit modal elements (a separate dialog, for EXISTING credentials only)
+  const credentialModalBackdrop = document.getElementById('credential-modal-backdrop')
+  const credentialModalPanel = document.getElementById('credential-modal-panel')
+  const credentialModalTitle = document.getElementById('credential-modal-title')
+  const credentialModalIcon = document.getElementById('credential-modal-icon')
+  const btnCloseCredentialModal = document.getElementById('btn-close-credential-modal')
+  const btnCancelCredentialEdit = document.getElementById('btn-cancel-credential-edit')
+  const credentialEditForm = document.getElementById('credential-edit-form')
+  const credentialEditIdInput = document.getElementById('credential-edit-id')
+  const credentialEditSiteInput = document.getElementById('credential-edit-site')
+  const credentialEditUsernameInput = document.getElementById('credential-edit-username')
+  const credentialEditPasswordInput = document.getElementById('credential-edit-password')
+  const credentialEditNotesInput = document.getElementById('credential-edit-notes')
+  const credentialEditTypeSelect = document.getElementById('credential-edit-type')
+  const btnToggleEditPassword = document.getElementById('btn-toggle-edit-password')
   const credentialsGrid = document.getElementById('credentials-grid')
   const credentialsTableWrap = document.getElementById('credentials-table-wrap')
   const vaultEmptyState = document.getElementById('vault-empty-state')
@@ -173,6 +185,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const credColorSwatchDisplay = document.getElementById('cred-color-swatch-display')
   const credentialColorOptionsContainer = document.getElementById('credential-color-options')
 
+  // Credential edit modal popovers (type + color)
+  const btnCredEditTypePopup = document.getElementById('btn-cred-edit-type-popup')
+  const credEditTypePopover = document.getElementById('cred-edit-type-popover')
+  const credEditTypeIconDisplay = document.getElementById('cred-edit-type-icon-display')
+  const credEditTypeLabelDisplay = document.getElementById('cred-edit-type-label-display')
+  const btnCredEditColorPopup = document.getElementById('btn-cred-edit-color-popup')
+  const credEditColorPopover = document.getElementById('cred-edit-color-popover')
+  const credEditColorSwatchDisplay = document.getElementById('cred-edit-color-swatch-display')
+  const credentialEditColorOptionsContainer = document.getElementById('credential-edit-color-options')
+
   // INITIALIZATION
   function init() {
     initSpreadsheetDraft(3, 3)
@@ -182,6 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateLayoutToggleButton()
     updateTypeSpecificFields()
     updateCredentialTypeSpecificFields('login')
+    updateCredEditTypeSpecificFields('login')
   }
 
   async function fetchNotes() {
@@ -688,6 +711,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (credentialNotesInput) {
       credentialNotesInput.addEventListener('input', () => autoExpand(credentialNotesInput))
     }
+    if (credentialEditNotesInput) {
+      credentialEditNotesInput.addEventListener('input', () => autoExpand(credentialEditNotesInput))
+    }
 
     // Form submission (Save Note)
     noteForm.addEventListener('submit', handleFormSubmit)
@@ -774,8 +800,25 @@ document.addEventListener('DOMContentLoaded', () => {
           const selectedLabel = e.target.closest('.color-option-label')
           if (selectedLabel) {
             selectedLabel.classList.add('current')
-            if (credentialModalPanel) credentialModalPanel.style.borderColor = e.target.value
+            if (vaultCredentialCreator) vaultCredentialCreator.style.borderColor = e.target.value
             if (credColorSwatchDisplay) credColorSwatchDisplay.style.backgroundColor = e.target.value
+          }
+        }
+      })
+    }
+
+    // Edit modal color option picker: swatch + dialog border sync
+    if (credentialEditColorOptionsContainer) {
+      credentialEditColorOptionsContainer.addEventListener('change', (e) => {
+        if (e.target.name === 'credential-edit-color') {
+          document.querySelectorAll('#credential-edit-color-options .color-option-label').forEach(label => {
+            label.classList.remove('current')
+          })
+          const selectedLabel = e.target.closest('.color-option-label')
+          if (selectedLabel) {
+            selectedLabel.classList.add('current')
+            if (credentialModalPanel) credentialModalPanel.style.borderColor = e.target.value
+            if (credEditColorSwatchDisplay) credEditColorSwatchDisplay.style.backgroundColor = e.target.value
           }
         }
       })
@@ -907,6 +950,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.key === 'Escape') {
         closeFocusedNote()
         closeCredentialModal()
+        closeCredentialEditModal()
         document.querySelectorAll('.note-format-menu.open').forEach(closeFormatMenu)
       }
     })
@@ -976,6 +1020,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnColorPopup) btnColorPopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnColorPopup, colorPopover) })
     if (btnCredTypePopup) btnCredTypePopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnCredTypePopup, credTypePopover) })
     if (btnCredColorPopup) btnCredColorPopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnCredColorPopup, credColorPopover) })
+    if (btnCredEditTypePopup) btnCredEditTypePopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnCredEditTypePopup, credEditTypePopover) })
+    if (btnCredEditColorPopup) btnCredEditColorPopup.addEventListener('click', (e) => { e.stopPropagation(); togglePopover(btnCredEditColorPopup, credEditColorPopover) })
 
     // Popover item clicks
     if (credTypePopover) {
@@ -992,6 +1038,22 @@ document.addEventListener('DOMContentLoaded', () => {
       })
     }
 
+    if (credEditTypePopover) {
+      credEditTypePopover.addEventListener('click', (e) => {
+        const item = e.target.closest('.popover-item')
+        if (!item) return
+        const type = item.getAttribute('data-type')
+        if (type && credentialEditTypeSelect) {
+          credentialEditTypeSelect.value = type
+          updateCredEditTypeSpecificFields(type)
+          updateCredEditTypePopoverUI(type)
+          if (credentialModalTitle) credentialModalTitle.textContent = `Edit ${credTypeMeta(type).label}`
+          if (credentialModalIcon) credentialModalIcon.textContent = credTypeMeta(type).icon
+          closeAllPopovers()
+        }
+      })
+    }
+
     // MODE NAVIGATION (Notes <-> Vault)
     btnNavNotes.addEventListener('click', () => switchMode('notes'))
     btnNavVault.addEventListener('click', () => switchMode('vault'))
@@ -1003,29 +1065,44 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     btnLockVault.addEventListener('click', lockVault)
 
-    // Credential form password reveal toggle
+    // Credential creator (inline card) password reveal toggle
     btnToggleFormPassword.addEventListener('click', () => {
       togglePasswordVisibility(credentialPasswordInput, btnToggleFormPassword)
     })
 
-    // Credential creator modal openers and closers
+    // Credential creator (inline card, creates new credentials only)
     if (vaultCreatorCollapsed) {
       vaultCreatorCollapsed.addEventListener('click', () => {
         openCredentialModal()
       })
     }
-    if (btnCloseCredentialModal) {
-      btnCloseCredentialModal.addEventListener('click', closeCredentialModal)
-    }
     if (btnCancelCredentialModal) {
       btnCancelCredentialModal.addEventListener('click', closeCredentialModal)
     }
+
+    // Credential edit modal (separate dialog, edits existing credentials only)
+    if (btnCloseCredentialModal) {
+      btnCloseCredentialModal.addEventListener('click', closeCredentialEditModal)
+    }
+    if (btnCancelCredentialEdit) {
+      btnCancelCredentialEdit.addEventListener('click', closeCredentialEditModal)
+    }
     if (credentialModalBackdrop) {
-      credentialModalBackdrop.addEventListener('click', closeCredentialModal)
+      credentialModalBackdrop.addEventListener('click', (e) => {
+        if (e.target === credentialModalBackdrop) closeCredentialEditModal()
+      })
+    }
+    if (btnToggleEditPassword) {
+      btnToggleEditPassword.addEventListener('click', () => {
+        togglePasswordVisibility(credentialEditPasswordInput, btnToggleEditPassword)
+      })
     }
 
-    // Credential form submit
+    // Credential form submits
     credentialForm.addEventListener('submit', handleCredentialFormSubmit)
+    if (credentialEditForm) {
+      credentialEditForm.addEventListener('submit', handleCredentialEditSubmit)
+    }
 
     // Credential card action delegation
     credentialsGrid.addEventListener('click', handleCredentialCardActions)
@@ -1060,43 +1137,78 @@ document.addEventListener('DOMContentLoaded', () => {
     return 'text'
   }
 
-  function updateCredTypePopoverUI(type) {
-    const iconMap = { login: '🔑', payment: '💳', 'secure-note': '🔒' }
-    const labelMap = { login: 'Login', payment: 'Payment', 'secure-note': 'Secure Note' }
-    if (credTypeIconDisplay) credTypeIconDisplay.textContent = iconMap[type] || '🔑'
-    if (credTypeLabelDisplay) credTypeLabelDisplay.textContent = labelMap[type] || 'Login'
-    if (credTypePopover) {
-      credTypePopover.querySelectorAll('.popover-item').forEach(item => {
+  // Shared credential-type metadata used by both the inline creator and the edit modal
+  const CRED_TYPE_META = {
+    login: { icon: '🔑', label: 'Login' },
+    payment: { icon: '💳', label: 'Payment' },
+    'secure-note': { icon: '🔒', label: 'Secure Note' }
+  }
+
+  function credTypeMeta(type) {
+    return CRED_TYPE_META[type] || CRED_TYPE_META.login
+  }
+
+  function applyCredTypePopoverUI(type, iconEl, labelEl, popoverEl) {
+    const meta = credTypeMeta(type)
+    if (iconEl) iconEl.textContent = meta.icon
+    if (labelEl) labelEl.textContent = meta.label
+    if (popoverEl) {
+      popoverEl.querySelectorAll('.popover-item').forEach(item => {
         item.classList.toggle('active', item.getAttribute('data-type') === type)
       })
     }
   }
 
+  function updateCredTypePopoverUI(type) {
+    applyCredTypePopoverUI(type, credTypeIconDisplay, credTypeLabelDisplay, credTypePopover)
+  }
+
+  function updateCredEditTypePopoverUI(type) {
+    applyCredTypePopoverUI(type, credEditTypeIconDisplay, credEditTypeLabelDisplay, credEditTypePopover)
+  }
+
+  // Shared placeholder / required-field rules per credential type
+  function applyCredentialTypeFieldRules(type, fields) {
+    const { usernameInput, passwordInput, notesInput } = fields
+    if (type === 'secure-note') {
+      usernameInput.required = false
+      passwordInput.required = false
+      usernameInput.placeholder = 'Identifier / Tag (optional)'
+      passwordInput.placeholder = 'Secret key / Password (optional)'
+      notesInput.placeholder = 'Write your confidential secret note here...'
+      notesInput.required = true
+    } else if (type === 'payment') {
+      usernameInput.required = true
+      passwordInput.required = true
+      usernameInput.placeholder = 'Cardholder name'
+      passwordInput.placeholder = 'Card number / Expiry / CVV'
+      notesInput.placeholder = 'Billing address or notes (optional)'
+      notesInput.required = false
+    } else {
+      usernameInput.required = true
+      passwordInput.required = true
+      usernameInput.placeholder = 'Username or email'
+      passwordInput.placeholder = 'Password'
+      notesInput.placeholder = 'Notes (optional)'
+      notesInput.required = false
+    }
+  }
+
   function updateCredentialTypeSpecificFields(type) {
     if (!type) type = credentialTypeSelect ? credentialTypeSelect.value : 'login'
+    applyCredentialTypeFieldRules(type, {
+      usernameInput: credentialUsernameInput,
+      passwordInput: credentialPasswordInput,
+      notesInput: credentialNotesInput
+    })
+  }
 
-    if (type === 'secure-note') {
-      credentialUsernameInput.required = false
-      credentialPasswordInput.required = false
-      credentialUsernameInput.placeholder = 'Identifier / Tag (optional)'
-      credentialPasswordInput.placeholder = 'Secret key / Password (optional)'
-      credentialNotesInput.placeholder = 'Write your confidential secret note here...'
-      credentialNotesInput.required = true
-    } else if (type === 'payment') {
-      credentialUsernameInput.required = true
-      credentialPasswordInput.required = true
-      credentialUsernameInput.placeholder = 'Cardholder name'
-      credentialPasswordInput.placeholder = 'Card number / Expiry / CVV'
-      credentialNotesInput.placeholder = 'Billing address or notes (optional)'
-      credentialNotesInput.required = false
-    } else {
-      credentialUsernameInput.required = true
-      credentialPasswordInput.required = true
-      credentialUsernameInput.placeholder = 'Username or email'
-      credentialPasswordInput.placeholder = 'Password'
-      credentialNotesInput.placeholder = 'Notes (optional)'
-      credentialNotesInput.required = false
-    }
+  function updateCredEditTypeSpecificFields(type) {
+    applyCredentialTypeFieldRules(type || 'login', {
+      usernameInput: credentialEditUsernameInput,
+      passwordInput: credentialEditPasswordInput,
+      notesInput: credentialEditNotesInput
+    })
   }
 
   // MODE SWITCHING
@@ -1104,6 +1216,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentMode === mode) return
     currentMode = mode
     closeFocusedNote()
+    closeCredentialEditModal()
 
     btnNavNotes.classList.toggle('active', mode === 'notes')
     btnNavVault.classList.toggle('active', mode === 'vault')
@@ -1190,6 +1303,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function lockVault() {
     vaultUnlocked = false
     closeFocusedNote()
+    closeCredentialEditModal()
     credentialsGrid.innerHTML = ''
     vaultEmptyState.style.display = 'none'
     vaultSetupMode = false
@@ -1226,14 +1340,13 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleBtn.classList.toggle('revealed', !showing)
   }
 
-  // CREDENTIAL CREATOR UI (inline, note-style)
+  // CREDENTIAL CREATOR UI (inline card — creates NEW credentials only)
   function openCredentialModal() {
     closeFocusedNote()
+    closeCredentialEditModal()
 
-    const creator = document.getElementById('vault-credential-creator')
-    const expanded = document.getElementById('vault-creator-expanded')
-    if (creator) creator.classList.add('active')
-    if (expanded) expanded.style.display = 'block'
+    if (vaultCredentialCreator) vaultCredentialCreator.classList.add('active')
+    if (vaultCreatorExpanded) vaultCreatorExpanded.style.display = 'block'
     if (vaultCreatorCollapsed) vaultCreatorCollapsed.style.display = 'none'
 
     setTimeout(() => {
@@ -1244,10 +1357,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function closeCredentialModal() {
     closeAllPopovers()
 
-    const creator = document.getElementById('vault-credential-creator')
-    const expanded = document.getElementById('vault-creator-expanded')
-    if (creator) creator.classList.remove('active')
-    if (expanded) expanded.style.display = 'none'
+    if (vaultCredentialCreator) vaultCredentialCreator.classList.remove('active')
+    if (vaultCreatorExpanded) vaultCreatorExpanded.style.display = 'none'
     if (vaultCreatorCollapsed) vaultCreatorCollapsed.style.display = 'flex'
 
     resetCredentialForm()
@@ -1256,7 +1367,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function resetCredentialForm() {
     closeAllPopovers()
     credentialForm.reset()
-    credentialIdInput.value = ''
     if (credentialTypeSelect) {
       credentialTypeSelect.value = 'login'
       updateCredTypePopoverUI('login')
@@ -1269,23 +1379,103 @@ document.addEventListener('DOMContentLoaded', () => {
       pinkRadio.closest('.color-option-label')?.classList.add('current')
       if (credColorSwatchDisplay) credColorSwatchDisplay.style.backgroundColor = '#ffd1d9'
     }
-    const creator = document.getElementById('vault-credential-creator')
-    if (creator) creator.style.borderColor = 'var(--border-color)'
+    if (vaultCredentialCreator) vaultCredentialCreator.style.borderColor = 'var(--border-color)'
     credentialPasswordInput.type = 'password'
     if (btnToggleFormPassword) {
       btnToggleFormPassword.classList.remove('revealed')
       btnToggleFormPassword.title = 'Show password'
     }
-    const heading = document.getElementById('credential-editor-title')
-    if (heading) heading.textContent = 'Add a New Credential'
-    const saveLabel = btnSaveCredential?.querySelector('.btn-text')
-    if (saveLabel) saveLabel.textContent = 'Save Credential'
   }
 
+  // CREDENTIAL EDIT MODAL (separate dialog — edits EXISTING credentials only)
+  function openCredentialEditModal(cred) {
+    if (!cred || !credentialModalPanel) return
+
+    closeFocusedNote()
+    // Leave the inline creator (and any draft in it) untouched — the two UIs are independent
+    closeAllPopovers()
+
+    credentialEditIdInput.value = cred.id
+    credentialEditSiteInput.value = cred.site || ''
+    credentialEditUsernameInput.value = cred.username || ''
+    credentialEditPasswordInput.value = cred.password || ''
+    credentialEditNotesInput.value = cred.notes || ''
+
+    const type = cred.type || 'login'
+    if (credentialEditTypeSelect) credentialEditTypeSelect.value = type
+    updateCredEditTypePopoverUI(type)
+    updateCredEditTypeSpecificFields(type)
+    highlightCredentialEditColor(cred.color || '#ffd1d9')
+
+    if (credentialModalTitle) credentialModalTitle.textContent = `Edit ${credTypeMeta(type).label}`
+    if (credentialModalIcon) credentialModalIcon.textContent = credTypeMeta(type).icon
+
+    credentialEditPasswordInput.type = 'password'
+    if (btnToggleEditPassword) {
+      btnToggleEditPassword.classList.remove('revealed')
+      btnToggleEditPassword.title = 'Show password'
+    }
+
+    credentialModalBackdrop.classList.add('active')
+    credentialModalBackdrop.setAttribute('aria-hidden', 'false')
+    credentialModalPanel.classList.add('active')
+    credentialModalPanel.setAttribute('aria-hidden', 'false')
+
+    setTimeout(() => {
+      if (credentialEditSiteInput) credentialEditSiteInput.focus()
+      if (credentialEditSiteInput) credentialEditSiteInput.select()
+    }, 80)
+  }
+
+  function closeCredentialEditModal() {
+    if (!credentialModalPanel) return
+    closeAllPopovers()
+
+    credentialModalPanel.classList.remove('active')
+    credentialModalPanel.setAttribute('aria-hidden', 'true')
+    if (credentialModalBackdrop) {
+      credentialModalBackdrop.classList.remove('active')
+      credentialModalBackdrop.setAttribute('aria-hidden', 'true')
+    }
+
+    resetCredentialEditForm()
+  }
+
+  function resetCredentialEditForm() {
+    if (credentialEditForm) credentialEditForm.reset()
+    if (credentialEditIdInput) credentialEditIdInput.value = ''
+    if (credentialEditTypeSelect) credentialEditTypeSelect.value = 'login'
+    updateCredEditTypePopoverUI('login')
+    updateCredEditTypeSpecificFields('login')
+    highlightCredentialEditColor('#ffd1d9')
+    if (credentialModalPanel) credentialModalPanel.style.borderColor = 'var(--border-color)'
+    if (credentialModalTitle) credentialModalTitle.textContent = 'Edit Credential'
+    if (credentialModalIcon) credentialModalIcon.textContent = credTypeMeta('login').icon
+    if (credentialEditPasswordInput) credentialEditPasswordInput.type = 'password'
+    if (btnToggleEditPassword) {
+      btnToggleEditPassword.classList.remove('revealed')
+      btnToggleEditPassword.title = 'Show password'
+    }
+  }
+
+  // Sync the edit modal's color swatch, radio state and dialog border
+  function highlightCredentialEditColor(color) {
+    const radio = document.querySelector(`input[name="credential-edit-color"][value="${color}"]`)
+    if (radio) radio.checked = true
+    document.querySelectorAll('#credential-edit-color-options .color-option-label').forEach(label => label.classList.remove('current'))
+    // Fall back to the first swatch when the stored color is not part of the palette
+    const activeLabel = radio
+      ? radio.closest('.color-option-label')
+      : document.querySelector('#credential-edit-color-options .color-option-label')
+    if (activeLabel) activeLabel.classList.add('current')
+    if (credEditColorSwatchDisplay) credEditColorSwatchDisplay.style.backgroundColor = color
+    if (credentialModalPanel) credentialModalPanel.style.borderColor = color
+  }
+
+  // CREATE CREDENTIAL FORM HANDLER (inline creator — always creates a new credential)
   async function handleCredentialFormSubmit(e) {
     e.preventDefault()
 
-    const id = credentialIdInput.value
     const selectedColorRadio = document.querySelector('input[name="credential-color"]:checked')
     const color = selectedColorRadio ? selectedColorRadio.value : '#ffd1d9'
     const credentialData = {
@@ -1297,76 +1487,69 @@ document.addEventListener('DOMContentLoaded', () => {
       color
     }
 
-    if (id) {
-      setSyncStatus('saving', 'Saving...')
-      try {
-        const res = await fetch(`/api/credentials/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(credentialData)
-        })
-        if (!res.ok) throw new Error('Cloud update failed')
-        const updated = await res.json()
-        credentials = credentials.map(c => c.id === id ? normalizeCredential({ ...c, ...updated }) : c)
-        setSyncStatus('saved', 'Changes synced')
-        showToast('Credential updated! 🔏')
-      } catch (err) {
-        console.error(err)
-        setSyncStatus('error', 'Not synced — offline')
-        showToast('Could not save — server offline ⚠️', 'warn')
-      }
-    } else {
-      setSyncStatus('saving', 'Saving...')
-      try {
-        const res = await fetch('/api/credentials', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(credentialData)
-        })
-        if (!res.ok) throw new Error('Cloud save failed')
-        const saved = await res.json()
-        credentials.unshift(normalizeCredential(saved))
-        setSyncStatus('saved', 'Changes synced')
-        showToast('Credential saved! 🔐')
-      } catch (err) {
-        console.error(err)
-        setSyncStatus('error', 'Not saved — offline')
-        showToast('Could not save — server offline ⚠️', 'warn')
-      }
+    setSyncStatus('saving', 'Saving...')
+    try {
+      const res = await fetch('/api/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentialData)
+      })
+      if (!res.ok) throw new Error('Cloud save failed')
+      const saved = await res.json()
+      credentials.unshift(normalizeCredential(saved))
+      setSyncStatus('saved', 'Changes synced')
+      showToast('Credential saved! 🔐')
+    } catch (err) {
+      console.error(err)
+      setSyncStatus('error', 'Not saved — offline')
+      showToast('Could not save — server offline ⚠️', 'warn')
     }
 
     closeCredentialModal()
     render()
   }
 
-  function populateCredentialForm(cred) {
-    credentialIdInput.value = cred.id
-    credentialSiteInput.value = cred.site
-    credentialUsernameInput.value = cred.username
-    credentialPasswordInput.value = cred.password
-    credentialNotesInput.value = cred.notes
-    if (credentialTypeSelect) {
-      credentialTypeSelect.value = cred.type || 'login'
-      updateCredTypePopoverUI(cred.type || 'login')
-      updateCredentialTypeSpecificFields(cred.type || 'login')
+  // UPDATE CREDENTIAL FORM HANDLER (edit modal — always updates an existing credential)
+  async function handleCredentialEditSubmit(e) {
+    e.preventDefault()
+
+    const id = credentialEditIdInput.value
+    if (!id) { closeCredentialEditModal(); return }
+
+    const existing = credentials.find(c => c.id === id)
+    const selectedColorRadio = document.querySelector('input[name="credential-edit-color"]:checked')
+    const color = selectedColorRadio
+      ? selectedColorRadio.value
+      : (existing && existing.color) || '#ffd1d9'
+    const updates = {
+      site: credentialEditSiteInput.value.trim(),
+      username: credentialEditUsernameInput.value.trim(),
+      password: credentialEditPasswordInput.value,
+      notes: credentialEditNotesInput.value.trim(),
+      type: credentialEditTypeSelect ? credentialEditTypeSelect.value : 'login',
+      color
     }
 
-    const credColor = cred.color || '#ffd1d9'
-    const radioToSelect = document.querySelector(`input[name="credential-color"][value="${credColor}"]`)
-    if (radioToSelect) {
-      radioToSelect.checked = true
-      document.querySelectorAll('#credential-color-options .color-option-label').forEach(label => label.classList.remove('current'))
-      radioToSelect.closest('.color-option-label')?.classList.add('current')
-      if (credColorSwatchDisplay) credColorSwatchDisplay.style.backgroundColor = credColor
-      const creator = document.getElementById('vault-credential-creator')
-    if (creator) creator.style.borderColor = credColor
+    setSyncStatus('saving', 'Saving...')
+    try {
+      const res = await fetch(`/api/credentials/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      })
+      if (!res.ok) throw new Error('Cloud update failed')
+      const updated = await res.json()
+      credentials = credentials.map(c => c.id === id ? normalizeCredential({ ...c, ...updated }) : c)
+      setSyncStatus('saved', 'Changes synced')
+      showToast('Credential updated! 🔏')
+      // Only dismiss the dialog once the update actually landed (keeps edits on failure)
+      closeCredentialEditModal()
+      render()
+    } catch (err) {
+      console.error(err)
+      setSyncStatus('error', 'Not synced — offline')
+      showToast('Could not save — server offline ⚠️', 'warn')
     }
-
-    const heading = document.getElementById('credential-editor-title')
-    if (heading) heading.textContent = 'Edit Credential'
-    const saveLabel = btnSaveCredential?.querySelector('.btn-text')
-    if (saveLabel) saveLabel.textContent = 'Save Changes'
-    openCredentialModal()
   }
 
   // CREDENTIAL CARD ACTIONS
@@ -1394,7 +1577,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (target.closest('.action-edit')) {
       closeFocusedNote()
-      populateCredentialForm(cred)
+      openCredentialEditModal(cred)
       return
     }
 
@@ -1403,7 +1586,8 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(async () => {
         const removedCred = credentials.find(c => c.id === credId)
         credentials = credentials.filter(c => c.id !== credId)
-        if (credentialIdInput.value === credId) resetCredentialForm()
+        // Dismiss the edit dialog if it was showing the credential being deleted
+        if (credentialEditIdInput.value === credId) closeCredentialEditModal()
         render()
         try {
           const res = await fetch(`/api/credentials/${credId}`, { method: 'DELETE' })
@@ -1421,7 +1605,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return
     }
 
-    populateCredentialForm(cred)
+    // Clicking anywhere else on the row opens that credential in the edit dialog
+    openCredentialEditModal(cred)
   }
 
   async function copyToClipboard(text, label) {

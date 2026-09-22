@@ -1019,6 +1019,18 @@ body.note-focus-open {
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
+  overflow-y: auto;
+}
+
+/* Edit form mirrors the inline creator rows (spacing comes from .creator-expanded there) */
+#credential-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+#credential-edit-form .creator-row-2 {
+  gap: 0.6rem;
 }
 
 .credential-modal-header {
@@ -2098,17 +2110,29 @@ body.note-focus-open {
 
   /* Note creator buttons */
   .form-actions button#btn-close-creator::before,
-  .form-actions button#btn-cancel-credential-modal::before {
+  .form-actions button#btn-cancel-credential-modal::before,
+  .form-actions button#btn-cancel-credential-edit::before {
     content: '✕';
     font-size: 1rem;
     color: var(--text-muted);
   }
 
   .form-actions button#btn-save-note::before,
-  .form-actions button#btn-save-credential::before {
+  .form-actions button#btn-save-credential::before,
+  .form-actions button#btn-save-credential-edit::before {
     content: '✓';
     font-size: 1rem;
     color: #ffffff;
+  }
+
+  /* Credential edit dialog fits comfortably on small screens */
+  .credential-modal-panel {
+    width: calc(100vw - 1.5rem);
+    max-height: calc(100vh - 2rem);
+  }
+
+  .credential-modal-inner {
+    padding: 1rem;
   }
 }
 

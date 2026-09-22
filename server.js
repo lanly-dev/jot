@@ -142,7 +142,7 @@ function normalizeCredential(cred) {
     password: String(cred.password || ''),
     notes: String(cred.notes || ''),
     type: allowedTypes.includes(cred.type) ? cred.type : 'login',
-    color: String(cred.color || '#ffd1d9'),
+    color: /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(String(cred.color || '')) ? String(cred.color) : '#ffd1d9',
     createdAt: cred.createdAt || new Date().toISOString()
   }
 }

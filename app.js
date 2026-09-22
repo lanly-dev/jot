@@ -241,14 +241,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Keep only well-formed hex colors so imported/stored values can never break
+  // the color radio lookup or leak into inline styles
+  function safeCredentialColor(color) {
+    return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(String(color || '')) ? String(color) : '#ffd1d9'
+  }
+
   function normalizeCredential(cred) {
     const merged = cred || {}
+    const allowedTypes = ['login', 'payment', 'secure-note']
     return {
       id: merged.id || 'cred-' + Date.now(),
       site: merged.site || '',
       username: merged.username || '',
       password: merged.password || '',
       notes: merged.notes || '',
+      type: allowedTypes.includes(merged.type) ? merged.type : 'login',
+      color: safeCredentialColor(merged.color),
       createdAt: merged.createdAt || new Date().toISOString()
     }
   }
@@ -2445,6 +2454,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderCredentialRowHTML(cred) {
     const escSite = escapeHTML(cred.site)
     const escUsername = escapeHTML(cred.username)
+    const rowColor = safeCredentialColor(cred.color)
     const siteUrl = credentialSiteUrl(cred.site)
     const openLinkButton = siteUrl
       ? `
@@ -2454,7 +2464,7 @@ document.addEventListener('DOMContentLoaded', () => {
       : ''
 
     return `
-      <tr class="credential-row" data-id="${cred.id}">
+      <tr class="credential-row" data-id="${cred.id}" style="--cred-color: ${rowColor};">
         <td class="col-site">
           <span class="credential-site-cell">
             <span class="credential-site-icon" aria-hidden="true">🔑</span>

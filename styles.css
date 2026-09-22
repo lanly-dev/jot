@@ -2466,11 +2466,13 @@ body.note-focus-open {
 }
 
 .credentials-table tbody tr {
+  background-color: var(--cred-color, #ffffff);
   transition: background-color 0.15s ease;
 }
 
+/* Tint overlay so hovering keeps the chosen card color instead of replacing it */
 .credentials-table tbody tr:hover {
-  background-color: rgba(255, 117, 143, 0.04);
+  background-image: linear-gradient(rgba(45, 43, 42, 0.04), rgba(45, 43, 42, 0.04));
 }
 
 .credential-site-cell,

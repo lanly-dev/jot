@@ -1575,6 +1575,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return
     }
 
+    if (target.closest('.action-open-link')) {
+      const url = target.closest('.action-open-link').getAttribute('data-url')
+      if (url) window.open(url, '_blank', 'noopener,noreferrer')
+      return
+    }
+
     if (target.closest('.action-edit')) {
       closeFocusedNote()
       openCredentialEditModal(cred)
@@ -2419,9 +2425,33 @@ document.addEventListener('DOMContentLoaded', () => {
     `
   }
 
+  // Return a safe, normalized http(s) URL if the site value looks like a link, else null
+  function credentialSiteUrl(site) {
+    if (!site || typeof site !== 'string') return null
+    const trimmed = site.trim()
+    if (!trimmed) return null
+    const hasProtocol = /^https?:\/\//i.test(trimmed)
+    const looksLikeDomain = /^(?!-)(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}(?::\d+)?(?:[/?#].*)?$/i.test(trimmed)
+    if (!hasProtocol && !looksLikeDomain) return null
+    const candidate = hasProtocol ? trimmed : `https://${trimmed}`
+    try {
+      const parsed = new URL(candidate)
+      return (parsed.protocol === 'http:' || parsed.protocol === 'https:') ? parsed.href : null
+    } catch (err) {
+      return null
+    }
+  }
+
   function renderCredentialRowHTML(cred) {
     const escSite = escapeHTML(cred.site)
     const escUsername = escapeHTML(cred.username)
+    const siteUrl = credentialSiteUrl(cred.site)
+    const openLinkButton = siteUrl
+      ? `
+            <button type="button" class="btn-icon action-open-link" data-url="${escapeHTML(siteUrl)}" title="Open ${escSite} in new tab" aria-label="Open in new tab">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            </button>`
+      : ''
 
     return `
       <tr class="credential-row" data-id="${cred.id}">
@@ -2452,6 +2482,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </td>
         <td class="col-actions">
           <span class="credential-row-actions">
+            ${openLinkButton}
             <button type="button" class="btn-icon action-edit" title="Edit Credential">
               <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"></path></svg>
             </button>

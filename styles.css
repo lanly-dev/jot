@@ -2451,7 +2451,7 @@ body.note-focus-open {
 }
 
 .credentials-table th.col-actions {
-  width: 88px;
+  width: 116px;
   text-align: right;
 }
 
@@ -2550,6 +2550,85 @@ body.note-focus-open {
 
 .credential-row-actions .btn-icon.action-edit:hover {
   color: #ff9f1c;
+}
+
+/* ---- Mobile: two-row credential cards (max-width: 600px) ---- */
+@media (max-width: 600px) {
+  .credentials-table {
+    min-width: 0;
+  }
+
+  .credentials-table thead {
+    display: none;
+  }
+
+  .credential-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "site actions"
+      "username password";
+    column-gap: 0.4rem;
+  }
+
+  .credential-row td {
+    padding: 0.6rem 0.85rem;
+    border-bottom: none;
+    background: transparent;
+  }
+
+  .credential-row .col-site {
+    grid-area: site;
+  }
+
+  .credential-row .col-actions {
+    grid-area: actions;
+  }
+
+  .credential-row .col-username {
+    grid-area: username;
+  }
+
+  .credential-row .col-password {
+    grid-area: password;
+  }
+
+  .credential-row .col-site .credential-site {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Row 1 keeps open-link (when present) + delete; editing is done by tapping the card */
+  .credential-row .credential-row-actions {
+    justify-content: flex-end;
+    gap: 0.2rem;
+  }
+
+  .credential-row .col-actions .action-edit {
+    display: none;
+  }
+
+  /* Row 2: hide the username copy button, keep password reveal + copy */
+  .credential-row .col-username .credential-copy {
+    display: none;
+  }
+
+  .credential-row .credential-cell-btn,
+  .credential-row .credential-row-actions .btn-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  /* Single clean separator under each two-row card */
+  .credential-row .col-username,
+  .credential-row .col-password {
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .credential-row:last-child .col-username,
+  .credential-row:last-child .col-password {
+    border-bottom: none;
+  }
 }
 
 .credential-field-label {

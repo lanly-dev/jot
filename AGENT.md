@@ -70,7 +70,9 @@ npm run efix
 - `GET /api/credentials`
 - `POST /api/credentials`
 - `PUT /api/credentials/:id`
-- `DELETE /api/credentials/:id`
+- `DELETE /api/credentials/:id` — soft-delete (to vault trash); `?permanent=1` hard-deletes
+- `POST /api/credentials/:id/restore` — restore a trashed credential
+- `DELETE /api/credentials/trash` — empty the trash (hard-delete all trashed credentials)
 
 ### Updates (self-update, git installs only)
 

@@ -143,6 +143,8 @@ function normalizeCredential(cred) {
     notes: String(cred.notes || ''),
     type: allowedTypes.includes(cred.type) ? cred.type : 'login',
     color: /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(String(cred.color || '')) ? String(cred.color) : '#ffd1d9',
+    deleted: !!cred.deleted,
+    deletedAt: cred.deletedAt || null,
     createdAt: cred.createdAt || new Date().toISOString()
   }
 }
@@ -457,19 +459,55 @@ app.put('/api/credentials/:id', async (req, res) => {
   res.json(updatedCredential)
 })
 
-// DELETE: Remove a credential permanently
+// DELETE: Empty the credential trash (permanently remove all deleted
+// credentials). Declared before the :id route so "trash" is not matched as a
+// credential id.
+app.delete('/api/credentials/trash', async (req, res) => {
+  const credentials = await readCredentials()
+  const kept = credentials.filter(c => !c.deleted)
+  const removedCount = credentials.length - kept.length
+  await writeCredentials(kept)
+  console.log(`Credential trash emptied: removed ${removedCount} credential(s) 🗑️`)
+  res.json({ success: true, message: 'Credential trash emptied 🔐', removed: removedCount })
+})
+
+// DELETE: Move a credential to the trash (soft delete). Pass ?permanent=1 to
+// remove it for good instead.
 app.delete('/api/credentials/:id', async (req, res) => {
   const { id } = req.params
+  const permanent = req.query.permanent === '1'
   const credentials = await readCredentials()
-  const credExists = credentials.some(c => c.id === id)
+  const credIndex = credentials.findIndex(c => c.id === id)
 
-  if (!credExists)
+  if (credIndex === -1)
   {return res.status(404).json({ error: 'Credential not found 😿' })}
 
-  const remaining = credentials.filter(c => c.id !== id)
-  await writeCredentials(remaining)
-  console.log(`Credential deleted permanently: (${id}) 🗑️`)
-  res.json({ success: true, message: 'Credential deleted permanently 🔐' })
+  if (permanent) {
+    const remaining = credentials.filter(c => c.id !== id)
+    await writeCredentials(remaining)
+    console.log(`Credential deleted permanently: (${id}) 🗑️`)
+    return res.json({ success: true, message: 'Credential deleted permanently 🔐' })
+  }
+
+  credentials[credIndex] = { ...credentials[credIndex], deleted: true, deletedAt: new Date().toISOString() }
+  await writeCredentials(credentials)
+  console.log(`Credential moved to trash: (${id}) 🗑️`)
+  res.json({ success: true, message: 'Credential moved to trash 🔐' })
+})
+
+// POST: Restore a credential from the trash
+app.post('/api/credentials/:id/restore', async (req, res) => {
+  const { id } = req.params
+  const credentials = await readCredentials()
+  const credIndex = credentials.findIndex(c => c.id === id)
+
+  if (credIndex === -1)
+  {return res.status(404).json({ error: 'Credential not found 😿' })}
+
+  credentials[credIndex] = { ...credentials[credIndex], deleted: false, deletedAt: null }
+  await writeCredentials(credentials)
+  console.log(`Credential restored: (${id}) 🌱`)
+  res.json(credentials[credIndex])
 })
 
 /* ==========================================================================

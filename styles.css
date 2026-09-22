@@ -1299,29 +1299,37 @@ body.note-focus-open {
   margin-top: auto;
 }
 
-/* Desktop: hide actions by default, show on card hover */
-@media (min-width: 769px) {
+/* Desktop with a hover-capable fine pointer: hide actions by default, show on
+   card hover or when keyboard focus is inside the card. Touch/coarse/no-hover
+   devices skip this block entirely so the buttons are always visible (taps do
+   not produce a sustained :hover). While hidden, the buttons stay tabbable:
+   opacity: 0 + pointer-events: none keeps them in the tab order (unlike
+   visibility: hidden) but makes them unclickable, so the first Tab into the
+   card reveals the whole bar via :focus-within. */
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
   .note-actions {
     opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.25s ease, visibility 0.25s ease;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
   }
 
-  .note-card:hover .note-actions {
+  .note-card:hover .note-actions,
+  .note-card:focus-within .note-actions {
     opacity: 1;
-    visibility: visible;
+    pointer-events: auto;
   }
 
-  /* List-view desktop: hide actions by default, show on card hover */
+  /* List-view desktop: hide actions by default, show on hover/focus */
   .notes-grid.list-view .note-actions {
     opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.25s ease, visibility 0.25s ease;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
   }
 
-  .notes-grid.list-view .note-card:hover .note-actions {
+  .notes-grid.list-view .note-card:hover .note-actions,
+  .notes-grid.list-view .note-card:focus-within .note-actions {
     opacity: 1;
-    visibility: visible;
+    pointer-events: auto;
   }
 }
 
@@ -1337,6 +1345,14 @@ body.note-focus-open {
   background-color: #ffffff;
   color: var(--text-main);
   transform: scale(1.1);
+}
+
+/* Keyboard navigation: show which action button is focused */
+.note-actions .btn-icon:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  background-color: #ffffff;
+  color: var(--text-main);
 }
 
 .note-actions .btn-icon.action-delete:hover {
@@ -1363,6 +1379,22 @@ body.note-focus-open {
 /* Trashed notes look slightly faded and desaturated */
 .notes-grid .note-card.trashed-note {
   filter: saturate(0.55) opacity(0.82);
+}
+
+/* Trashed credentials look slightly faded and desaturated */
+.credentials-table .credential-row.trashed-credential {
+  filter: saturate(0.55) opacity(0.82);
+}
+
+/* Credential trash actions (restore + permanent delete) */
+.credential-row-actions .btn-icon.action-restore:hover {
+  color: #2ec4b6;
+  background-color: #e7f8f6;
+}
+
+.credential-row-actions .btn-icon.action-delete-permanent:hover {
+  color: #ff4d6d;
+  background-color: #ffeef1;
 }
 
 /* Note type indicator icon in the action bar (informational, not clickable) */

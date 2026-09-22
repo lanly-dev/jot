@@ -116,7 +116,10 @@ The backend initializes a sample note set if the file does not exist.
 
 ### Credentials
 
-`data/credentials.json` stores credential entries as an array. Sensitive values are encrypted before being written to disk.
+`data/credentials.json` stores credential entries as an array. Each credential includes an `id`, `site`, `username`, `password`, `notes`, `type`, `color`, `createdAt`, plus trash fields mirroring notes:
+
+- `deleted` — when `true`, the credential is in the vault trash
+- `deletedAt` — timestamp of when the credential was trashed
 
 The following fields are encrypted when persisted:
 
@@ -187,7 +190,14 @@ Important operational note: if the key file is lost and `JOT_SECRET_KEY` is not 
 - Updates the credential record and re-encrypts stored sensitive fields
 
 `DELETE /api/credentials/:id`
-- Removes the credential from the file
+- Moves the credential to the vault trash (soft delete: sets `deleted`/`deletedAt`)
+- Pass `?permanent=1` to delete it permanently instead
+
+`POST /api/credentials/:id/restore`
+- Restores a trashed credential (clears `deleted`/`deletedAt`)
+
+`DELETE /api/credentials/trash`
+- Empties the vault trash (permanently removes every trashed credential)
 
 ---
 

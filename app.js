@@ -76,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnFilterArchived = document.getElementById('status-archived')
   const btnFilterTrash = document.getElementById('status-trash')
   const btnEmptyTrash = document.getElementById('btn-empty-trash')
+  const btnEmptyVaultTrash = document.getElementById('btn-empty-vault-trash')
   const btnLayoutToggle = document.getElementById('btn-layout-toggle')
   const notesSearchInput = document.getElementById('notes-search-input')
 
@@ -258,6 +259,8 @@ document.addEventListener('DOMContentLoaded', () => {
       notes: merged.notes || '',
       type: allowedTypes.includes(merged.type) ? merged.type : 'login',
       color: safeCredentialColor(merged.color),
+      deleted: !!merged.deleted,
+      deletedAt: merged.deletedAt || null,
       createdAt: merged.createdAt || new Date().toISOString()
     }
   }
@@ -865,6 +868,11 @@ document.addEventListener('DOMContentLoaded', () => {
         render()
       })
     })
+
+    // Empty the vault trash (permanent delete of all trashed credentials)
+    if (btnEmptyVaultTrash) {
+      btnEmptyVaultTrash.addEventListener('click', handleEmptyVaultTrash)
+    }
 
     // Thumbnail/List layout toggle
     btnLayoutToggle.addEventListener('click', () => {
@@ -1597,21 +1605,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (target.closest('.action-delete')) {
+      const isTrashView = currentVaultFilter === 'trash'
       card.classList.add('card-poof')
+
       setTimeout(async () => {
-        const removedCred = credentials.find(c => c.id === credId)
-        credentials = credentials.filter(c => c.id !== credId)
+        const removedCredRef = credentials.find(c => c.id === credId)
+        if (isTrashView) {
+          credentials = credentials.filter(c => c.id !== credId)
+        } else {
+          cred.deleted = true
+          cred.deletedAt = new Date().toISOString()
+        }
         // Dismiss the edit dialog if it was showing the credential being deleted
         if (credentialEditIdInput.value === credId) closeCredentialEditModal()
         render()
         try {
-          const res = await fetch(`/api/credentials/${credId}`, { method: 'DELETE' })
-          if (!res.ok) throw new Error('Cloud delete failed')
-          setSyncStatus('saved', 'Changes synced')
-          showToast('Credential deleted permanently! 🗑️')
+          if (isTrashView) {
+            await deleteCredentialPermanently(credId)
+          } else {
+            await moveCredentialToTrash(credId)
+          }
         } catch (err) {
           console.error(err)
-          if (removedCred) credentials.push(removedCred)
+          if (isTrashView) {
+            if (removedCredRef) credentials.unshift(removedCredRef)
+          } else {
+            cred.deleted = false
+            cred.deletedAt = null
+          }
           render()
           setSyncStatus('error', 'Delete failed — offline')
           showToast('Could not delete — server offline ⚠️', 'warn')
@@ -1619,6 +1640,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 300)
       return
     }
+
+    // 2.5 RESTORE ACTION (only for trashed credentials)
+    if (target.closest('.action-restore')) {
+      restoreCredential(credId)
+      return
+    }
+
+    // In the trash view rows are managed with restore/delete only — clicking
+    // anywhere else does not open the edit dialog
+    if (currentVaultFilter === 'trash') return
 
     // Clicking anywhere else on the row opens that credential in the edit dialog
     openCredentialEditModal(cred)
@@ -1878,6 +1909,59 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Restore a credential from the vault trash
+  async function restoreCredential(id) {
+    try {
+      const res = await fetch(`/api/credentials/${id}/restore`, { method: 'POST' })
+      if (!res.ok) throw new Error('Cloud restore failed')
+      credentials = credentials.map(c => c.id === id ? { ...c, deleted: false, deletedAt: null } : c)
+      setSyncStatus('saved', 'Changes synced')
+      showToast('Credential restored! 🌱')
+      render()
+    } catch (err) {
+      console.error(err)
+      setSyncStatus('error', 'Restore failed — offline')
+      showToast('Could not restore — server offline ⚠️', 'warn')
+    }
+  }
+
+  // Move a credential to the trash (soft delete). Throws on failure so the
+  // caller can revert.
+  async function moveCredentialToTrash(id) {
+    const res = await fetch(`/api/credentials/${id}`, { method: 'DELETE' })
+    if (!res.ok) throw new Error('Cloud delete failed')
+    setSyncStatus('saved', 'Changes synced')
+    showToast('Credential moved to trash 🗑️')
+  }
+
+  // Permanently delete a single credential. Throws on failure so the caller
+  // can revert.
+  async function deleteCredentialPermanently(id) {
+    const res = await fetch(`/api/credentials/${id}?permanent=1`, { method: 'DELETE' })
+    if (!res.ok) throw new Error('Cloud delete failed')
+    setSyncStatus('saved', 'Changes synced')
+    showToast('Credential deleted permanently! 🗑️')
+  }
+
+  // Empty the vault trash (permanently delete all trashed credentials)
+  async function handleEmptyVaultTrash() {
+    const confirmed = window.confirm('Permanently delete ALL credentials in the trash? This cannot be undone.')
+    if (!confirmed) return
+    const trashedCount = credentials.filter(c => c.deleted).length
+    try {
+      const res = await fetch('/api/credentials/trash', { method: 'DELETE' })
+      if (!res.ok) throw new Error('Empty trash failed')
+      credentials = credentials.filter(c => !c.deleted)
+      render()
+      setSyncStatus('saved', 'Changes synced')
+      showToast(`Vault trash emptied! Removed ${trashedCount} credential(s) 🗑️`)
+    } catch (err) {
+      console.error(err)
+      setSyncStatus('error', 'Empty trash failed')
+      showToast('Could not empty trash — server offline ⚠️', 'warn')
+    }
+  }
+
   function normalizeNote(note, fallback = {}) {
     const merged = { ...fallback, ...(note || {}) }
     return {
@@ -2087,27 +2171,43 @@ document.addEventListener('DOMContentLoaded', () => {
     vaultLockedState.classList.add('hidden')
     vaultContent.classList.remove('hidden')
 
-    // 1. Filter credentials based on currentVaultFilter
-    let filteredCredentials = credentials
-    if (currentVaultFilter !== 'all') {
-      filteredCredentials = credentials.filter(c => (c.type || 'login') === currentVaultFilter)
-    }
+    // 1. Filter credentials based on currentVaultFilter. The trash view shows
+    // only soft-deleted credentials; every other view hides them.
+    const isVaultTrashView = currentVaultFilter === 'trash'
+    let filteredCredentials = credentials.filter(c => {
+      if (!!c.deleted !== isVaultTrashView) return false
+      if (isVaultTrashView || currentVaultFilter === 'all') return true
+      return (c.type || 'login') === currentVaultFilter
+    })
 
-    // 2. Update vault stats
-    statTotalCredentials.textContent = credentials.length
+    // 2. Update vault stats (only live credentials count)
+    statTotalCredentials.textContent = credentials.filter(c => !c.deleted).length
+
+    // Toggle the "Empty trash" button: only in trash view when something is there
+    if (btnEmptyVaultTrash) {
+      const hasVaultTrash = credentials.some(c => c.deleted)
+      btnEmptyVaultTrash.style.display = isVaultTrashView && hasVaultTrash ? 'inline-flex' : 'none'
+    }
 
     // 3. Handle empty state display
     if (filteredCredentials.length === 0) {
       credentialsTableWrap.style.display = 'none'
       vaultEmptyState.style.display = 'flex'
+      const emptyMascot = vaultEmptyState.querySelector('.empty-mascot')
       const emptyTitle = vaultEmptyState.querySelector('h3')
       const emptyPara = vaultEmptyState.querySelector('p')
       if (emptyTitle && emptyPara) {
-        if (currentVaultFilter !== 'all') {
+        if (isVaultTrashView) {
+          if (emptyMascot) emptyMascot.textContent = '🗑️'
+          emptyTitle.textContent = 'Trash is empty'
+          emptyPara.textContent = 'Deleted credentials land here so you can restore them. They are only gone for good when you empty the trash.'
+        } else if (currentVaultFilter !== 'all') {
+          if (emptyMascot) emptyMascot.textContent = '🔐'
           const typeNames = { login: 'logins', payment: 'payments', 'secure-note': 'secure notes' }
           emptyTitle.textContent = `No ${typeNames[currentVaultFilter] || 'items'} found`
           emptyPara.textContent = 'Add a new credential or switch filter back to "All" to view your saved credentials.'
         } else {
+          if (emptyMascot) emptyMascot.textContent = '🔐'
           emptyTitle.textContent = 'Your vault is empty'
           emptyPara.textContent = 'Add your first password, API key, or login so it is always one cute tap away!'
         }
@@ -2456,15 +2556,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const escUsername = escapeHTML(cred.username)
     const rowColor = safeCredentialColor(cred.color)
     const siteUrl = credentialSiteUrl(cred.site)
-    const openLinkButton = siteUrl
+    const isTrashCred = !!cred.deleted
+    const openLinkButton = !isTrashCred && siteUrl
       ? `
             <button type="button" class="btn-icon action-open-link" data-url="${escapeHTML(siteUrl)}" title="Open ${escSite} in new tab" aria-label="Open in new tab">
               <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             </button>`
       : ''
 
+    // Trash-specific actions (only for credentials that have been deleted)
+    const restoreMarkup = isTrashCred
+      ? `
+            <button type="button" class="btn-icon action-restore" title="Restore credential">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+            </button>`
+      : ''
+    const editMarkup = isTrashCred
+      ? ''
+      : `
+            <button type="button" class="btn-icon action-edit" title="Edit Credential">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"></path></svg>
+            </button>`
+    const deleteTitle = isTrashCred ? 'Delete Permanently' : 'Move to Trash'
+
     return `
-      <tr class="credential-row" data-id="${cred.id}" style="--cred-color: ${rowColor};">
+      <tr class="credential-row ${isTrashCred ? 'trashed-credential' : ''}" data-id="${cred.id}" style="--cred-color: ${rowColor};">
         <td class="col-site">
           <span class="credential-site-cell">
             <span class="credential-site-icon" aria-hidden="true">🔑</span>
@@ -2493,10 +2609,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="col-actions">
           <span class="credential-row-actions">
             ${openLinkButton}
-            <button type="button" class="btn-icon action-edit" title="Edit Credential">
-              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"></path></svg>
-            </button>
-            <button type="button" class="btn-icon action-delete" title="Delete Credential Permanently">
+            ${editMarkup}
+            ${restoreMarkup}
+            <button type="button" class="btn-icon action-delete ${isTrashCred ? 'action-delete-permanent' : ''}" title="${deleteTitle}">
               <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
             </button>
           </span>

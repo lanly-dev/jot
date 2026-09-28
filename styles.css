@@ -687,6 +687,34 @@ h4 {
   opacity: 0.7;
 }
 
+#vault-search-input {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  width: 120px;
+  outline: none;
+  transition: width 0.3s ease;
+}
+
+#vault-search-input:focus {
+  width: 180px;
+}
+
+#vault-search-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.vault-search-group {
+  margin-left: 0.5rem;
+  flex-grow: 1;
+  justify-content: flex-end;
+}
+
 /* Tablet: Compact display controls with icon-only status filters */
 @media (max-width: 768px) {
   .display-controls {
@@ -743,6 +771,28 @@ h4 {
 
   #notes-search-input:focus {
     width: 100%;
+  }
+
+  #vault-search-input {
+    width: 100%;
+    line-height: 1.2;
+  }
+
+  #vault-search-input:focus {
+    width: 100%;
+  }
+
+  .vault-display-controls {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .vault-search-group {
+    margin-left: 0;
+    margin-top: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: flex-end;
   }
 }
 

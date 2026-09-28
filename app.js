@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentVaultFilter = 'all' // 'all', 'login', 'payment', 'secure-note'
   let currentTagFilter = null
   let currentSearchQuery = ''
+  let vaultSearchQuery = ''
   const reminderTimers = new Map()
   const VAULT_HASH_KEY = 'jot_vault_master_hash'
 
@@ -147,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const vaultUnlockError = document.getElementById('vault-unlock-error')
   const btnToggleUnlockPassword = document.getElementById('btn-toggle-unlock-password')
   const btnVaultUnlock = document.getElementById('btn-vault-unlock')
+  const vaultSearchInput = document.getElementById('vault-search-input')
 
   // Update / self-update UI elements
   const updateModalBackdrop = document.getElementById('update-modal-backdrop')
@@ -869,6 +871,18 @@ document.addEventListener('DOMContentLoaded', () => {
       })
     })
 
+    // Vault search input handler
+    if (vaultSearchInput) {
+      vaultSearchInput.addEventListener('input', (e) => {
+        vaultSearchQuery = e.target.value.trim().toLowerCase()
+        const container = vaultSearchInput.closest('.search-option')
+        if (container) {
+          container.classList.toggle('active', vaultSearchQuery.length > 0)
+        }
+        renderVault()
+      })
+    }
+
     // Empty the vault trash (permanent delete of all trashed credentials)
     if (btnEmptyVaultTrash) {
       btnEmptyVaultTrash.addEventListener('click', handleEmptyVaultTrash)
@@ -1319,6 +1333,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function lockVault() {
     vaultUnlocked = false
+    vaultSearchQuery = ''
+    if (vaultSearchInput) {
+      vaultSearchInput.value = ''
+      const container = vaultSearchInput.closest('.search-option')
+      if (container) container.classList.remove('active')
+    }
     closeFocusedNote()
     closeCredentialEditModal()
     credentialsGrid.innerHTML = ''
@@ -2250,8 +2270,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const isVaultTrashView = currentVaultFilter === 'trash'
     let filteredCredentials = credentials.filter(c => {
       if (!!c.deleted !== isVaultTrashView) return false
-      if (isVaultTrashView || currentVaultFilter === 'all') return true
-      return (c.type || 'login') === currentVaultFilter
+      if (!isVaultTrashView && currentVaultFilter !== 'all') {
+        if ((c.type || 'login') !== currentVaultFilter) return false
+      }
+      // Search filter: match against site, username, and notes fields
+      if (vaultSearchQuery) {
+        const siteMatch = c.site && c.site.toLowerCase().includes(vaultSearchQuery)
+        const usernameMatch = c.username && c.username.toLowerCase().includes(vaultSearchQuery)
+        const notesMatch = c.notes && c.notes.toLowerCase().includes(vaultSearchQuery)
+        if (!siteMatch && !usernameMatch && !notesMatch) return false
+      }
+      return true
     })
 
     // 2. Update vault stats (only live credentials count)
@@ -2271,7 +2300,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const emptyTitle = vaultEmptyState.querySelector('h3')
       const emptyPara = vaultEmptyState.querySelector('p')
       if (emptyTitle && emptyPara) {
-        if (isVaultTrashView) {
+        if (vaultSearchQuery) {
+          if (emptyMascot) emptyMascot.textContent = '🔍'
+          emptyTitle.textContent = 'No matching entries'
+          emptyPara.textContent = 'No credentials match your search. Try a different keyword or clear the search.'
+        } else if (isVaultTrashView) {
           if (emptyMascot) emptyMascot.textContent = '🗑️'
           emptyTitle.textContent = 'Trash is empty'
           emptyPara.textContent = 'Deleted credentials land here so you can restore them. They are only gone for good when you empty the trash.'

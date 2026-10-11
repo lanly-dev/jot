@@ -1288,11 +1288,26 @@ document.addEventListener('DOMContentLoaded', () => {
     return 'text'
   }
 
-  // Shared credential-type metadata used by both the inline creator and the edit modal
+  // Shared credential-type metadata used by both the inline creator and the edit
+  // modal. `icon` keeps the emoji (used in the modal title); `svg` is the
+  // stroke line-icon variant for the type dropdown, matching the vault filter
+  // icon theme (currentColor, 16×16, no fill).
   const CRED_TYPE_META = {
-    login: { icon: '🔑', label: 'Login' },
-    payment: { icon: '💳', label: 'Payment' },
-    'secure-note': { icon: '🔒', label: 'Secure Note' }
+    login: {
+      icon: '🔑',
+      label: 'Login',
+      svg: '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>'
+    },
+    payment: {
+      icon: '💳',
+      label: 'Payment',
+      svg: '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>'
+    },
+    'secure-note': {
+      icon: '🔒',
+      label: 'Secure Note',
+      svg: '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><rect x="9" y="13" width="6" height="5" rx="1"></rect><path d="M10 13v-1a2 2 0 0 1 4 0v1"></path></svg>'
+    }
   }
 
   function credTypeMeta(type) {
@@ -1301,7 +1316,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function applyCredTypePopoverUI(type, iconEl, labelEl, popoverEl) {
     const meta = credTypeMeta(type)
-    if (iconEl) iconEl.textContent = meta.icon
+    if (iconEl) iconEl.innerHTML = meta.svg || meta.icon
     if (labelEl) labelEl.textContent = meta.label
     if (popoverEl) {
       popoverEl.querySelectorAll('.popover-item').forEach(item => {

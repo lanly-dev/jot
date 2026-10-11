@@ -845,7 +845,6 @@ h4 {
 .notes-grid.list-view {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
 }
 
 .note-focus-backdrop {
@@ -3131,6 +3130,18 @@ body.note-focus-open {
     padding: 0.4rem 0.2rem;
     justify-content: center;
   }
+}
+
+/* Credential type dropdown item icons (SVG line-icon variant) */
+.popover-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.popover-item-icon svg {
+  display: block;
 }
 
 /* Card Tag Chips (hashtags rendered inline in the text; chips act as filters) */

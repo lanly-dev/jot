@@ -7,8 +7,6 @@ const cors = require('cors')
 const fs = require('fs')
 const path = require('path')
 const { execFile } = require('child_process')
-// const nodeCrypto = require('crypto')
-// const crytpo = require('crypto')
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -16,6 +14,27 @@ const PORT = process.env.PORT || 3000
 // Enable CORS and JSON parsing
 app.use(cors())
 app.use(express.json())
+
+// Basic security headers. (No Content-Security-Policy: the UI relies on
+// inline style attributes, so a strict style-src would break rendering;
+// these three are the ones that matter for a LAN-served app.)
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('X-Frame-Options', 'DENY')
+  res.setHeader('Referrer-Policy', 'no-referrer')
+  next()
+})
+
+// Unique ids that can't collide on rapid double-submits (Date.now() can
+// repeat within the same millisecond).
+function newId(prefix) {
+  return `${prefix}-${crypto.randomUUID()}`
+}
+
+function normalizeColor(color, fallback = '#ffd1dc') {
+  const c = String(color || '')
+  return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c) ? c : fallback
+}
 
 // Live reload for development
 if (process.env.NODE_ENV !== 'production') {
@@ -109,7 +128,6 @@ async function importAESKey() {
 async function encryptCredentialValue(value) {
   if (value === undefined || value === null || value === '') return value
   const str = String(value)
-  if (str.startsWith(ENC_PREFIX)) return str
   try {
     const key = await importAESKey()
     const iv = crypto.getRandomValues(new Uint8Array(12))
@@ -123,6 +141,10 @@ async function encryptCredentialValue(value) {
     throw new Error('Credential encryption failed — refusing to store plaintext', { cause: err })
   }
 }
+// Note: no "already starts with ENC:, skip" shortcut here. Every value is
+// encrypted unconditionally — a literal password starting with "ENC:" is just
+// a string like any other, and no code path ever hands an already-encrypted
+// blob back to this function (reads decrypt first).
 
 async function decryptCredentialValue(value) {
   if (typeof value !== 'string' || !value.startsWith(ENC_PREFIX)) return value
@@ -165,6 +187,7 @@ function extractHashtagsServer(text) {
 
 function normalizeCredential(cred) {
   const allowedTypes = ['login', 'payment', 'secure-note']
+  const createdAt = cred.createdAt || new Date().toISOString()
   return {
     id: cred.id,
     site: String(cred.site || ''),
@@ -172,10 +195,11 @@ function normalizeCredential(cred) {
     password: String(cred.password || ''),
     notes: String(cred.notes || ''),
     type: allowedTypes.includes(cred.type) ? cred.type : 'login',
-    color: /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(String(cred.color || '')) ? String(cred.color) : '#ffd1d9',
+    color: normalizeColor(cred.color, '#ffd1d9'),
     deleted: !!cred.deleted,
     deletedAt: cred.deletedAt || null,
-    createdAt: cred.createdAt || new Date().toISOString()
+    createdAt,
+    updatedAt: cred.updatedAt || createdAt
   }
 }
 
@@ -363,10 +387,10 @@ app.get('/api/notes', (req, res) => {
 app.post('/api/notes', (req, res) => {
   const notes = readNotes()
   const newNote = {
-    id: req.body.id || 'note-' + Date.now(),
+    id: req.body.id || newId('note'),
     title: req.body.title || '',
     content: req.body.content || '',
-    color: req.body.color || '#ffd1dc',
+    color: normalizeColor(req.body.color),
     tags: extractHashtagsServer((req.body.title || '') + ' ' + (req.body.content || '')),
     pinned: !!req.body.pinned,
     archived: !!req.body.archived,
@@ -400,7 +424,9 @@ app.put('/api/notes/:id', (req, res) => {
     ...notes[noteIndex],
     title: req.body.title !== undefined ? req.body.title : notes[noteIndex].title,
     content: req.body.content !== undefined ? req.body.content : notes[noteIndex].content,
-    color: req.body.color !== undefined ? req.body.color : notes[noteIndex].color,
+    color: req.body.color !== undefined
+      ? normalizeColor(req.body.color, notes[noteIndex].color || '#ffd1dc')
+      : notes[noteIndex].color,
     ...(req.body.title !== undefined || req.body.content !== undefined
       ? { tags: extractHashtagsServer(((req.body.title !== undefined ? req.body.title : notes[noteIndex].title) || '') + ' ' + ((req.body.content !== undefined ? req.body.content : notes[noteIndex].content) || '')) }
       : {}),
@@ -485,7 +511,7 @@ app.get('/api/credentials', async (req, res) => {
 app.post('/api/credentials', async (req, res) => {
   const credentials = await readCredentials()
   const newCredential = normalizeCredential({
-    id: req.body.id || 'cred-' + Date.now(),
+    id: req.body.id || newId('cred'),
     site: req.body.site,
     username: req.body.username,
     password: req.body.password,
@@ -517,7 +543,8 @@ app.put('/api/credentials/:id', async (req, res) => {
     password: req.body.password !== undefined ? req.body.password : credentials[credIndex].password,
     notes: req.body.notes !== undefined ? req.body.notes : credentials[credIndex].notes,
     type: req.body.type !== undefined ? req.body.type : credentials[credIndex].type,
-    color: req.body.color !== undefined ? req.body.color : credentials[credIndex].color
+    color: req.body.color !== undefined ? req.body.color : credentials[credIndex].color,
+    updatedAt: new Date().toISOString()
   })
 
   credentials[credIndex] = updatedCredential
@@ -556,7 +583,7 @@ app.delete('/api/credentials/:id', async (req, res) => {
     return res.json({ success: true, message: 'Credential deleted permanently 🔐' })
   }
 
-  credentials[credIndex] = { ...credentials[credIndex], deleted: true, deletedAt: new Date().toISOString() }
+  credentials[credIndex] = { ...credentials[credIndex], deleted: true, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
   await writeCredentials(credentials)
   console.log(`Credential moved to trash: (${id}) 🗑️`)
   res.json({ success: true, message: 'Credential moved to trash 🔐' })
@@ -571,7 +598,7 @@ app.post('/api/credentials/:id/restore', async (req, res) => {
   if (credIndex === -1)
   {return res.status(404).json({ error: 'Credential not found 😿' })}
 
-  credentials[credIndex] = { ...credentials[credIndex], deleted: false, deletedAt: null }
+  credentials[credIndex] = { ...credentials[credIndex], deleted: false, deletedAt: null, updatedAt: new Date().toISOString() }
   try {
     await writeCredentials(credentials)
   } catch {

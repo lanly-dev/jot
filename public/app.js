@@ -289,11 +289,19 @@ document.addEventListener('DOMContentLoaded', () => {
     return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(String(color || '')) ? String(color) : '#ffd1d9'
   }
 
+  // Unique ids that can't collide on rapid double-submits. crypto.randomUUID
+  // needs a secure context (localhost is, plain LAN http may not be), so fall
+  // back to timestamp + randomness.
+  function newClientId(prefix) {
+    if (window.crypto && crypto.randomUUID) return `${prefix}-${crypto.randomUUID()}`
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+  }
+
   function normalizeCredential(cred) {
     const merged = cred || {}
     const allowedTypes = ['login', 'payment', 'secure-note']
     return {
-      id: merged.id || 'cred-' + Date.now(),
+      id: merged.id || newClientId('cred'),
       site: merged.site || '',
       username: merged.username || '',
       password: merged.password || '',

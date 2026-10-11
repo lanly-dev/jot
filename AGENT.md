@@ -55,6 +55,7 @@ npm run efix
 - Writes are atomic (temp file + rename); reads never fall back to `[]` on corruption — a corrupt file is quarantined to `data/<name>.corrupt-<timestamp>` and the API answers 500 until it is restored or removed.
 - If `JOT_SECRET_KEY` is absent, the app generates a key in `data/.jot-secret.key` on first run.
 - Losing that key without a backup can make stored credentials unrecoverable.
+- IDs are `prefix-<uuid>`; note/credential colors are hex-validated server-side; credentials carry `updatedAt` like notes.
 
 ## API contract
 

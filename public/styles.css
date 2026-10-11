@@ -3291,3 +3291,37 @@ body.note-focus-open {
 .note-format-option input[type="radio"]:checked ~ span.fmt-option-icon {
   color: var(--color-primary);
 }
+
+/* API token gate banner (shown when the server requires JOT_API_TOKEN) */
+.api-token-banner {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: #fff7f9;
+  border: 2px solid #ffb3c6;
+  border-radius: 999px;
+  padding: 8px 8px 8px 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  font-size: 14px;
+  max-width: min(92vw, 560px);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.api-token-input {
+  border: 1px solid #f3c6d3;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font: inherit;
+  min-width: 200px;
+  background: #fff;
+}
+.api-token-save {
+  border-radius: 999px;
+  padding: 6px 16px;
+  cursor: pointer;
+}

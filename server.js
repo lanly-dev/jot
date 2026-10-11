@@ -38,8 +38,27 @@ if (process.env.NODE_ENV !== 'production') {
   app.use(connectLiveReload())
 }
 
-// Serve static frontend files from the root directory
-app.use(express.static(path.join(__dirname)))
+// Serve static frontend files from public/ only. The project root (server.js,
+// data/, .env, package.json, …) is never exposed over HTTP.
+app.use(express.static(path.join(__dirname, 'public')))
+
+// ---------------------------------------------------------------------------
+// API authentication
+// Every /api route requires a bearer token when JOT_API_TOKEN is set. Without
+// it the vault (including decrypted credentials) is open to anyone who can
+// reach the port, so the server logs a loud warning and keeps working — set
+// the token in production deployments (see .env.example).
+// ---------------------------------------------------------------------------
+const API_TOKEN = process.env.JOT_API_TOKEN || ''
+
+function requireApiToken(req, res, next) {
+  if (!API_TOKEN) return next()
+  const auth = req.headers.authorization || ''
+  if (auth === `Bearer ${API_TOKEN}`) return next()
+  return res.status(401).json({ error: 'Unauthorized — a valid API token is required 🔒' })
+}
+
+app.use('/api', requireApiToken)
 
 // File path for database storage
 const DATA_DIR = path.join(__dirname, 'data')
@@ -63,11 +82,19 @@ function loadEncryptionKey() {
   if (credentialKey) return credentialKey
   if (process.env.JOT_SECRET_KEY) {
     credentialKey = new Uint8Array(Buffer.from(process.env.JOT_SECRET_KEY, 'base64'))
+    if (credentialKey.length !== 32) {
+      // Fail fast: a misconfigured key must never silently fall back to
+      // storing plaintext (see encryptCredentialValue).
+      throw new Error(
+        `JOT_SECRET_KEY must decode to exactly 32 bytes (got ${credentialKey.length}). ` +
+        'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'base64\'))"'
+      )
+    }
   } else if (fs.existsSync(SECRET_FILE)) {
     credentialKey = new Uint8Array(Buffer.from(fs.readFileSync(SECRET_FILE, 'utf-8').trim(), 'base64'))
   } else {
     credentialKey = new Uint8Array(32)
-    crypto.randomFillSync(credentialKey)
+    crypto.getRandomValues(credentialKey)
     fs.mkdirSync(DATA_DIR, { recursive: true })
     fs.writeFileSync(SECRET_FILE, Buffer.from(credentialKey).toString('base64'), 'utf-8')
     console.log('Generated credential encryption key 🔑')
@@ -89,8 +116,11 @@ async function encryptCredentialValue(value) {
     const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, Buffer.from(str, 'utf-8'))
     return ENC_PREFIX + Buffer.concat([Buffer.from(iv), Buffer.from(encrypted)]).toString('base64')
   } catch (err) {
+    // Fail closed: never write the plaintext when encryption breaks. Callers
+    // (writeCredentials) propagate the throw so the API answers 500 instead of
+    // persisting an unencrypted secret.
     console.error('Credential encryption failed:', err)
-    return str
+    throw new Error('Credential encryption failed — refusing to store plaintext', { cause: err })
   }
 }
 
@@ -692,6 +722,11 @@ function scheduleServiceRestart() {
 
 // Start the Express server
 app.listen(PORT, async () => {
+  if (!API_TOKEN) {
+    console.warn('⚠️  JOT_API_TOKEN is not set — the API is running WITHOUT authentication.')
+    console.warn('   Anyone who can reach this port can read and modify your vault.')
+    console.warn('   Set JOT_API_TOKEN to a long random value (see .env.example).')
+  }
   // Encrypt any pre-existing plaintext credentials on boot
   await secureExistingCredentials()
   console.log(`==================================================`)

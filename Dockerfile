@@ -35,13 +35,13 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 
 # Copy application source files from the build context (respects .dockerignore).
+# Frontend assets live in public/ — the project root (server.js, data/, .env)
+# is never served over HTTP.
 COPY --chown=appuser:appgroup \
   package.json \
   server.js \
-  index.html \
-  app.js \
-  styles.css \
-  ./
+  public/ \
+  ./public/
 
 # Ensure the non-root user owns every file (node_modules etc.) and that the
 # data directory exists for runtime writes.

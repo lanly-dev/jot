@@ -25,6 +25,9 @@ services:
       # Set JOT_SECRET_KEY to a base64-encoded 32-byte key to make your
       # encrypted vault portable across machines (see .env.example).
       JOT_SECRET_KEY: "${JOT_SECRET_KEY:-}"
+      # API bearer token required by every /api route (see .env.example).
+      # The web UI prompts for it once and stores it in the browser.
+      JOT_API_TOKEN: "${JOT_API_TOKEN:-}"
     volumes:
       - jot-data:/app/data
     healthcheck:

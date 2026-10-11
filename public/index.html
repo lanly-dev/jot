@@ -19,6 +19,13 @@
 
 <body>
   <div class="app-container">
+    <!-- API TOKEN GATE — shown when the server requires JOT_API_TOKEN (401) -->
+    <div class="api-token-banner hidden" id="api-token-banner" role="alert">
+      <span aria-hidden="true">🔒</span>
+      <span class="api-token-text">This Jot server requires an API token.</span>
+      <input type="password" id="api-token-input" class="api-token-input" placeholder="Paste API token…" autocomplete="off" spellcheck="false">
+      <button type="button" id="api-token-save" class="btn-primary api-token-save">Connect</button>
+    </div>
     <!-- GLOBAL SYNC / CONNECTION STATUS (fixed, top-right) -->
     <span class="sync-status" id="sync-status" data-state="saved" title="Save / sync status">
       <span class="sync-icon"><svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2"

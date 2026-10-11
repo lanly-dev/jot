@@ -2616,6 +2616,34 @@ body.note-focus-open {
   background-color: var(--color-primary-light);
 }
 
+/* Expiry chip shown next to the cardholder name in payment rows */
+.cred-expiry-tag {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background-color: var(--color-primary-light);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  white-space: nowrap;
+}
+
+/* Expiry + CVV side-by-side inside the payment fields */
+.cred-payment-mini-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+/* Secure-note secret content textarea */
+.cred-note-content {
+  min-height: 120px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.86rem;
+  line-height: 1.55;
+  resize: vertical;
+}
+
 .credential-row-actions {
   display: flex;
   align-items: center;

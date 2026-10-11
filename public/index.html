@@ -363,28 +363,78 @@
                   </div>
 
                   <div class="creator-row-2">
-                    <div class="input-group"">
-                      <label for="credential-username" class="sr-only">Username or Email</label>
-                      <input type="text" id="credential-username" placeholder="Username or email" maxlength="150"
-                        required>
-                    </div>
+                    <!-- LOGIN-specific fields -->
+                    <div class="cred-type-fields cred-fields-login">
+                      <div class="input-group">
+                        <label for="credential-username" class="sr-only">Username or Email</label>
+                        <input type="text" id="credential-username" placeholder="Username or email" maxlength="150">
+                      </div>
 
-                    <div class="input-group"">
-                      <label for="credential-password" class="sr-only">Password</label>
-                      <div class="password-input-wrap">
-                        <input type="password" id="credential-password" placeholder="Password" required>
-                        <button type="button" class="btn-icon password-reveal-toggle" id="btn-toggle-form-password"
-                          title="Show password" aria-label="Show or hide password">
-                          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2"
-                            fill="none" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
-                          </svg>
-                        </button>
+                      <div class="input-group">
+                        <label for="credential-password" class="sr-only">Password</label>
+                        <div class="password-input-wrap">
+                          <input type="password" id="credential-password" placeholder="Password">
+                          <button type="button" class="btn-icon password-reveal-toggle" id="btn-toggle-form-password"
+                            title="Show password" aria-label="Show or hide password">
+                            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2"
+                              fill="none" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path>
+                              <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    <div class="input-group" style="margin-bottom: 0.25rem;">
+                    <!-- PAYMENT-specific fields -->
+                    <div class="cred-type-fields cred-fields-payment" style="display: none;">
+                      <div class="input-group">
+                        <label for="credential-cardholder" class="sr-only">Cardholder Name</label>
+                        <input type="text" id="credential-cardholder" placeholder="Cardholder name" maxlength="100">
+                      </div>
+
+                      <div class="input-group">
+                        <label for="credential-card-number" class="sr-only">Card Number</label>
+                        <input type="text" id="credential-card-number" placeholder="Card number (e.g. 4111 1111 1111 1111)"
+                          inputmode="numeric" autocomplete="off" maxlength="19">
+                      </div>
+
+                      <div class="cred-payment-mini-row">
+                        <div class="input-group">
+                          <label for="credential-expiry" class="sr-only">Expiry Date</label>
+                          <input type="text" id="credential-expiry" placeholder="MM / YY" inputmode="numeric"
+                            autocomplete="off" maxlength="7">
+                        </div>
+                        <div class="input-group">
+                          <label for="credential-cvv" class="sr-only">CVV</label>
+                          <div class="password-input-wrap">
+                            <input type="password" id="credential-cvv" placeholder="CVV" inputmode="numeric"
+                              autocomplete="off" maxlength="4">
+                            <button type="button" class="btn-icon password-reveal-toggle" id="btn-toggle-form-cvv"
+                              title="Show CVV" aria-label="Show or hide CVV">
+                              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2"
+                                fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- SECURE NOTE-specific fields -->
+                    <div class="cred-type-fields cred-fields-note" style="display: none;">
+                      <div class="input-group">
+                        <label for="credential-content" class="sr-only">Secret Note Content</label>
+                        <textarea id="credential-content" class="cred-note-content"
+                          placeholder="Your secret note content... (recovery codes, PINs, sensitive info)"
+                          rows="5"></textarea>
+                      </div>
+                    </div>
+
+                    <!-- Shared notes (login & payment only) -->
+                    <div class="input-group cred-notes-field" style="margin-bottom: 0.25rem;">
                       <label for="credential-notes" class="sr-only">Notes</label>
                       <textarea id="credential-notes" placeholder="Notes (optional)" rows="2"></textarea>
                     </div>
@@ -480,28 +530,55 @@
               <label class="status-option active" for="vault-filter-all">
                 <input type="radio" name="vault-filter" id="vault-filter-all" value="all" checked
                   aria-label="All items">
-                ✨
+                <!-- Sparkle icon representing All items -->
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
                 <span class="status-text">All</span>
               </label>
               <label class="status-option" for="vault-filter-login">
                 <input type="radio" name="vault-filter" id="vault-filter-login" value="login" aria-label="Logins">
-                🔑
+                <!-- Key icon representing Logins -->
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+                </svg>
                 <span class="status-text">Logins</span>
               </label>
               <label class="status-option" for="vault-filter-payment">
                 <input type="radio" name="vault-filter" id="vault-filter-payment" value="payment" aria-label="Payments">
-                💳
+                <!-- Credit card icon representing Payments -->
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                  <line x1="1" y1="10" x2="23" y2="10"></line>
+                </svg>
                 <span class="status-text">Payments</span>
               </label>
               <label class="status-option" for="vault-filter-note">
                 <input type="radio" name="vault-filter" id="vault-filter-note" value="secure-note"
                   aria-label="Secure Notes">
-                🔒
+                <!-- Lock-note icon representing Secure Notes -->
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <rect x="9" y="13" width="6" height="5" rx="1"></rect>
+                  <path d="M10 13v-1a2 2 0 0 1 4 0v1"></path>
+                </svg>
                 <span class="status-text">Notes</span>
               </label>
               <label class="status-option" for="vault-filter-trash">
                 <input type="radio" name="vault-filter" id="vault-filter-trash" value="trash" aria-label="Trash">
-                🗑️
+                <!-- Trash bin icon representing trashed credentials -->
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
                 <span class="status-text">Trash</span>
               </label>
             </div>
@@ -553,9 +630,9 @@
             <table class="credentials-table">
               <thead>
                 <tr>
-                  <th scope="col" class="col-site">Site</th>
-                  <th scope="col" class="col-username">Username</th>
-                  <th scope="col" class="col-password">Password</th>
+                  <th scope="col" class="col-site" id="th-cred-site">Site</th>
+                  <th scope="col" class="col-username" id="th-cred-username">Username</th>
+                  <th scope="col" class="col-password" id="th-cred-password">Password</th>
                   <th scope="col" class="col-actions"></th>
                 </tr>
               </thead>
@@ -648,27 +725,79 @@
         </div>
 
         <div class="creator-row-2">
-          <div class="input-group">
-            <label for="credential-edit-username" class="sr-only">Username or Email</label>
-            <input type="text" id="credential-edit-username" placeholder="Username or email" maxlength="150" required>
-          </div>
+          <!-- LOGIN-specific fields -->
+          <div class="cred-type-fields cred-fields-login">
+            <div class="input-group">
+              <label for="credential-edit-username" class="sr-only">Username or Email</label>
+              <input type="text" id="credential-edit-username" placeholder="Username or email" maxlength="150">
+            </div>
 
-          <div class="input-group">
-            <label for="credential-edit-password" class="sr-only">Password</label>
-            <div class="password-input-wrap">
-              <input type="password" id="credential-edit-password" placeholder="Password" required>
-              <button type="button" class="btn-icon password-reveal-toggle" id="btn-toggle-edit-password"
-                title="Show password" aria-label="Show or hide password">
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-              </button>
+            <div class="input-group">
+              <label for="credential-edit-password" class="sr-only">Password</label>
+              <div class="password-input-wrap">
+                <input type="password" id="credential-edit-password" placeholder="Password">
+                <button type="button" class="btn-icon password-reveal-toggle" id="btn-toggle-edit-password"
+                  title="Show password" aria-label="Show or hide password">
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
 
-          <div class="input-group" style="margin-bottom: 0.25rem;">
+          <!-- PAYMENT-specific fields -->
+          <div class="cred-type-fields cred-fields-payment" style="display: none;">
+            <div class="input-group">
+              <label for="credential-edit-cardholder" class="sr-only">Cardholder Name</label>
+              <input type="text" id="credential-edit-cardholder" placeholder="Cardholder name" maxlength="100">
+            </div>
+
+            <div class="input-group">
+              <label for="credential-edit-card-number" class="sr-only">Card Number</label>
+              <input type="text" id="credential-edit-card-number"
+                placeholder="Card number (e.g. 4111 1111 1111 1111)" inputmode="numeric" autocomplete="off"
+                maxlength="19">
+            </div>
+
+            <div class="cred-payment-mini-row">
+              <div class="input-group">
+                <label for="credential-edit-expiry" class="sr-only">Expiry Date</label>
+                <input type="text" id="credential-edit-expiry" placeholder="MM / YY" inputmode="numeric"
+                  autocomplete="off" maxlength="7">
+              </div>
+              <div class="input-group">
+                <label for="credential-edit-cvv" class="sr-only">CVV</label>
+                <div class="password-input-wrap">
+                  <input type="password" id="credential-edit-cvv" placeholder="CVV" inputmode="numeric"
+                    autocomplete="off" maxlength="4">
+                  <button type="button" class="btn-icon password-reveal-toggle" id="btn-toggle-edit-cvv"
+                    title="Show CVV" aria-label="Show or hide CVV">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECURE NOTE-specific fields -->
+          <div class="cred-type-fields cred-fields-note" style="display: none;">
+            <div class="input-group">
+              <label for="credential-edit-content" class="sr-only">Secret Note Content</label>
+              <textarea id="credential-edit-content" class="cred-note-content"
+                placeholder="Your secret note content... (recovery codes, PINs, sensitive info)"
+                rows="5"></textarea>
+            </div>
+          </div>
+
+          <!-- Shared notes (login & payment only) -->
+          <div class="input-group cred-notes-field" style="margin-bottom: 0.25rem;">
             <label for="credential-edit-notes" class="sr-only">Notes</label>
             <textarea id="credential-edit-notes" placeholder="Notes (optional)" rows="2"></textarea>
           </div>

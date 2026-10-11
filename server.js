@@ -94,7 +94,9 @@ const CREDENTIALS_FILE = path.join(DATA_DIR, 'credentials.json')
 // ---------------------------------------------------------------------------
 const SECRET_FILE = path.join(DATA_DIR, '.jot-secret.key')
 const ENC_PREFIX = 'ENC:'
-const SENSITIVE_FIELDS = ['password', 'notes']
+// Payment credentials store card data in cardNumber/expiry/cvv, so those must
+// be encrypted at rest alongside the password and notes.
+const SENSITIVE_FIELDS = ['password', 'notes', 'cardNumber', 'expiry', 'cvv']
 let credentialKey = null
 
 function loadEncryptionKey() {
@@ -194,6 +196,9 @@ function normalizeCredential(cred) {
     username: String(cred.username || ''),
     password: String(cred.password || ''),
     notes: String(cred.notes || ''),
+    cardNumber: String(cred.cardNumber || ''),
+    expiry: String(cred.expiry || ''),
+    cvv: String(cred.cvv || ''),
     type: allowedTypes.includes(cred.type) ? cred.type : 'login',
     color: normalizeColor(cred.color, '#ffd1d9'),
     deleted: !!cred.deleted,
@@ -516,6 +521,9 @@ app.post('/api/credentials', async (req, res) => {
     username: req.body.username,
     password: req.body.password,
     notes: req.body.notes,
+    cardNumber: req.body.cardNumber,
+    expiry: req.body.expiry,
+    cvv: req.body.cvv,
     type: req.body.type,
     color: req.body.color,
     createdAt: req.body.createdAt || new Date().toISOString()
@@ -542,6 +550,9 @@ app.put('/api/credentials/:id', async (req, res) => {
     username: req.body.username !== undefined ? req.body.username : credentials[credIndex].username,
     password: req.body.password !== undefined ? req.body.password : credentials[credIndex].password,
     notes: req.body.notes !== undefined ? req.body.notes : credentials[credIndex].notes,
+    cardNumber: req.body.cardNumber !== undefined ? req.body.cardNumber : credentials[credIndex].cardNumber,
+    expiry: req.body.expiry !== undefined ? req.body.expiry : credentials[credIndex].expiry,
+    cvv: req.body.cvv !== undefined ? req.body.cvv : credentials[credIndex].cvv,
     type: req.body.type !== undefined ? req.body.type : credentials[credIndex].type,
     color: req.body.color !== undefined ? req.body.color : credentials[credIndex].color,
     updatedAt: new Date().toISOString()

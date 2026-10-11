@@ -153,8 +153,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const credentialSiteInput = document.getElementById('credential-site')
   const credentialUsernameInput = document.getElementById('credential-username')
   const credentialPasswordInput = document.getElementById('credential-password')
+  const credentialCardholderInput = document.getElementById('credential-cardholder')
+  const credentialCardInput = document.getElementById('credential-card-number')
+  const credentialExpiryInput = document.getElementById('credential-expiry')
+  const credentialCvvInput = document.getElementById('credential-cvv')
+  const credentialContentInput = document.getElementById('credential-content')
   const credentialNotesInput = document.getElementById('credential-notes')
   const btnToggleFormPassword = document.getElementById('btn-toggle-form-password')
+  const btnToggleFormCvv = document.getElementById('btn-toggle-form-cvv')
+  const credFieldsLogin = document.querySelector('#credential-form .cred-fields-login')
+  const credFieldsPayment = document.querySelector('#credential-form .cred-fields-payment')
+  const credFieldsNote = document.querySelector('#credential-form .cred-fields-note')
+  const credNotesField = document.querySelector('#credential-form .cred-notes-field')
 
   // Credential edit modal elements (a separate dialog, for EXISTING credentials only)
   const credentialModalBackdrop = document.getElementById('credential-modal-backdrop')
@@ -168,9 +178,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const credentialEditSiteInput = document.getElementById('credential-edit-site')
   const credentialEditUsernameInput = document.getElementById('credential-edit-username')
   const credentialEditPasswordInput = document.getElementById('credential-edit-password')
+  const credentialEditCardholderInput = document.getElementById('credential-edit-cardholder')
+  const credentialEditCardInput = document.getElementById('credential-edit-card-number')
+  const credentialEditExpiryInput = document.getElementById('credential-edit-expiry')
+  const credentialEditCvvInput = document.getElementById('credential-edit-cvv')
+  const credentialEditContentInput = document.getElementById('credential-edit-content')
   const credentialEditNotesInput = document.getElementById('credential-edit-notes')
   const credentialEditTypeSelect = document.getElementById('credential-edit-type')
   const btnToggleEditPassword = document.getElementById('btn-toggle-edit-password')
+  const btnToggleEditCvv = document.getElementById('btn-toggle-edit-cvv')
+  const credEditFieldsLogin = document.querySelector('#credential-edit-form .cred-fields-login')
+  const credEditFieldsPayment = document.querySelector('#credential-edit-form .cred-fields-payment')
+  const credEditFieldsNote = document.querySelector('#credential-edit-form .cred-fields-note')
+  const credEditNotesField = document.querySelector('#credential-edit-form .cred-notes-field')
+  const thCredSite = document.getElementById('th-cred-site')
+  const thCredUsername = document.getElementById('th-cred-username')
+  const thCredPassword = document.getElementById('th-cred-password')
   const credentialsGrid = document.getElementById('credentials-grid')
   const credentialsTableWrap = document.getElementById('credentials-table-wrap')
   const vaultEmptyState = document.getElementById('vault-empty-state')
@@ -306,6 +329,9 @@ document.addEventListener('DOMContentLoaded', () => {
       username: merged.username || '',
       password: merged.password || '',
       notes: merged.notes || '',
+      cardNumber: merged.cardNumber || '',
+      expiry: merged.expiry || '',
+      cvv: merged.cvv || '',
       type: allowedTypes.includes(merged.type) ? merged.type : 'login',
       color: safeCredentialColor(merged.color),
       deleted: !!merged.deleted,
@@ -1148,6 +1174,31 @@ document.addEventListener('DOMContentLoaded', () => {
       togglePasswordVisibility(credentialPasswordInput, btnToggleFormPassword)
     })
 
+    // CVV reveal toggle (creator)
+    if (btnToggleFormCvv) {
+      btnToggleFormCvv.addEventListener('click', () => {
+        togglePasswordVisibility(credentialCvvInput, btnToggleFormCvv)
+      })
+    }
+
+    // Payment input masks (creator): group the card number in 4s, build the
+    // expiry as MM / YY, and keep the CVV to at most 4 digits.
+    if (credentialCardInput) {
+      credentialCardInput.addEventListener('input', () => {
+        credentialCardInput.value = formatCardNumberInput(credentialCardInput.value)
+      })
+    }
+    if (credentialExpiryInput) {
+      credentialExpiryInput.addEventListener('input', () => {
+        credentialExpiryInput.value = formatExpiryInput(credentialExpiryInput.value)
+      })
+    }
+    if (credentialCvvInput) {
+      credentialCvvInput.addEventListener('input', () => {
+        credentialCvvInput.value = credentialCvvInput.value.replace(/\D/g, '').slice(0, 4)
+      })
+    }
+
     // Credential creator (inline card, creates new credentials only)
     if (vaultCreatorCollapsed) {
       vaultCreatorCollapsed.addEventListener('click', () => {
@@ -1173,6 +1224,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnToggleEditPassword) {
       btnToggleEditPassword.addEventListener('click', () => {
         togglePasswordVisibility(credentialEditPasswordInput, btnToggleEditPassword)
+      })
+    }
+    if (btnToggleEditCvv) {
+      btnToggleEditCvv.addEventListener('click', () => {
+        togglePasswordVisibility(credentialEditCvvInput, btnToggleEditCvv)
+      })
+    }
+
+    // Payment input masks (edit modal)
+    if (credentialEditCardInput) {
+      credentialEditCardInput.addEventListener('input', () => {
+        credentialEditCardInput.value = formatCardNumberInput(credentialEditCardInput.value)
+      })
+    }
+    if (credentialEditExpiryInput) {
+      credentialEditExpiryInput.addEventListener('input', () => {
+        credentialEditExpiryInput.value = formatExpiryInput(credentialEditExpiryInput.value)
+      })
+    }
+    if (credentialEditCvvInput) {
+      credentialEditCvvInput.addEventListener('input', () => {
+        credentialEditCvvInput.value = credentialEditCvvInput.value.replace(/\D/g, '').slice(0, 4)
       })
     }
 
@@ -1245,48 +1318,114 @@ document.addEventListener('DOMContentLoaded', () => {
     applyCredTypePopoverUI(type, credEditTypeIconDisplay, credEditTypeLabelDisplay, credEditTypePopover)
   }
 
-  // Shared placeholder / required-field rules per credential type
-  function applyCredentialTypeFieldRules(type, fields) {
-    const { usernameInput, passwordInput, notesInput } = fields
-    if (type === 'secure-note') {
-      usernameInput.required = false
-      passwordInput.required = false
-      usernameInput.placeholder = 'Identifier / Tag (optional)'
-      passwordInput.placeholder = 'Secret key / Password (optional)'
-      notesInput.placeholder = 'Write your confidential secret note here...'
-      notesInput.required = true
-    } else if (type === 'payment') {
-      usernameInput.required = true
-      passwordInput.required = true
-      usernameInput.placeholder = 'Cardholder name'
-      passwordInput.placeholder = 'Card number / Expiry / CVV'
-      notesInput.placeholder = 'Billing address or notes (optional)'
-      notesInput.required = false
-    } else {
-      usernameInput.required = true
-      passwordInput.required = true
-      usernameInput.placeholder = 'Username or email'
-      passwordInput.placeholder = 'Password'
-      notesInput.placeholder = 'Notes (optional)'
-      notesInput.required = false
+  // Shared per-credential-type rules: shows the tailored field group and sets
+  // placeholders / required flags so only the visible fields are validated.
+  const CRED_SITE_PLACEHOLDERS = {
+    login: 'Site / App name (e.g. GitHub, Netflix)',
+    payment: 'Card label (e.g. Personal Visa, Amayz Gold)',
+    'secure-note': 'Note title (e.g. Wi-Fi router admin)'
+  }
+
+  function applyCredentialTypeFieldRules(type, refs) {
+    const showLogin = type === 'login'
+    const showPayment = type === 'payment'
+    const showNote = type === 'secure-note'
+
+    if (refs.siteInput) refs.siteInput.placeholder = CRED_SITE_PLACEHOLDERS[type] || CRED_SITE_PLACEHOLDERS.login
+
+    // Toggle the tailored field groups
+    if (refs.loginGroup) refs.loginGroup.style.display = showLogin ? '' : 'none'
+    if (refs.paymentGroup) refs.paymentGroup.style.display = showPayment ? '' : 'none'
+    if (refs.noteGroup) refs.noteGroup.style.display = showNote ? '' : 'none'
+    if (refs.notesField) refs.notesField.style.display = showNote ? 'none' : ''
+
+    // Required flags follow visibility (hidden-but-required inputs block submit)
+    if (refs.usernameInput) refs.usernameInput.required = showLogin
+    if (refs.passwordInput) refs.passwordInput.required = showLogin
+    if (refs.cardholderInput) refs.cardholderInput.required = showPayment
+    if (refs.cardNumberInput) refs.cardNumberInput.required = showPayment
+    if (refs.expiryInput) refs.expiryInput.required = showPayment
+    if (refs.cvvInput) refs.cvvInput.required = showPayment
+    if (refs.contentInput) refs.contentInput.required = showNote
+
+    if (refs.notesInput) {
+      refs.notesInput.placeholder = showPayment ? 'Billing address or extra notes (optional)' : 'Notes (optional)'
     }
   }
 
   function updateCredentialTypeSpecificFields(type) {
     if (!type) type = credentialTypeSelect ? credentialTypeSelect.value : 'login'
     applyCredentialTypeFieldRules(type, {
+      siteInput: credentialSiteInput,
       usernameInput: credentialUsernameInput,
       passwordInput: credentialPasswordInput,
-      notesInput: credentialNotesInput
+      cardholderInput: credentialCardholderInput,
+      cardNumberInput: credentialCardInput,
+      expiryInput: credentialExpiryInput,
+      cvvInput: credentialCvvInput,
+      contentInput: credentialContentInput,
+      notesInput: credentialNotesInput,
+      loginGroup: credFieldsLogin,
+      paymentGroup: credFieldsPayment,
+      noteGroup: credFieldsNote,
+      notesField: credNotesField
     })
   }
 
   function updateCredEditTypeSpecificFields(type) {
     applyCredentialTypeFieldRules(type || 'login', {
+      siteInput: credentialEditSiteInput,
       usernameInput: credentialEditUsernameInput,
       passwordInput: credentialEditPasswordInput,
-      notesInput: credentialEditNotesInput
+      cardholderInput: credentialEditCardholderInput,
+      cardNumberInput: credentialEditCardInput,
+      expiryInput: credentialEditExpiryInput,
+      cvvInput: credentialEditCvvInput,
+      contentInput: credentialEditContentInput,
+      notesInput: credentialEditNotesInput,
+      loginGroup: credEditFieldsLogin,
+      paymentGroup: credEditFieldsPayment,
+      noteGroup: credEditFieldsNote,
+      notesField: credEditNotesField
     })
+  }
+
+  // ---- Payment input masks ----
+  function formatCardNumberInput(value) {
+    const digits = String(value || '').replace(/\D/g, '').slice(0, 16)
+    return digits.replace(/(.{4})/g, '$1 ').trim()
+  }
+
+  function formatExpiryInput(value) {
+    const digits = String(value || '').replace(/\D/g, '').slice(0, 4)
+    if (digits.length <= 2) return digits
+    return digits.slice(0, 2) + '/' + digits.slice(2)
+  }
+
+  function formatCvvInput(value) {
+    return String(value || '').replace(/\D/g, '').slice(0, 4)
+  }
+
+  function maskCardNumber(cardNumber) {
+    const digits = String(cardNumber || '').replace(/\D/g, '')
+    if (!digits) return ''
+    return '•••• •••• •••• ' + digits.slice(-4)
+  }
+
+  // Gathers only the fields relevant to the selected credential type so each
+  // stored record keeps the tailored data (and stays clean when switching types).
+  function collectCredentialFields(type, refs) {
+    const val = (el) => (el && el.value ? el.value.trim() : '')
+    return {
+      site: val(refs.siteInput),
+      username: type === 'payment' ? val(refs.cardholderInput) : type === 'login' ? val(refs.usernameInput) : '',
+      password: type === 'login' && refs.passwordInput ? refs.passwordInput.value : '',
+      notes: type === 'secure-note' ? val(refs.contentInput) : val(refs.notesInput),
+      cardNumber: type === 'payment' ? val(refs.cardNumberInput) : '',
+      expiry: type === 'payment' ? val(refs.expiryInput) : '',
+      cvv: type === 'payment' ? val(refs.cvvInput) : '',
+      type
+    }
   }
 
   // MODE SWITCHING
@@ -1469,6 +1608,11 @@ document.addEventListener('DOMContentLoaded', () => {
       btnToggleFormPassword.classList.remove('revealed')
       btnToggleFormPassword.title = 'Show password'
     }
+    if (credentialCvvInput) credentialCvvInput.type = 'password'
+    if (btnToggleFormCvv) {
+      btnToggleFormCvv.classList.remove('revealed')
+      btnToggleFormCvv.title = 'Show CVV'
+    }
   }
 
   // CREDENTIAL EDIT MODAL (separate dialog — edits EXISTING credentials only)
@@ -1483,6 +1627,11 @@ document.addEventListener('DOMContentLoaded', () => {
     credentialEditSiteInput.value = cred.site || ''
     credentialEditUsernameInput.value = cred.username || ''
     credentialEditPasswordInput.value = cred.password || ''
+    if (credentialEditCardholderInput) credentialEditCardholderInput.value = cred.username || ''
+    if (credentialEditCardInput) credentialEditCardInput.value = cred.cardNumber ? formatCardNumberInput(cred.cardNumber) : ''
+    if (credentialEditExpiryInput) credentialEditExpiryInput.value = cred.expiry || ''
+    if (credentialEditCvvInput) credentialEditCvvInput.value = cred.cvv || ''
+    if (credentialEditContentInput) credentialEditContentInput.value = cred.notes || ''
     credentialEditNotesInput.value = cred.notes || ''
 
     const type = cred.type || 'login'
@@ -1498,6 +1647,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnToggleEditPassword) {
       btnToggleEditPassword.classList.remove('revealed')
       btnToggleEditPassword.title = 'Show password'
+    }
+    if (credentialEditCvvInput) credentialEditCvvInput.type = 'password'
+    if (btnToggleEditCvv) {
+      btnToggleEditCvv.classList.remove('revealed')
+      btnToggleEditCvv.title = 'Show CVV'
     }
 
     credentialModalBackdrop.classList.add('active')
@@ -1540,6 +1694,11 @@ document.addEventListener('DOMContentLoaded', () => {
       btnToggleEditPassword.classList.remove('revealed')
       btnToggleEditPassword.title = 'Show password'
     }
+    if (credentialEditCvvInput) credentialEditCvvInput.type = 'password'
+    if (btnToggleEditCvv) {
+      btnToggleEditCvv.classList.remove('revealed')
+      btnToggleEditCvv.title = 'Show CVV'
+    }
   }
 
   // Sync the edit modal's color swatch, radio state and dialog border
@@ -1563,11 +1722,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedColorRadio = document.querySelector('input[name="credential-color"]:checked')
     const color = selectedColorRadio ? selectedColorRadio.value : '#ffd1d9'
     const credentialData = {
-      site: credentialSiteInput.value.trim(),
-      username: credentialUsernameInput.value.trim(),
-      password: credentialPasswordInput.value,
-      notes: credentialNotesInput.value.trim(),
-      type: credentialTypeSelect ? credentialTypeSelect.value : 'login',
+      ...collectCredentialFields(credentialTypeSelect ? credentialTypeSelect.value : 'login', {
+        siteInput: credentialSiteInput,
+        usernameInput: credentialUsernameInput,
+        passwordInput: credentialPasswordInput,
+        cardholderInput: credentialCardholderInput,
+        cardNumberInput: credentialCardInput,
+        expiryInput: credentialExpiryInput,
+        cvvInput: credentialCvvInput,
+        contentInput: credentialContentInput,
+        notesInput: credentialNotesInput
+      }),
       color
     }
 
@@ -1606,11 +1771,17 @@ document.addEventListener('DOMContentLoaded', () => {
       ? selectedColorRadio.value
       : (existing && existing.color) || '#ffd1d9'
     const updates = {
-      site: credentialEditSiteInput.value.trim(),
-      username: credentialEditUsernameInput.value.trim(),
-      password: credentialEditPasswordInput.value,
-      notes: credentialEditNotesInput.value.trim(),
-      type: credentialEditTypeSelect ? credentialEditTypeSelect.value : 'login',
+      ...collectCredentialFields(credentialEditTypeSelect ? credentialEditTypeSelect.value : 'login', {
+        siteInput: credentialEditSiteInput,
+        usernameInput: credentialEditUsernameInput,
+        passwordInput: credentialEditPasswordInput,
+        cardholderInput: credentialEditCardholderInput,
+        cardNumberInput: credentialEditCardInput,
+        expiryInput: credentialEditExpiryInput,
+        cvvInput: credentialEditCvvInput,
+        contentInput: credentialEditContentInput,
+        notesInput: credentialEditNotesInput
+      }),
       color
     }
 
@@ -1649,13 +1820,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (target.closest('.credential-reveal')) {
       const valueEl = card.querySelector('.credential-password')
       const revealed = card.classList.toggle('revealed')
-      valueEl.textContent = revealed ? cred.password : '••••••••••'
+      valueEl.textContent = revealed ? (credentialSecretValue(cred) || '—') : credentialMaskedDisplay(cred)
       return
     }
 
     if (target.closest('.credential-copy')) {
-      const what = target.closest('.credential-copy').getAttribute('data-copy')
-      copyToClipboard(what === 'password' ? cred.password : cred.username, what)
+      const copyBtn = target.closest('.credential-copy')
+      const what = copyBtn.getAttribute('data-copy')
+      const label = copyBtn.getAttribute('title') ? copyBtn.getAttribute('title').replace(/^Copy /, '') : what
+      copyToClipboard(what === 'password' ? credentialSecretValue(cred) : cred.username, label)
       return
     }
 
@@ -2302,6 +2475,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentMode === 'vault') { renderVault() } else { renderNotes() }
   }
 
+  // Relabel the three data columns to match the active vault filter so the
+  // table reads correctly for payment cards and secure notes too.
+  function updateVaultTableHeaders(filter) {
+    if (!thCredSite || !thCredUsername || !thCredPassword) return
+    if (filter === 'payment') {
+      thCredSite.textContent = 'Card'
+      thCredUsername.textContent = 'Cardholder'
+      thCredPassword.textContent = 'Card Number'
+    } else if (filter === 'secure-note') {
+      thCredSite.textContent = 'Note'
+      thCredUsername.textContent = 'Preview'
+      thCredPassword.textContent = 'Content'
+    } else {
+      thCredSite.textContent = 'Site'
+      thCredUsername.textContent = 'Username'
+      thCredPassword.textContent = 'Password'
+    }
+  }
+
   function renderVault() {
     if (!vaultUnlocked) {
       showVaultLockedState()
@@ -2311,6 +2503,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Show vault content, hide locked state
     vaultLockedState.classList.add('hidden')
     vaultContent.classList.remove('hidden')
+
+    // Column titles follow the active type filter
+    updateVaultTableHeaders(currentVaultFilter)
 
     // 1. Filter credentials based on currentVaultFilter. The trash view shows
     // only soft-deleted credentials; every other view hides them.
@@ -2325,13 +2520,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const siteMatch = c.site && c.site.toLowerCase().includes(vaultSearchQuery)
         const usernameMatch = c.username && c.username.toLowerCase().includes(vaultSearchQuery)
         const notesMatch = c.notes && c.notes.toLowerCase().includes(vaultSearchQuery)
-        if (!siteMatch && !usernameMatch && !notesMatch) return false
+        // Match card numbers by their digits (e.g. "4242" or the full number with spaces)
+        const queryDigits = vaultSearchQuery.replace(/\D/g, '')
+        const cardMatch = c.cardNumber && queryDigits.length >= 2 &&
+          c.cardNumber.replace(/\D/g, '').includes(queryDigits)
+        if (!siteMatch && !usernameMatch && !notesMatch && !cardMatch) return false
       }
       return true
     })
 
     // 2. Update vault stats (only live credentials count)
     statTotalCredentials.textContent = credentials.filter(c => !c.deleted).length
+
+    // Relabel the table headers so they match the credential type on display.
+    if (thCredSite && thCredUsername && thCredPassword) {
+      const headerLabels = {
+        all: ['Website', 'Username', 'Password'],
+        login: ['Website', 'Username', 'Password'],
+        payment: ['Brand / Store', 'Cardholder', 'Card Number'],
+        'secure-note': ['Title', 'Note Preview', 'Note Content'],
+        trash: ['Website', 'Username', 'Password']
+      }
+      const labels = headerLabels[currentVaultFilter] || headerLabels.all
+      thCredSite.textContent = labels[0]
+      thCredUsername.textContent = labels[1]
+      thCredPassword.textContent = labels[2]
+    }
 
     // Toggle the "Empty trash" button: only in trash view when something is there
     if (btnEmptyVaultTrash) {
@@ -2705,12 +2919,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // The sensitive value each type reveals/copies from its "secret" column
+  function credentialSecretValue(cred) {
+    const type = cred.type || 'login'
+    if (type === 'payment') return cred.cardNumber ? formatCardNumberInput(cred.cardNumber) : ''
+    if (type === 'secure-note') return cred.notes || ''
+    return cred.password || ''
+  }
+
+  function credentialMaskedDisplay(cred) {
+    const type = cred.type || 'login'
+    if (type === 'payment') {
+      const masked = maskCardNumber(cred.cardNumber)
+      return masked || '•••• •••• •••• ••••'
+    }
+    return '••••••••••'
+  }
+
   function renderCredentialRowHTML(cred) {
     const escSite = escapeHTML(cred.site)
     const escUsername = escapeHTML(cred.username)
     const rowColor = safeCredentialColor(cred.color)
     const siteUrl = credentialSiteUrl(cred.site)
     const isTrashCred = !!cred.deleted
+    const credType = cred.type || 'login'
+    const typeIcon = credType === 'payment' ? '💳' : credType === 'secure-note' ? '🔒' : '🔑'
+    const maskedDisplay = credentialMaskedDisplay(cred)
     const openLinkButton = !isTrashCred && siteUrl
       ? `
             <button type="button" class="btn-icon action-open-link" data-url="${escapeHTML(siteUrl)}" title="Open ${escSite} in new tab" aria-label="Open in new tab">
@@ -2733,33 +2967,50 @@ document.addEventListener('DOMContentLoaded', () => {
             </button>`
     const deleteTitle = isTrashCred ? 'Delete Permanently' : 'Move to Trash'
 
+    // Type-tailored middle cell (identity / cardholder / note preview)
+    const copyIcon = '<svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>'
+    let usernameCellMarkup
+    if (credType === 'secure-note') {
+      const preview = escapeHTML((cred.notes || '').replace(/\s+/g, ' ').slice(0, 48)) || '—'
+      usernameCellMarkup = `
+          <span class="credential-username-cell">
+            <span class="credential-username" title="${escapeHTML(cred.notes || '')}">${preview}</span>
+          </span>`
+    } else {
+      const holderTitle = credType === 'payment' ? 'Copy cardholder name' : 'Copy username'
+      const expiryTag = credType === 'payment' && cred.expiry
+        ? `<span class="cred-expiry-tag" title="Expiry date">Exp ${escapeHTML(cred.expiry)}</span>`
+        : ''
+      usernameCellMarkup = `
+          <span class="credential-username-cell">
+            <span class="credential-username" title="${escUsername}">${escUsername}</span>
+            ${expiryTag}
+            <button type="button" class="btn-icon credential-cell-btn credential-copy" data-copy="username" title="${holderTitle}">${copyIcon}</button>
+          </span>`
+    }
+
+    // Type-tailored secret cell (password / masked card number / note content)
+    const revealTitle = credType === 'payment' ? 'Show card number' : credType === 'secure-note' ? 'Reveal note' : 'Show password'
+    const copyTitle = credType === 'payment' ? 'Copy card number' : credType === 'secure-note' ? 'Copy note' : 'Copy password'
+    const secretCellMarkup = `
+          <span class="credential-password-cell">
+            <span class="credential-password">${escapeHTML(maskedDisplay)}</span>
+            <button type="button" class="btn-icon credential-cell-btn credential-reveal" title="${revealTitle}">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+            <button type="button" class="btn-icon credential-cell-btn credential-copy" data-copy="password" title="${copyTitle}">${copyIcon}</button>
+          </span>`
+
     return `
-      <tr class="credential-row ${isTrashCred ? 'trashed-credential' : ''}" data-id="${cred.id}" style="--cred-color: ${rowColor};">
+      <tr class="credential-row ${isTrashCred ? 'trashed-credential' : ''}" data-id="${cred.id}" data-type="${credType}" style="--cred-color: ${rowColor};">
         <td class="col-site">
           <span class="credential-site-cell">
-            <span class="credential-site-icon" aria-hidden="true">🔑</span>
+            <span class="credential-site-icon" aria-hidden="true">${typeIcon}</span>
             <span class="credential-site" title="${escSite}">${escSite}</span>
           </span>
         </td>
-        <td class="col-username">
-          <span class="credential-username-cell">
-            <span class="credential-username" title="${escUsername}">${escUsername}</span>
-            <button type="button" class="btn-icon credential-cell-btn credential-copy" data-copy="username" title="Copy username">
-              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-            </button>
-          </span>
-        </td>
-        <td class="col-password">
-          <span class="credential-password-cell">
-            <span class="credential-password">••••••••••</span>
-            <button type="button" class="btn-icon credential-cell-btn credential-reveal" title="Show password">
-              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            </button>
-            <button type="button" class="btn-icon credential-cell-btn credential-copy" data-copy="password" title="Copy password">
-              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-            </button>
-          </span>
-        </td>
+        <td class="col-username">${usernameCellMarkup}</td>
+        <td class="col-password">${secretCellMarkup}</td>
         <td class="col-actions">
           <span class="credential-row-actions">
             ${openLinkButton}

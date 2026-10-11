@@ -233,29 +233,69 @@ function initializeDatabase() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Storage primitives
+// Reads never silently swallow corruption and writes are atomic, so a crash
+// or a corrupt file can never snowball into silent total data loss.
+// ---------------------------------------------------------------------------
+
+// Read a JSON data file. If the file exists but is not valid JSON, it is
+// quarantined aside (renamed, never deleted) and the error propagates so
+// routes answer 500 — the caller must NOT fall back to [] and let a later
+// write overwrite the corrupt file with fresh data.
+function readJsonFile(file, initialize) {
+  initialize()
+  let raw
+  try {
+    raw = fs.readFileSync(file, 'utf-8')
+  } catch (err) {
+    console.error(`Error reading ${file}:`, err)
+    throw err
+  }
+  try {
+    return JSON.parse(raw)
+  } catch (err) {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const backup = `${file}.corrupt-${stamp}`
+    try {
+      fs.renameSync(file, backup)
+      console.error(`Corrupt data file quarantined to ${backup}`)
+    } catch (renameErr) {
+      console.error(`Could not quarantine corrupt ${file}:`, renameErr)
+    }
+    throw new Error(
+      `${path.basename(file)} is corrupt and was quarantined to ${path.basename(backup)}. ` +
+      'Restore it from the backup, or delete the backup to start fresh.',
+      { cause: err }
+    )
+  }
+}
+
+// Write a JSON data file atomically: serialize to a temp file, then rename.
+// On POSIX the rename is atomic, so a crash mid-write can never leave a
+// truncated file behind. Throws on failure so routes answer 500 instead of
+// reporting success without persisting.
+function writeJsonFile(file, value, initialize) {
+  initialize()
+  const tmp = `${file}.tmp-${process.pid}`
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(value, null, 2), 'utf-8')
+    fs.renameSync(tmp, file)
+  } catch (err) {
+    try { fs.rmSync(tmp, { force: true }) } catch { /* best effort cleanup */ }
+    console.error(`Error writing ${file}:`, err)
+    throw err
+  }
+}
+
 // Helper to read notes
 function readNotes() {
-  try {
-    initializeDatabase()
-    const data = fs.readFileSync(DATA_FILE, 'utf-8')
-    return JSON.parse(data)
-  } catch (err) {
-    console.error('Error reading notes database:', err)
-    return []
-  }
+  return readJsonFile(DATA_FILE, initializeDatabase)
 }
 
 // Helper to write notes
 function writeNotes(notes) {
-  try {
-    initializeDatabase()
-    fs.writeFileSync(DATA_FILE, JSON.stringify(notes, null, 2), 'utf-8')
-  } catch (err) {
-    console.error('Error writing to notes database:', err)
-    // Re-throw so routes answer 500 instead of reporting success without
-    // persisting (Express 5 turns handler throws into a 500 response).
-    throw err
-  }
+  writeJsonFile(DATA_FILE, notes, initializeDatabase)
 }
 
 // Helper to ensure credentials database file exists
@@ -271,38 +311,23 @@ function initializeCredentialsDatabase() {
 
 // Helper to read & decrypt credentials
 async function readCredentials() {
-  try {
-    initializeCredentialsDatabase()
-    const data = fs.readFileSync(CREDENTIALS_FILE, 'utf-8')
-    const parsed = JSON.parse(data)
-    const list = Array.isArray(parsed) ? parsed : []
-    return await Promise.all(list.map(async cred => {
-      const out = { ...cred }
-      for (const field of SENSITIVE_FIELDS) out[field] = await decryptCredentialValue(out[field])
-      return out
-    }))
-  } catch (err) {
-    console.error('Error reading credentials database:', err)
-    return []
-  }
+  const parsed = readJsonFile(CREDENTIALS_FILE, initializeCredentialsDatabase)
+  const list = Array.isArray(parsed) ? parsed : []
+  return await Promise.all(list.map(async cred => {
+    const out = { ...cred }
+    for (const field of SENSITIVE_FIELDS) out[field] = await decryptCredentialValue(out[field])
+    return out
+  }))
 }
 
 // Helper to encrypt & write credentials
 async function writeCredentials(credentials) {
-  try {
-    initializeCredentialsDatabase()
-    const encrypted = await Promise.all(credentials.map(async cred => {
-      const out = { ...cred }
-      for (const field of SENSITIVE_FIELDS) out[field] = await encryptCredentialValue(out[field])
-      return out
-    }))
-    fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(encrypted, null, 2), 'utf-8')
-  } catch (err) {
-    console.error('Error writing to credentials database:', err)
-    // Re-throw so routes answer 500 instead of a fake success — the client
-    // would otherwise show "restored" while the file never changed.
-    throw err
-  }
+  const encrypted = await Promise.all(credentials.map(async cred => {
+    const out = { ...cred }
+    for (const field of SENSITIVE_FIELDS) out[field] = await encryptCredentialValue(out[field])
+    return out
+  }))
+  writeJsonFile(CREDENTIALS_FILE, encrypted, initializeCredentialsDatabase)
 }
 
 // Encrypt any credentials that were saved as plaintext before encryption existed
@@ -630,9 +655,21 @@ function friendlyGitError(rawError) {
   return msg
 }
 
+// Kill-switch for the self-updater: set JOT_ALLOW_SELF_UPDATE=0 to disable the
+// /api/update/* endpoints entirely (they run git + npm install as the service
+// user, so some deployments may prefer updates to happen only from the host).
+const ALLOW_SELF_UPDATE = process.env.JOT_ALLOW_SELF_UPDATE !== '0'
+
+function requireSelfUpdate(req, res, next) {
+  if (!ALLOW_SELF_UPDATE) {
+    return res.status(403).json({ error: 'Self-update is disabled on this deployment (JOT_ALLOW_SELF_UPDATE=0).' })
+  }
+  next()
+}
+
 // GET: lightweight update availability (no network). Used to decide whether the
 // UI should offer in-app updates at all.
-app.get('/api/update/status', async (req, res) => {
+app.get('/api/update/status', requireSelfUpdate, async (req, res) => {
   if (!isGitRepo()) {
     return res.json({ supported: false })
   }
@@ -645,7 +682,7 @@ app.get('/api/update/status', async (req, res) => {
 })
 
 // POST: fetch remote refs and compare them against the local checkout.
-app.post('/api/update/check', async (req, res) => {
+app.post('/api/update/check', requireSelfUpdate, async (req, res) => {
   if (!isGitRepo()) {
     return res.status(400).json({ error: 'This deployment was not installed from git, so it cannot self-update.' })
   }
@@ -663,7 +700,7 @@ app.post('/api/update/check', async (req, res) => {
 })
 
 // POST: pull the latest code, reinstall dependencies, then restart the service.
-app.post('/api/update', async (req, res) => {
+app.post('/api/update', requireSelfUpdate, async (req, res) => {
   if (!isGitRepo()) {
     return res.status(400).json({ error: 'This deployment was not installed from git, so it cannot self-update.' })
   }
@@ -719,6 +756,14 @@ function scheduleServiceRestart() {
   console.warn('Self-update applied — not running under systemd; restart the process to load the new code.')
   setTimeout(() => { updateInProgress = false }, 1000)
 }
+
+// API errors as JSON (Express' default error page is HTML, which breaks
+// clients that call res.json() on error responses).
+// Registered after all routes; only handles errors passed via throw/next(err).
+app.use('/api', (err, req, res, next) => {
+  console.error('API error:', err.message)
+  res.status(err.status || 500).json({ error: err.message || 'Internal server error 😿' })
+})
 
 // Start the Express server
 app.listen(PORT, async () => {

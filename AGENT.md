@@ -52,6 +52,7 @@ npm run efix
 
 - Notes are stored in `data/notes.json`.
 - Credentials are stored in `data/credentials.json` and sensitive values are encrypted before write.
+- Writes are atomic (temp file + rename); reads never fall back to `[]` on corruption — a corrupt file is quarantined to `data/<name>.corrupt-<timestamp>` and the API answers 500 until it is restored or removed.
 - If `JOT_SECRET_KEY` is absent, the app generates a key in `data/.jot-secret.key` on first run.
 - Losing that key without a backup can make stored credentials unrecoverable.
 
@@ -80,6 +81,7 @@ npm run efix
 - `GET /api/update/status` — reports whether in-app updates are supported and the current commit
 - `POST /api/update/check` — fetches remote refs and compares against the local commit
 - `POST /api/update` — fetches latest code, resets to remote, reinstalls production deps, restarts the service
+- All three update endpoints are disabled when `JOT_ALLOW_SELF_UPDATE=0`
 
 ## Deployment notes
 

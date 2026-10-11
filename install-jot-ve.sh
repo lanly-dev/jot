@@ -249,10 +249,13 @@ chown -R jot:jot /opt/jot
 
 echo " >> Generating JOT_SECRET_KEY (AES-256-GCM) ..."
 SECRET_KEY="$(openssl rand -base64 32)"
+echo " >> Generating JOT_API_TOKEN ..."
+API_TOKEN="$(openssl rand -base64 32)"
 cat > /opt/jot/.env <<EOF
 PORT=3000
 NODE_ENV=production
 JOT_SECRET_KEY=${SECRET_KEY}
+JOT_API_TOKEN=${API_TOKEN}
 EOF
 chmod 600 /opt/jot/.env
 chown jot:jot /opt/jot/.env
@@ -309,3 +312,5 @@ msg_info "Open Jot at:  http://${IP_INFO}:${PORT}"
 msg_info "Service is managed by systemd:  systemctl status jot"
 msg_warn "Notes & credentials live in /opt/jot/data, and JOT_SECRET_KEY is in /opt/jot/.env."
 msg_warn "Back those up so your encrypted credentials survive a reinstall."
+msg_info "The API now requires a token: find it with 'grep JOT_API_TOKEN /opt/jot/.env'"
+msg_info "and paste it into the banner when you first open Jot in your browser."

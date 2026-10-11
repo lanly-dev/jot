@@ -20,6 +20,45 @@ document.addEventListener('DOMContentLoaded', () => {
   let vaultSearchQuery = ''
   const reminderTimers = new Map()
   const VAULT_HASH_KEY = 'jot_vault_master_hash'
+  const API_TOKEN_KEY = 'jot_api_token'
+
+  // API TOKEN — when the server is configured with JOT_API_TOKEN, every /api
+  // route requires `Authorization: Bearer <token>`. The token lives only in
+  // this browser's localStorage and is attached here, in one place, so no
+  // call site needs to know about it. A 401 reveals the token banner.
+  const _fetch = window.fetch.bind(window)
+  window.fetch = function (input, init) {
+    const url = typeof input === 'string' ? input : (input && input.url) || ''
+    if (!url.startsWith('/api/')) return _fetch(input, init)
+    const token = localStorage.getItem(API_TOKEN_KEY) || ''
+    init = init || {}
+    init.headers = {
+      ...(init.headers || {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    }
+    return _fetch(input, init).then(res => {
+      if (res.status === 401) showApiTokenBanner()
+      return res
+    })
+  }
+
+  function showApiTokenBanner() {
+    const banner = document.getElementById('api-token-banner')
+    if (banner) banner.classList.remove('hidden')
+  }
+
+  const apiTokenSaveBtn = document.getElementById('api-token-save')
+  if (apiTokenSaveBtn) {
+    const apiTokenInput = document.getElementById('api-token-input')
+    const saveApiToken = () => {
+      const token = (apiTokenInput.value || '').trim()
+      if (!token) return
+      localStorage.setItem(API_TOKEN_KEY, token)
+      location.reload()
+    }
+    apiTokenSaveBtn.addEventListener('click', saveApiToken)
+    apiTokenInput.addEventListener('keydown', e => { if (e.key === 'Enter') saveApiToken() })
+  }
 
   // DEFAULT SAMPLES (Loaded only on first visit to make it feel rich and welcoming!)
   const SAMPLE_NOTES = [

@@ -6,8 +6,9 @@ This repository contains a lightweight full-stack note-taking app built with Nod
 
 ## Project summary
 
-- Frontend: static HTML/CSS/JS served from the project root
+- Frontend: static HTML/CSS/JS served from `public/` only (the project root is never exposed over HTTP)
 - Backend: Express server in `server.js`
+- Auth: every `/api` route requires `Authorization: Bearer <JOT_API_TOKEN>` when the env var is set; the server warns loudly at boot when it is unset
 - Runtime: Node.js
 - Persistence: JSON files in `data/`
 - Encryption: AES-256-GCM for sensitive credential fields
@@ -19,9 +20,9 @@ This repository contains a lightweight full-stack note-taking app built with Nod
 
 - `data/` — Persistence directory for notes and credentials
 - `server.js` — Express API, persistence logic, encryption, file initialization
-- `app.js` — frontend state management, rendering, note/credential interactions, sync logic
-- `index.html` — app shell and modal/layout structure
-- `styles.css` — styling and UI behavior
+- `public/app.js` — frontend state management, rendering, note/credential interactions, sync logic (attaches the API bearer token to every `/api` fetch)
+- `public/index.html` — app shell and modal/layout structure
+- `public/styles.css` — styling and UI behavior
 - `data/notes.json` — persisted notes
 - `data/credentials.json` — persisted credentials, with encrypted sensitive fields
 - `data/.jot-secret.key` — generated AES key for credential encryption when `JOT_SECRET_KEY` is not set

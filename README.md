@@ -117,7 +117,7 @@ The backend initializes a sample note set if the file does not exist.
 
 ### Credentials
 
-`data/credentials.json` stores credential entries as an array. Each credential includes an `id`, `site`, `username`, `password`, `notes`, `type`, `color`, `createdAt`, plus trash fields mirroring notes:
+`data/credentials.json` stores credential entries as an array. Each credential includes an `id`, `site`, `username`, `password`, `notes`, `type`, `color`, `createdAt`, `updatedAt`, plus trash fields mirroring notes:
 
 - `deleted` — when `true`, the credential is in the vault trash
 - `deletedAt` — timestamp of when the credential was trashed

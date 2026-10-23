@@ -2617,8 +2617,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const statusMatch = isTrashView || note.archived === (currentView === 'archived')
       const tagMatch = isTrashView || !currentTagFilter ||
         (Array.isArray(note.tags) && note.tags.includes(currentTagFilter.toLowerCase()))
-      const searchMatch = !currentSearchQuery || 
-        (note.title && note.title.toLowerCase().includes(currentSearchQuery)) || 
+      const searchMatch = !currentSearchQuery ||
+        (note.title && note.title.toLowerCase().includes(currentSearchQuery)) ||
         (note.content && note.content.toLowerCase().includes(currentSearchQuery))
       return deletedMatch && statusMatch && tagMatch && searchMatch
     })
@@ -3120,7 +3120,7 @@ document.addEventListener('DOMContentLoaded', () => {
     reminderConfig.style.display = 'none'
     spreadsheetConfig.style.display = 'none'
     noteContentInput.required = true
-    noteContentInput.placeholder = 'Write your thoughts down here... Feel free to be creative!'
+    noteContentInput.placeholder = 'Note contents...'
   }
 
   function clearReminderTimers() {

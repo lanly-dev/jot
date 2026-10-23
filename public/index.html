@@ -23,7 +23,8 @@
     <div class="api-token-banner hidden" id="api-token-banner" role="alert">
       <span aria-hidden="true">🔒</span>
       <span class="api-token-text">This Jot server requires an API token.</span>
-      <input type="password" id="api-token-input" class="api-token-input" placeholder="Paste API token…" autocomplete="off" spellcheck="false">
+      <input type="password" id="api-token-input" class="api-token-input" placeholder="Paste API token…"
+        autocomplete="off" spellcheck="false">
       <button type="button" id="api-token-save" class="btn-primary api-token-save">Connect</button>
     </div>
     <!-- GLOBAL SYNC / CONNECTION STATUS (fixed, top-right) -->
@@ -58,7 +59,7 @@
               <div class="creator-trigger-row">
                 <div class="creator-trigger-left">
                   <span class="pencil-icon-inside">✏️</span>
-                  <span class="placeholder-text">Create a new jot... ✨</span>
+                  <span class="placeholder-text">Create a new note</span>
                 </div>
                 <button type="button" class="btn-icon" id="btn-expand-creator" title="Write a Note">
                   <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
@@ -78,8 +79,7 @@
 
                 <!-- 1st ROW: Label / Title Input -->
                 <div class="creator-row-1">
-                  <input type="text" id="note-title" placeholder="Title (e.g. Shopping List, Great Idea ✨)"
-                    maxlength="50" required>
+                  <input type="text" id="note-title" placeholder="Title" maxlength="50" required>
                   <button type="button" class="btn-icon pin-toggle-btn" id="editor-pin-btn" title="Pin Note to Top">
                     <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
                       stroke-linecap="round" stroke-linejoin="round" class="svg-pin">
@@ -93,8 +93,7 @@
 
                 <!-- 2nd ROW: Content (Expandable depend on content) -->
                 <div class="creator-row-2">
-                  <textarea id="note-content" placeholder="Write your thoughts down here... Feel free to be creative!"
-                    rows="2" required></textarea>
+                  <textarea id="note-content" placeholder="Note contents..." rows="2" required></textarea>
 
                   <p class="note-type-hint" id="devnote-hint" style="display: none;">Dev Note supports markdown
                     formatting like headings, lists, links, code blocks, and inline code.</p>
@@ -114,9 +113,6 @@
                     </div>
                     <div class="spreadsheet-grid" id="spreadsheet-grid" aria-label="Spreadsheet input grid"></div>
                   </div>
-
-                  <!-- Hashtag hint: tags live inline in the note text -->
-                  <p class="note-type-hint hashtag-hint">Tip: type #tags anywhere in your note (e.g. #work #ideas) to organize &amp; filter</p>
                 </div>
 
                 <!-- 3rd ROW: Options Bar (Type Icon, Color Icon, Tags with popups) & Actions -->
@@ -395,8 +391,9 @@
 
                       <div class="input-group">
                         <label for="credential-card-number" class="sr-only">Card Number</label>
-                        <input type="text" id="credential-card-number" placeholder="Card number (e.g. 4111 1111 1111 1111)"
-                          inputmode="numeric" autocomplete="off" maxlength="19">
+                        <input type="text" id="credential-card-number"
+                          placeholder="Card number (e.g. 4111 1111 1111 1111)" inputmode="numeric" autocomplete="off"
+                          maxlength="19">
                       </div>
 
                       <div class="cred-payment-mini-row">
@@ -451,21 +448,45 @@
                       <div class="popover-wrapper">
                         <button type="button" class="btn-popover-trigger" id="btn-cred-type-popup"
                           title="Select Credential Type" aria-expanded="false">
-                          <span class="trigger-icon" id="cred-type-icon-display"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg></span>
+                          <span class="trigger-icon" id="cred-type-icon-display"><svg viewBox="0 0 24 24" width="16"
+                              height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+                              stroke-linejoin="round" aria-hidden="true">
+                              <path
+                                d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4">
+                              </path>
+                            </svg></span>
                           <span class="trigger-label" id="cred-type-label-display">Login</span>
                         </button>
                         <div class="popover-menu" id="cred-type-popover">
                           <div class="popover-title">Credential Type</div>
                           <button type="button" class="popover-item active" data-type="login">
-                            <span class="popover-item-icon"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg></span>
+                            <span class="popover-item-icon"><svg viewBox="0 0 24 24" width="16" height="16"
+                                stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path
+                                  d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4">
+                                </path>
+                              </svg></span>
                             <span class="popover-item-text">Login</span>
                           </button>
                           <button type="button" class="popover-item" data-type="payment">
-                            <span class="popover-item-icon"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg></span>
+                            <span class="popover-item-icon"><svg viewBox="0 0 24 24" width="16" height="16"
+                                stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                <line x1="1" y1="10" x2="23" y2="10"></line>
+                              </svg></span>
                             <span class="popover-item-text">Payment</span>
                           </button>
                           <button type="button" class="popover-item" data-type="secure-note">
-                            <span class="popover-item-icon"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><rect x="9" y="13" width="6" height="5" rx="1"></rect><path d="M10 13v-1a2 2 0 0 1 4 0v1"></path></svg></span>
+                            <span class="popover-item-icon"><svg viewBox="0 0 24 24" width="16" height="16"
+                                stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <rect x="9" y="13" width="6" height="5" rx="1"></rect>
+                                <path d="M10 13v-1a2 2 0 0 1 4 0v1"></path>
+                              </svg></span>
                             <span class="popover-item-text">Secure Note</span>
                           </button>
                         </div>
@@ -533,7 +554,9 @@
                 <!-- Sparkle icon representing All items -->
                 <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                  <polygon
+                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                  </polygon>
                 </svg>
                 <span class="status-text">All</span>
               </label>
@@ -542,7 +565,9 @@
                 <!-- Key icon representing Logins -->
                 <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+                  <path
+                    d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4">
+                  </path>
                 </svg>
                 <span class="status-text">Logins</span>
               </label>
@@ -589,12 +614,13 @@
                   <circle cx="11" cy="11" r="8"></circle>
                   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
-                <input type="search" id="vault-search-input" placeholder="Search vault..." aria-label="Search vault entries">
+                <input type="search" id="vault-search-input" placeholder="Search vault..."
+                  aria-label="Search vault entries">
               </div>
             </div>
             <div style="display: flex; align-items: center; gap: 1rem;">
-              <button type="button" class="btn-empty-trash" id="btn-empty-vault-trash"
-                title="Empty trash permanently" style="display: none;">
+              <button type="button" class="btn-empty-trash" id="btn-empty-vault-trash" title="Empty trash permanently"
+                style="display: none;">
                 <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <polyline points="3 6 5 6 21 6"></polyline>
@@ -757,9 +783,8 @@
 
             <div class="input-group">
               <label for="credential-edit-card-number" class="sr-only">Card Number</label>
-              <input type="text" id="credential-edit-card-number"
-                placeholder="Card number (e.g. 4111 1111 1111 1111)" inputmode="numeric" autocomplete="off"
-                maxlength="19">
+              <input type="text" id="credential-edit-card-number" placeholder="Card number (e.g. 4111 1111 1111 1111)"
+                inputmode="numeric" autocomplete="off" maxlength="19">
             </div>
 
             <div class="cred-payment-mini-row">
@@ -791,8 +816,7 @@
             <div class="input-group">
               <label for="credential-edit-content" class="sr-only">Secret Note Content</label>
               <textarea id="credential-edit-content" class="cred-note-content"
-                placeholder="Your secret note content... (recovery codes, PINs, sensitive info)"
-                rows="5"></textarea>
+                placeholder="Your secret note content... (recovery codes, PINs, sensitive info)" rows="5"></textarea>
             </div>
           </div>
 
@@ -808,29 +832,50 @@
             <div class="popover-wrapper">
               <button type="button" class="btn-popover-trigger" id="btn-cred-edit-type-popup"
                 title="Select Credential Type" aria-expanded="false">
-                <span class="trigger-icon" id="cred-edit-type-icon-display"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg></span>
+                <span class="trigger-icon" id="cred-edit-type-icon-display"><svg viewBox="0 0 24 24" width="16"
+                    height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+                    stroke-linejoin="round" aria-hidden="true">
+                    <path
+                      d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4">
+                    </path>
+                  </svg></span>
                 <span class="trigger-label" id="cred-edit-type-label-display">Login</span>
               </button>
               <div class="popover-menu" id="cred-edit-type-popover">
                 <div class="popover-title">Credential Type</div>
                 <button type="button" class="popover-item active" data-type="login">
-                  <span class="popover-item-icon"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg></span>
+                  <span class="popover-item-icon"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor"
+                      stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path
+                        d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4">
+                      </path>
+                    </svg></span>
                   <span class="popover-item-text">Login</span>
                 </button>
                 <button type="button" class="popover-item" data-type="payment">
-                  <span class="popover-item-icon"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg></span>
+                  <span class="popover-item-icon"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor"
+                      stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                      <line x1="1" y1="10" x2="23" y2="10"></line>
+                    </svg></span>
                   <span class="popover-item-text">Payment</span>
                 </button>
                 <button type="button" class="popover-item" data-type="secure-note">
-                  <span class="popover-item-icon"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><rect x="9" y="13" width="6" height="5" rx="1"></rect><path d="M10 13v-1a2 2 0 0 1 4 0v1"></path></svg></span>
+                  <span class="popover-item-icon"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor"
+                      stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                      <rect x="9" y="13" width="6" height="5" rx="1"></rect>
+                      <path d="M10 13v-1a2 2 0 0 1 4 0v1"></path>
+                    </svg></span>
                   <span class="popover-item-text">Secure Note</span>
                 </button>
               </div>
             </div>
 
             <div class="popover-wrapper">
-              <button type="button" class="btn-popover-trigger" id="btn-cred-edit-color-popup"
-                title="Choose Card Color" aria-expanded="false">
+              <button type="button" class="btn-popover-trigger" id="btn-cred-edit-color-popup" title="Choose Card Color"
+                aria-expanded="false">
                 <span class="color-dot-swatch" id="cred-edit-color-swatch-display"
                   style="background-color: #ffd1d9;"></span>
               </button>

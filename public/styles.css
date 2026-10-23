@@ -1123,7 +1123,7 @@ body.note-focus-open {
 
 .note-card {
   background-color: var(--note-color, var(--pastel-pink));
-  border-radius: 10px;
+  border-radius: 5px;
   border: 2px solid var(--border-color);
   padding: .5rem;
   position: relative;
@@ -1534,7 +1534,7 @@ body.note-focus-open {
 .empty-state {
   background-color: rgba(255, 255, 255, 0.5);
   border: 2px dashed var(--border-color);
-  border-radius: 28px;
+  border-radius: 5px;
   padding: 4rem 2rem;
   text-align: center;
   display: flex;

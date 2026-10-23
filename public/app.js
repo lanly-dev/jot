@@ -3,6 +3,13 @@
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Pane layout: dock the focus panel into the notes editor column. In the
+  // markup it ships as a slide-over overlay (with backdrop); the stylesheet
+  // renders it as a static pane there, and the backdrop is never displayed.
+  const notesModeSection = document.getElementById('notes-mode')
+  const focusPanelForLayout = document.getElementById('note-focus-panel')
+  if (notesModeSection && focusPanelForLayout) notesModeSection.appendChild(focusPanelForLayout)
+
   // CENTRAL STATE
   let notes = []
   let credentials = []
@@ -2590,9 +2597,9 @@ document.addEventListener('DOMContentLoaded', () => {
           emptyTitle.textContent = `No ${typeNames[currentVaultFilter] || 'items'} found`
           emptyPara.textContent = 'Add a new credential or switch filter back to "All" to view your saved credentials.'
         } else {
-          if (emptyMascot) emptyMascot.textContent = '🔐'
+          if (emptyMascot) emptyMascot.textContent = '▢'
           emptyTitle.textContent = 'Your vault is empty'
-          emptyPara.textContent = 'Add your first password, API key, or login so it is always one cute tap away!'
+          emptyPara.textContent = 'Add your first login, card, or secure note.'
         }
       }
     } else {
@@ -2675,9 +2682,9 @@ document.addEventListener('DOMContentLoaded', () => {
         emptyTitle.textContent = 'Your archive is empty'
         emptyPara.textContent = 'When you have a jot that you are finished with, tap its Archive box to tuck it away here!'
       } else {
-        emptyMascot.textContent = '✨'
-        emptyTitle.textContent = 'Your Jot board is looking quiet...'
-        emptyPara.textContent = 'Write your first sweet note in the panel on the left to start filling your board with color and joy!'
+        emptyMascot.textContent = '▢'
+        emptyTitle.textContent = 'No notes here yet'
+        emptyPara.textContent = 'Create one from the editor pane — it will show up in this list.'
       }
     } else {
       const isListView = currentLayoutView === 'list'
@@ -2781,6 +2788,11 @@ document.addEventListener('DOMContentLoaded', () => {
     render()
   }
 
+  /**
+   * Sync the focus panel and list highlighting with the currently open note.
+   * Toggles the panel's open state and `aria-hidden`, and marks the open
+   * note's card with `focused-card` (cleared from all cards when none is open).
+   */
   function applyFocusedNoteState() {
     const focusedNote = notes.find(note => note.id === focusedNoteId)
     const isOpen = Boolean(focusedNote)
@@ -2789,6 +2801,11 @@ document.addEventListener('DOMContentLoaded', () => {
     noteFocusPanel.classList.toggle('active', isOpen)
     noteFocusPanel.setAttribute('aria-hidden', isOpen ? 'false' : 'true')
     document.body.classList.toggle('note-focus-open', isOpen)
+
+    // Pane layout: highlight the open note's row in the list.
+    notesGrid.querySelectorAll('.note-card').forEach(card => {
+      card.classList.toggle('focused-card', isOpen && card.dataset.id === focusedNoteId)
+    })
 
     if (focusedNote) {
       noteFocusContent.innerHTML = renderFocusedNotePanelHTML(focusedNote)

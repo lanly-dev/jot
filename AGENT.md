@@ -7,6 +7,7 @@ This repository contains a lightweight full-stack note-taking app built with Nod
 ## Project summary
 
 - Frontend: static HTML/CSS/JS served from `public/` only (the project root is never exposed over HTTP)
+- UI: light "technical workspace" theme — three-pane layout (sidebar / note list / editor; the focus panel is docked into the editor pane by app.js at startup), system font stacks only (mono for metadata/tags/credentials), note colors render as accent stripes, never full-card fills. The old masonry card board is neutralized in CSS; keep it that way.
 - Backend: Express server in `server.js`
 - Auth: every `/api` route requires `Authorization: Bearer <JOT_API_TOKEN>` when the env var is set; the server warns loudly at boot when it is unset
 - Runtime: Node.js

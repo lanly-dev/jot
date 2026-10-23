@@ -6,8 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jot | Note-taking app</title>
   <meta name="description"
-    content="Jot — a technical note-taking app with an encrypted credentials vault. Notes, checklists, tables, reminders, and secrets in a three-pane workspace.">
-  <!-- System font stacks only: no webfonts, works fully offline on a LAN. -->
+    content="Organize your daily life with Jot, a modern, beautiful, and delightfully cute note-taking app. Pick colorful pastel palettes, pin your priorities, and watch your thoughts shine.">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Outfit:wght@400;600;800&display=swap"
+    rel="stylesheet">
   <!-- Main stylesheet -->
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -21,13 +26,16 @@
       <input type="password" id="api-token-input" class="api-token-input" placeholder="Paste API token…" autocomplete="off" spellcheck="false">
       <button type="button" id="api-token-save" class="btn-primary api-token-save">Connect</button>
     </div>
+    <!-- GLOBAL SYNC / CONNECTION STATUS (fixed, top-right) -->
+    <span class="sync-status" id="sync-status" data-state="saved" title="Save / sync status">
+      <span class="sync-icon"><svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2"
+          fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg></span>
+      <span class="sync-text">Connected</span>
+    </span>
 
-
-    <!-- SIDEBAR: wordmark, mode nav, sync status, options -->
-    <aside class="app-sidebar">
-      <div class="app-wordmark" aria-hidden="true">jot<span class="wordmark-accent">_</span></div>
-      <div class="app-tagline">notes / vault</div>
-
+    <!-- MODE NAVIGATION -->
     <nav class="app-nav" aria-label="App mode navigation">
       <button type="button" class="nav-tab active" id="nav-notes" data-mode="notes">
         <span class="nav-icon" aria-hidden="true">📝</span>
@@ -39,46 +47,6 @@
       </button>
     </nav>
 
-      <div class="sidebar-spacer"></div>
-
-    <span class="sync-status" id="sync-status" data-state="saved" title="Save / sync status">
-      <span class="sync-icon"><svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2"
-          fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="20 6 9 17 4 12"></polyline>
-        </svg></span>
-      <span class="sync-text">Connected</span>
-    </span>
-
-    <footer class="app-footer">
-      <p>Jot &copy; 2026</p>
-      <div class="app-footer-dropdown">
-        <button type="button" class="app-footer-dropdown-toggle" id="btn-footer-dropdown-toggle" aria-haspopup="true"
-          aria-expanded="false">
-          <span aria-hidden="true">⚙️</span> Options
-        </button>
-        <div class="app-footer-dropdown-menu" id="footer-dropdown-menu" role="menu">
-          <button type="button" class="dropdown-item" id="btn-export-data" role="menuitem">
-            <span class="dropdown-item-icon" aria-hidden="true">📦</span>
-            <span class="dropdown-item-text">Export Notes</span>
-            <span class="dropdown-item-hint">Download as JSON</span>
-          </button>
-          <button type="button" class="dropdown-item" id="btn-import-data" role="menuitem">
-            <span class="dropdown-item-icon" aria-hidden="true">📥</span>
-            <span class="dropdown-item-text">Import Notes</span>
-            <span class="dropdown-item-hint">Merge from file</span>
-          </button>
-          <div class="dropdown-divider"></div>
-          <button type="button" class="dropdown-item" id="btn-open-update" role="menuitem">
-            <span class="dropdown-item-icon" aria-hidden="true">🚀</span>
-            <span class="dropdown-item-text">Update Jot</span>
-            <span class="dropdown-item-hint">Check for updates</span>
-          </button>
-        </div>
-      </div>
-      <input type="file" id="import-file-input" accept=".json" style="display: none;">
-    </footer>
-    </aside>
-
     <!-- MAIN LAYOUT -->
     <main class="app-main">
       <section class="display-section" id="notes-mode">
@@ -89,8 +57,8 @@
             <div class="creator-collapsed" id="creator-collapsed">
               <div class="creator-trigger-row">
                 <div class="creator-trigger-left">
-                  <span class="pencil-icon-inside">+</span>
-                  <span class="placeholder-text">New note…</span>
+                  <span class="pencil-icon-inside">✏️</span>
+                  <span class="placeholder-text">Create a new jot... ✨</span>
                 </div>
                 <button type="button" class="btn-icon" id="btn-expand-creator" title="Write a Note">
                   <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
@@ -110,7 +78,7 @@
 
                 <!-- 1st ROW: Label / Title Input -->
                 <div class="creator-row-1">
-                  <input type="text" id="note-title" placeholder="Title"
+                  <input type="text" id="note-title" placeholder="Title (e.g. Shopping List, Great Idea ✨)"
                     maxlength="50" required>
                   <button type="button" class="btn-icon pin-toggle-btn" id="editor-pin-btn" title="Pin Note to Top">
                     <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"
@@ -125,7 +93,7 @@
 
                 <!-- 2nd ROW: Content (Expandable depend on content) -->
                 <div class="creator-row-2">
-                  <textarea id="note-content" placeholder="Write here. #tags work anywhere."
+                  <textarea id="note-content" placeholder="Write your thoughts down here... Feel free to be creative!"
                     rows="2" required></textarea>
 
                   <p class="note-type-hint" id="devnote-hint" style="display: none;">Dev Note supports markdown
@@ -336,9 +304,9 @@
 
         <!-- Empty State Message -->
         <div class="empty-state" id="empty-state">
-          <div class="empty-mascot">▢</div>
-          <h3>No notes here yet</h3>
-          <p>Create one from the editor pane — it will show up in this list.</p>
+          <div class="empty-mascot">✨</div>
+          <h3>Your Jot board is looking quiet...</h3>
+          <p>Write your first sweet note in the panel on the left to start fill your board with color and joy!</p>
         </div>
 
         <!-- Notes Grid Container -->
@@ -381,8 +349,8 @@
               <div class="creator-collapsed" id="vault-creator-collapsed">
                 <div class="creator-trigger-row">
                   <div class="creator-trigger-left">
-                    <span class="pencil-icon-inside">+</span>
-                    <span class="placeholder-text">Add a new credential…</span>
+                    <span class="pencil-icon-inside">🔑</span>
+                    <span class="placeholder-text">Add a new credential... 🔐</span>
                   </div>
                 </div>
               </div>
@@ -652,9 +620,9 @@
 
           <!-- Vault Empty State -->
           <div class="empty-state" id="vault-empty-state" style="display: none;">
-            <div class="empty-mascot">▢</div>
+            <div class="empty-mascot">🔐</div>
             <h3>Your vault is empty</h3>
-            <p>Add your first login, card, or secure note.</p>
+            <p>Add your first password, API key, or login so it is always one cute tap away!</p>
           </div>
 
           <!-- Credentials Table Container -->
@@ -677,6 +645,35 @@
       </section>
     </main>
 
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <p>Jot &copy; 2026</p>
+      <div class="app-footer-dropdown">
+        <button type="button" class="app-footer-dropdown-toggle" id="btn-footer-dropdown-toggle" aria-haspopup="true"
+          aria-expanded="false">
+          <span aria-hidden="true">⚙️</span> Options
+        </button>
+        <div class="app-footer-dropdown-menu" id="footer-dropdown-menu" role="menu">
+          <button type="button" class="dropdown-item" id="btn-export-data" role="menuitem">
+            <span class="dropdown-item-icon" aria-hidden="true">📦</span>
+            <span class="dropdown-item-text">Export Notes</span>
+            <span class="dropdown-item-hint">Download as JSON</span>
+          </button>
+          <button type="button" class="dropdown-item" id="btn-import-data" role="menuitem">
+            <span class="dropdown-item-icon" aria-hidden="true">📥</span>
+            <span class="dropdown-item-text">Import Notes</span>
+            <span class="dropdown-item-hint">Merge from file</span>
+          </button>
+          <div class="dropdown-divider"></div>
+          <button type="button" class="dropdown-item" id="btn-open-update" role="menuitem">
+            <span class="dropdown-item-icon" aria-hidden="true">🚀</span>
+            <span class="dropdown-item-text">Update Jot</span>
+            <span class="dropdown-item-hint">Check for updates</span>
+          </button>
+        </div>
+      </div>
+      <input type="file" id="import-file-input" accept=".json" style="display: none;">
+    </footer>
   </div>
 
   <div class="note-focus-backdrop" id="note-focus-backdrop" aria-hidden="true"></div>

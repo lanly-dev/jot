@@ -429,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Lightweight status check: is this install capable of in-app updates?
   async function refreshUpdateStatus() {
     if (!updateModalBody) return
-    setUpdateBody('<p class="update-status-hint">Checking your installation…</p>')
+    setUpdateBody('<p class="update-status-hint">Checking your installation...</p>')
     try {
       const res = await fetch('/api/update/status')
       const data = await res.json()
@@ -457,9 +457,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!updateModalBody) return
     if (btnUpdateCheck) {
       btnUpdateCheck.disabled = true
-      btnUpdateCheck.textContent = 'Checking…'
+      btnUpdateCheck.textContent = 'Checking...'
     }
-    setUpdateBody('<p class="update-status-hint">Checking for updates…</p>')
+    setUpdateBody('<p class="update-status-hint">Checking for updates...</p>')
     try {
       const res = await fetch('/api/update/check', { method: 'POST' })
       const data = await res.json()
@@ -514,9 +514,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!btnDoUpdate || btnDoUpdate.disabled) return
     btnDoUpdate.disabled = true
     const originalLabel = btnDoUpdate.textContent
-    btnDoUpdate.textContent = 'Updating…'
+    btnDoUpdate.textContent = 'Updating...'
     if (btnUpdateCheck) btnUpdateCheck.disabled = true
-    setUpdateBody('<p class="update-status-hint">Pulling the latest code and installing dependencies…</p>')
+    setUpdateBody('<p class="update-status-hint">Pulling the latest code and installing dependencies...</p>')
     try {
       const res = await fetch('/api/update', { method: 'POST' })
       const data = await res.json()
@@ -526,7 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setUpdateButtons(true, false)
         return
       }
-      setUpdateBody('<p class="update-status-hint">✅ Update applied — restarting the app…</p>')
+      setUpdateBody('<p class="update-status-hint">✅ Update applied — restarting the app...</p>')
       if (btnUpdateCheck) btnUpdateCheck.disabled = true
       reloadWhenReady(30)
     } catch (err) {
@@ -2899,17 +2899,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ${spreadsheetMarkup}
         ${checklistMarkup}
 
-        <div class="note-focus-tags-section">
-          <div class="note-focus-tags-header">
-            <span>Hashtags detected</span>
-            <span style="font-size: 0.68rem; color: var(--text-muted); font-weight: 500;">Edit them inline in the text with #</span>
-          </div>
-          <div class="note-focus-tags-list">
-            ${(focusTags.map(t => `<span class="note-tag-chip active-chip" data-tag="${escapeHTML(t)}">#${escapeHTML(t)}</span>`).join('') || '<span class="note-focus-no-tags">No #hashtags yet — just type one in the text above</span>')}
-          </div>
-        </div>
-
-                <div class="note-focus-actions">
+        <div class="note-focus-actions">
           <button type="button" class="btn btn-secondary" id="focus-action-close">Close</button>
           <button type="button" class="btn btn-primary" id="focus-action-save">Save Changes</button>
         </div>

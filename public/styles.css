@@ -983,10 +983,7 @@ body.note-focus-open {
 .note-focus-body-input {
   width: 100%;
   min-height: 260px;
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-  background: #fbf9f7;
-  padding: 0.9rem 1rem;
+  border: none;
   font-family: inherit;
   font-size: 0.98rem;
   line-height: 1.7;
@@ -1224,7 +1221,6 @@ body.note-focus-open {
 
 .note-title {
   font-size: 1rem;
-  font-weight: 700;
   color: var(--text-main);
   word-break: break-word;
 }
@@ -1309,11 +1305,11 @@ body.note-focus-open {
   cursor: pointer;
 }
 
-.note-checklist-item > span {
+.note-checklist-item>span {
   min-width: 0;
 }
 
-.note-checklist-item input:checked + span {
+.note-checklist-item input:checked+span {
   text-decoration: line-through;
   color: var(--text-muted);
 }
@@ -2355,7 +2351,7 @@ body.note-focus-open {
   font-family: var(--font-body);
 }
 
-.pencil-icon-inside {
+.icon-append {
   color: #a39d99;
   font-size: 1.1rem;
   display: flex;
@@ -3128,7 +3124,6 @@ body.note-focus-open {
     gap: 0.4rem;
     flex-wrap: wrap;
     padding: 0.4rem 0.2rem;
-    justify-content: center;
   }
 }
 
@@ -3236,18 +3231,24 @@ body.note-focus-open {
   flex-wrap: wrap;
   gap: 0.3rem;
 }
+
 /* Inline #hashtags rendered inside note bodies */
 .note-tag-inline {
   padding: 0 0.35rem;
   margin: 0 0.1rem;
   vertical-align: baseline;
 }
+
 .note-focus-no-tags {
   font-size: 0.8rem;
   color: var(--text-muted);
   font-weight: 600;
 }
-.hashtag-hint { margin-top: 0.35rem; }
+
+.hashtag-hint {
+  margin-top: 0.35rem;
+}
+
 /* Action button + dropdown for choosing a note's render format */
 .note-format-wrap {
   position: relative;
@@ -3327,7 +3328,7 @@ body.note-focus-open {
   color: var(--text-muted);
 }
 
-.note-format-option input[type="radio"]:checked ~ span.fmt-option-icon {
+.note-format-option input[type="radio"]:checked~span.fmt-option-icon {
   color: var(--color-primary);
 }
 
@@ -3351,6 +3352,7 @@ body.note-focus-open {
   flex-wrap: wrap;
   justify-content: center;
 }
+
 .api-token-input {
   border: 1px solid #f3c6d3;
   border-radius: 999px;
@@ -3359,6 +3361,7 @@ body.note-focus-open {
   min-width: 200px;
   background: #fff;
 }
+
 .api-token-save {
   border-radius: 999px;
   padding: 6px 16px;

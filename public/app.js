@@ -564,28 +564,159 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // EXPORT DATA
-  function handleExportData() {
-    const exportData = {
-      version: '1.0',
-      exportedAt: new Date().toISOString(),
-      notes: notes,
-      credentials: credentials.length > 0 ? credentials : []
-    }
-
+  function triggerDownload(exportData, filename) {
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `jot-backup-${new Date().toISOString().split('T')[0]}.json`
+    a.download = filename || `jot-backup-${new Date().toISOString().split('T')[0]}.json`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-
-    showToast(`Exported ${notes.length} notes successfully! 📦`, 'success')
   }
 
-  // IMPORT DATA - Smart merge with comparison
+  function handleExportData() {
+    closeFooterDropdown()
+    const masterHash = localStorage.getItem(VAULT_HASH_KEY)
+
+    // If vault is already unlocked, or if no master password was ever configured:
+    if (vaultUnlocked || !masterHash) {
+      const exportData = {
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        notes,
+        credentials: vaultUnlocked ? credentials : []
+      }
+      triggerDownload(exportData)
+      if (vaultUnlocked && credentials.length > 0) {
+        showToast(`Exported ${notes.length} notes & ${credentials.length} credentials! 📦`, 'success')
+      } else {
+        showToast(`Exported ${notes.length} notes! 📦`, 'success')
+      }
+      return
+    }
+
+    // Vault is locked, prompt user with choices:
+    showExportOptionsModal()
+  }
+
+  function showExportOptionsModal() {
+    const existing = document.getElementById('export-options-modal')
+    if (existing) existing.remove()
+
+    const modal = document.createElement('div')
+    modal.id = 'export-options-modal'
+    modal.className = 'import-confirm-modal'
+    modal.innerHTML = `
+      <div class="import-confirm-backdrop"></div>
+      <div class="import-confirm-panel">
+        <div class="import-confirm-header">
+          <span class="import-confirm-icon">📦</span>
+          <h3>Export Backup</h3>
+        </div>
+        <div class="import-confirm-body">
+          <p class="import-confirm-summary">Your vault is locked. Choose what to include in your backup file:</p>
+          <div class="export-options-list">
+            <label class="export-option-card">
+              <input type="radio" name="export-choice" value="notes" checked>
+              <div class="export-option-content">
+                <strong>Notes Only</strong>
+                <span>Export ${notes.length} notes without vault credentials</span>
+              </div>
+            </label>
+            <label class="export-option-card">
+              <input type="radio" name="export-choice" value="all">
+              <div class="export-option-content">
+                <strong>Full Backup (Notes &amp; Vault)</strong>
+                <span>Unlock vault to include your saved credentials</span>
+              </div>
+            </label>
+          </div>
+          <div class="export-vault-unlock-field hidden" id="export-vault-unlock-field">
+            <label for="export-vault-password">Master Password</label>
+            <input type="password" id="export-vault-password" placeholder="Enter master password to include vault">
+            <p class="export-password-error" id="export-password-error"></p>
+          </div>
+        </div>
+        <div class="import-confirm-footer">
+          <button type="button" class="btn-secondary" id="btn-export-cancel">Cancel</button>
+          <button type="button" class="btn-primary" id="btn-export-confirm">Export Notes</button>
+        </div>
+      </div>
+    `
+
+    document.body.appendChild(modal)
+    requestAnimationFrame(() => modal.classList.add('active'))
+
+    const backdrop = modal.querySelector('.import-confirm-backdrop')
+    const cancelBtn = modal.querySelector('#btn-export-cancel')
+    const confirmBtn = modal.querySelector('#btn-export-confirm')
+    const radioInputs = modal.querySelectorAll('input[name="export-choice"]')
+    const unlockField = modal.querySelector('#export-vault-unlock-field')
+    const passInput = modal.querySelector('#export-vault-password')
+    const errorEl = modal.querySelector('#export-password-error')
+
+    const closeModal = () => {
+      modal.classList.remove('active')
+      setTimeout(() => modal.remove(), 250)
+    }
+
+    backdrop.addEventListener('click', closeModal)
+    cancelBtn.addEventListener('click', closeModal)
+
+    radioInputs.forEach(radio => {
+      radio.addEventListener('change', () => {
+        const isFull = radio.value === 'all'
+        unlockField.classList.toggle('hidden', !isFull)
+        confirmBtn.textContent = isFull ? 'Unlock & Export All' : 'Export Notes'
+        if (isFull && passInput) passInput.focus()
+      })
+    })
+
+    confirmBtn.addEventListener('click', async () => {
+      const choice = modal.querySelector('input[name="export-choice"]:checked')?.value || 'notes'
+      if (choice === 'notes') {
+        closeModal()
+        const exportData = {
+          version: '1.0',
+          exportedAt: new Date().toISOString(),
+          notes,
+          credentials: []
+        }
+        triggerDownload(exportData)
+        showToast(`Exported ${notes.length} notes! 📦`, 'success')
+      } else {
+        errorEl.textContent = ''
+        const pwd = passInput ? passInput.value : ''
+        if (!pwd) {
+          errorEl.textContent = 'Please enter your master password 😿'
+          return
+        }
+        const hash = await hashPassword(pwd)
+        if (hash !== localStorage.getItem(VAULT_HASH_KEY)) {
+          errorEl.textContent = 'Wrong master password 😿'
+          return
+        }
+        // Unlock vault and fetch credentials
+        vaultUnlocked = true
+        await fetchCredentials()
+        startVaultAutoLockTimer()
+        closeModal()
+
+        const exportData = {
+          version: '1.0',
+          exportedAt: new Date().toISOString(),
+          notes,
+          credentials
+        }
+        triggerDownload(exportData)
+        showToast(`Exported ${notes.length} notes & ${credentials.length} credentials! 📦`, 'success')
+      }
+    })
+  }
+
+  // IMPORT DATA - Smart merge with comparison and persistent backend storage
   function handleImportFileSelect(e) {
     const file = e.target.files[0]
     if (!file) return
@@ -610,13 +741,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const importNotes = Array.isArray(importData.notes) ? importData.notes : []
     const importCreds = Array.isArray(importData.credentials) ? importData.credentials : []
 
-    // Compare notes by ID
-    const existingIds = new Set(notes.map(n => n.id))
-    const duplicateIds = new Set()
+    if (importNotes.length === 0 && importCreds.length === 0) {
+      showToast('Selected file has no notes or credentials to import 😿', 'error')
+      return
+    }
 
-    // Check for duplicates by content similarity (title + content)
+    // Compare notes by ID and signature
+    const existingIds = new Set(notes.map(n => n.id))
     const existingSignatures = new Set(
-      notes.map(n => `${n.title?.toLowerCase().trim()}|${n.content?.toLowerCase().trim()}`)
+      notes.map(n => `${(n.title || '').toLowerCase().trim()}|${(n.content || '').toLowerCase().trim()}`)
     )
 
     let newCount = 0
@@ -624,18 +757,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let updatedCount = 0
 
     importNotes.forEach(importNote => {
-      const signature = `${importNote.title?.toLowerCase().trim()}|${importNote.content?.toLowerCase().trim()}`
+      const signature = `${(importNote.title || '').toLowerCase().trim()}|${(importNote.content || '').toLowerCase().trim()}`
 
       if (existingIds.has(importNote.id)) {
-        // Same ID - check if content changed
         const existingNote = notes.find(n => n.id === importNote.id)
-        const existingSignature = `${existingNote?.title?.toLowerCase().trim()}|${existingNote?.content?.toLowerCase().trim()}`
+        const existingSignature = `${(existingNote?.title || '').toLowerCase().trim()}|${(existingNote?.content || '').toLowerCase().trim()}`
         if (existingSignature !== signature) {
           updatedCount++
         } else {
           duplicateCount++
         }
-        duplicateIds.add(importNote.id)
       } else if (existingSignatures.has(signature)) {
         duplicateCount++
       } else {
@@ -643,24 +774,22 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     })
 
-    // Count new credentials
-    const existingCredIds = new Set(credentials.map(c => c.id))
-    const newCreds = importCreds.filter(c => !existingCredIds.has(c.id))
-
-    // Build preview modal
     showImportConfirmModal(importData, {
       newCount,
       duplicateCount,
       updatedCount,
-      newCreds: newCreds.length,
-      totalImport: importNotes.length
+      totalNotes: importNotes.length,
+      credsCount: importCreds.length
     })
   }
 
   function showImportConfirmModal(importData, stats) {
-    // Remove any existing modal
     const existingModal = document.getElementById('import-confirm-modal')
     if (existingModal) existingModal.remove()
+
+    const hasCreds = stats.credsCount > 0
+    const masterHash = localStorage.getItem(VAULT_HASH_KEY)
+    const requiresUnlock = hasCreds && !vaultUnlocked && !!masterHash
 
     const modal = document.createElement('div')
     modal.id = 'import-confirm-modal'
@@ -670,10 +799,10 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="import-confirm-panel">
         <div class="import-confirm-header">
           <span class="import-confirm-icon">📥</span>
-          <h3>Import Notes</h3>
+          <h3>Import Backup</h3>
         </div>
         <div class="import-confirm-body">
-          <p class="import-confirm-summary">We found the following in your backup file:</p>
+          <p class="import-confirm-summary">We found the following data in your backup file:</p>
           <div class="import-stats">
             <div class="import-stat import-stat-new">
               <span class="import-stat-number">${stats.newCount}</span>
@@ -685,105 +814,108 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div class="import-stat import-stat-duplicate">
               <span class="import-stat-number">${stats.duplicateCount}</span>
-              <span class="import-stat-label">Duplicates (skip)</span>
+              <span class="import-stat-label">Duplicates</span>
             </div>
           </div>
-          ${stats.newCreds > 0 ? `<p class="import-confirm-creds">Plus ${stats.newCreds} credential(s) will be added.</p>` : ''}
-          <p class="import-confirm-warning">Existing notes won't be removed. This action cannot be undone.</p>
+          ${hasCreds ? `
+            <div class="import-cred-stat-badge">
+              <span>🔐</span>
+              <span><strong>${stats.credsCount}</strong> vault credential(s) included</span>
+            </div>
+          ` : ''}
+          ${requiresUnlock ? `
+            <div class="import-vault-auth-box">
+              <label for="import-vault-password">Enter Master Password to authorize vault import:</label>
+              <input type="password" id="import-vault-password" placeholder="Master password" autocomplete="current-password">
+              <p class="import-vault-error" id="import-vault-error"></p>
+            </div>
+          ` : ''}
+          <p class="import-confirm-warning">Data will be merged and safely saved to your Jot database.</p>
         </div>
         <div class="import-confirm-footer">
           <button type="button" class="btn-secondary" id="btn-import-cancel">Cancel</button>
-          <button type="button" class="btn-primary" id="btn-import-confirm">Import ${stats.newCount + stats.updatedCount} notes</button>
+          <button type="button" class="btn-primary" id="btn-import-confirm">Import &amp; Save</button>
         </div>
       </div>
     `
 
     document.body.appendChild(modal)
+    requestAnimationFrame(() => modal.classList.add('active'))
 
-    // Animate in
-    requestAnimationFrame(() => {
-      modal.classList.add('active')
-    })
-
-    // Event handlers
     const backdrop = modal.querySelector('.import-confirm-backdrop')
     const cancelBtn = modal.querySelector('#btn-import-cancel')
     const confirmBtn = modal.querySelector('#btn-import-confirm')
+    const passInput = modal.querySelector('#import-vault-password')
+    const errorEl = modal.querySelector('#import-vault-error')
 
-    function closeModal() {
+    const closeModal = () => {
       modal.classList.remove('active')
       setTimeout(() => modal.remove(), 250)
     }
 
     backdrop.addEventListener('click', closeModal)
     cancelBtn.addEventListener('click', closeModal)
-    confirmBtn.addEventListener('click', () => {
+
+    confirmBtn.addEventListener('click', async () => {
+      if (requiresUnlock) {
+        const pwd = passInput ? passInput.value : ''
+        if (!pwd) {
+          if (errorEl) errorEl.textContent = 'Please enter master password 😿'
+          return
+        }
+        const hash = await hashPassword(pwd)
+        if (hash !== masterHash) {
+          if (errorEl) errorEl.textContent = 'Wrong master password 😿'
+          return
+        }
+        vaultUnlocked = true
+        startVaultAutoLockTimer()
+      }
+
+      confirmBtn.disabled = true
+      confirmBtn.textContent = 'Saving...'
+      await performImport(importData)
       closeModal()
-      performImport(importData)
     })
   }
 
-  function performImport(importData) {
-    const importNotes = Array.isArray(importData.notes) ? importData.notes : []
-    const importCreds = Array.isArray(importData.credentials) ? importData.credentials : []
+  async function performImport(importData) {
+    setSyncStatus('saving', 'Importing...')
+    try {
+      const res = await fetch('/api/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          notes: Array.isArray(importData.notes) ? importData.notes : [],
+          credentials: Array.isArray(importData.credentials) ? importData.credentials : []
+        })
+      })
 
-    const existingIds = new Set(notes.map(n => n.id))
-    const existingSignatures = new Set(
-      notes.map(n => `${n.title?.toLowerCase().trim()}|${n.content?.toLowerCase().trim()}`)
-    )
-    const existingCredIds = new Set(credentials.map(c => c.id))
+      if (!res.ok) throw new Error('Failed to import backup data')
+      const result = await res.json()
 
-    let addedCount = 0
-    let updatedCount = 0
-
-    // Merge notes
-    importNotes.forEach(importNote => {
-      const signature = `${importNote.title?.toLowerCase().trim()}|${importNote.content?.toLowerCase().trim()}`
-      const normalizedNote = normalizeNote(importNote)
-
-      if (existingIds.has(importNote.id)) {
-        // Same ID - check if content changed
-        const existingNote = notes.find(n => n.id === importNote.id)
-        const existingSignature = `${existingNote?.title?.toLowerCase().trim()}|${existingNote?.content?.toLowerCase().trim()}`
-        if (existingSignature !== signature) {
-          // Update existing note
-          const index = notes.findIndex(n => n.id === importNote.id)
-          if (index !== -1) {
-            notes[index] = normalizedNote
-            updatedCount++
-          }
-        }
-      } else if (!existingSignatures.has(signature)) {
-        // New note - add it
-        notes.push(normalizedNote)
-        addedCount++
-        // Update tracking sets
-        existingSignatures.add(signature)
+      await fetchNotes()
+      if (vaultUnlocked) {
+        await fetchCredentials()
       }
-    })
+      render()
+      setSyncStatus('saved', 'Connected · synced')
 
-    // Merge credentials
-    let credsAdded = 0
-    importCreds.forEach(cred => {
-      if (!existingCredIds.has(cred.id)) {
-        credentials.push(cred)
-        credsAdded++
+      const msgs = []
+      if (result.notesAdded > 0) msgs.push(`${result.notesAdded} new note${result.notesAdded !== 1 ? 's' : ''}`)
+      if (result.notesUpdated > 0) msgs.push(`${result.notesUpdated} updated note${result.notesUpdated !== 1 ? 's' : ''}`)
+      if (result.credentialsAdded > 0) msgs.push(`${result.credentialsAdded} credential${result.credentialsAdded !== 1 ? 's' : ''}`)
+      if (result.credentialsUpdated > 0) msgs.push(`${result.credentialsUpdated} updated credential${result.credentialsUpdated !== 1 ? 's' : ''}`)
+
+      if (msgs.length > 0) {
+        showToast(`Import complete: ${msgs.join(', ')}! 📥`, 'success')
+      } else {
+        showToast('Backup processed — all items up to date! ✓', 'success')
       }
-    })
-
-    // Re-render
-    render()
-
-    // Show success stats
-    const messages = []
-    if (addedCount > 0) messages.push(`${addedCount} new note${addedCount !== 1 ? 's' : ''}`)
-    if (updatedCount > 0) messages.push(`${updatedCount} updated`)
-    if (credsAdded > 0) messages.push(`${credsAdded} credential${credsAdded !== 1 ? 's' : ''}`)
-
-    if (messages.length > 0) {
-      showToast(`Import complete: ${messages.join(', ')} added! 📥`, 'success')
-    } else {
-      showToast('No new notes to import — everything was already up to date! ✓', 'success')
+    } catch (err) {
+      console.error('Import failed:', err)
+      setSyncStatus('error', 'Import failed')
+      showToast('Import failed — check server connection 😿', 'error')
     }
   }
 

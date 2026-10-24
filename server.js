@@ -621,6 +621,146 @@ app.post('/api/credentials/:id/restore', async (req, res) => {
   res.json(credentials[credIndex])
 })
 
+// ---------------------------------------------------------------------------
+// BACKUP & IMPORT
+// ---------------------------------------------------------------------------
+
+function normalizeNoteServer(note) {
+  const title = String(note.title || '')
+  const content = String(note.content || '')
+  const createdAt = note.createdAt || new Date().toISOString()
+  const rawTags = Array.isArray(note.tags) && note.tags.length > 0
+    ? note.tags
+    : extractHashtagsServer(title + ' ' + content)
+  return {
+    id: note.id || newId('note'),
+    title,
+    content,
+    color: normalizeColor(note.color),
+    tags: rawTags,
+    pinned: !!note.pinned,
+    archived: !!note.archived,
+    deleted: !!note.deleted,
+    deletedAt: note.deletedAt || null,
+    type: normalizeNoteType(note.type),
+    reminderAt: note.reminderAt || null,
+    spreadsheetData: normalizeSpreadsheetData(note.spreadsheetData),
+    createdAt,
+    updatedAt: note.updatedAt || createdAt
+  }
+}
+
+// POST: Batch import notes and credentials
+app.post('/api/import', async (req, res) => {
+  try {
+    const importNotes = Array.isArray(req.body.notes) ? req.body.notes : []
+    const importCreds = Array.isArray(req.body.credentials) ? req.body.credentials : []
+
+    let notesAdded = 0
+    let notesUpdated = 0
+    let credentialsAdded = 0
+    let credentialsUpdated = 0
+
+    if (importNotes.length > 0) {
+      const existingNotes = readNotes()
+      const existingIds = new Map()
+      const existingSignatures = new Map()
+
+      existingNotes.forEach((note, index) => {
+        existingIds.set(note.id, index)
+        const sig = `${(note.title || '').trim().toLowerCase()}|${(note.content || '').trim().toLowerCase()}`
+        existingSignatures.set(sig, index)
+      })
+
+      importNotes.forEach(rawNote => {
+        const normalized = normalizeNoteServer(rawNote)
+        const sig = `${normalized.title.trim().toLowerCase()}|${normalized.content.trim().toLowerCase()}`
+
+        if (existingIds.has(normalized.id)) {
+          const idx = existingIds.get(normalized.id)
+          existingNotes[idx] = { ...existingNotes[idx], ...normalized }
+          notesUpdated++
+        } else if (existingSignatures.has(sig)) {
+          // Duplicate note content signature — keep existing
+        } else {
+          existingNotes.push(normalized)
+          existingIds.set(normalized.id, existingNotes.length - 1)
+          existingSignatures.set(sig, existingNotes.length - 1)
+          notesAdded++
+        }
+      })
+
+      writeNotes(existingNotes)
+    }
+
+    if (importCreds.length > 0) {
+      const existingCreds = await readCredentials()
+      const existingCredIds = new Map()
+
+      existingCreds.forEach((cred, index) => {
+        existingCredIds.set(cred.id, index)
+      })
+
+      importCreds.forEach(rawCred => {
+        const normalized = normalizeCredential({
+          ...rawCred,
+          id: rawCred.id || newId('cred')
+        })
+
+        if (existingCredIds.has(normalized.id)) {
+          const idx = existingCredIds.get(normalized.id)
+          existingCreds[idx] = { ...existingCreds[idx], ...normalized }
+          credentialsUpdated++
+        } else {
+          existingCreds.push(normalized)
+          existingCredIds.set(normalized.id, existingCreds.length - 1)
+          credentialsAdded++
+        }
+      })
+
+      await writeCredentials(existingCreds)
+    }
+
+    console.log(
+      `Import complete: ${notesAdded} notes added, ${notesUpdated} notes updated, ` +
+      `${credentialsAdded} creds added, ${credentialsUpdated} creds updated 📥`
+    )
+
+    res.json({
+      success: true,
+      notesAdded,
+      notesUpdated,
+      credentialsAdded,
+      credentialsUpdated
+    })
+  } catch (err) {
+    console.error('Batch import failed:', err)
+    res.status(500).json({ error: 'Failed to import backup data 😿' })
+  }
+})
+
+// GET: Export full backup data
+app.get('/api/export', async (req, res) => {
+  try {
+    const notes = readNotes()
+    const includeCredentials = req.query.includeCredentials === 'true'
+    let credentials = []
+    if (includeCredentials) {
+      credentials = await readCredentials()
+    }
+    res.json({
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      notes,
+      credentials
+    })
+  } catch (err) {
+    console.error('Export failed:', err)
+    res.status(500).json({ error: 'Failed to export backup data 😿' })
+  }
+})
+
+
 /* ==========================================================================
    SELF-UPDATE (UI-triggered)
    Fetches the latest Jot code from git and reinstalls production dependencies,

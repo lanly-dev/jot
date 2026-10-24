@@ -2502,6 +2502,21 @@ body.note-focus-open {
   padding: .5rem 0 0 0;
 }
 
+/* Payment fields: borderless inputs */
+.cred-fields-payment input,
+.cred-fields-payment .input-group input {
+  border: none;
+  box-shadow: none;
+  outline: none;
+}
+
+.cred-fields-payment input:focus,
+.cred-fields-payment .input-group input:focus {
+  border: none;
+  box-shadow: none;
+  outline: none;
+}
+
 
 
 .credentials-table-wrap {
@@ -2977,7 +2992,7 @@ body.note-focus-open {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   outline: none;
   line-height: 1.5;
-  padding: 0.5rem 0;
+  padding: .65rem .95rem;
 }
 
 .creator-row-3 {

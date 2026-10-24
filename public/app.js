@@ -2494,19 +2494,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // table reads correctly for payment cards and secure notes too.
   function updateVaultTableHeaders(filter) {
     if (!thCredSite || !thCredUsername || !thCredPassword) return
-    if (filter === 'payment') {
-      thCredSite.textContent = 'Card'
-      thCredUsername.textContent = 'Cardholder'
-      thCredPassword.textContent = 'Card Number'
-    } else if (filter === 'secure-note') {
-      thCredSite.textContent = 'Note'
-      thCredUsername.textContent = 'Preview'
-      thCredPassword.textContent = 'Content'
-    } else {
-      thCredSite.textContent = 'Site'
-      thCredUsername.textContent = 'Username'
-      thCredPassword.textContent = 'Password'
+    const headerLabels = {
+      all: ['Item', 'Account', 'Details'],
+      login: ['Website', 'Username', 'Password'],
+      payment: ['Brand / Store', 'Cardholder', 'Card Number'],
+      'secure-note': ['Title', 'Preview', 'Content'],
+      trash: ['Item', 'Account', 'Details']
     }
+    const labels = headerLabels[filter] || headerLabels.all
+    thCredSite.textContent = labels[0]
+    thCredUsername.textContent = labels[1]
+    thCredPassword.textContent = labels[2]
   }
 
   function renderVault() {
@@ -2546,21 +2544,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. Update vault stats (only live credentials count)
     statTotalCredentials.textContent = credentials.filter(c => !c.deleted).length
-
-    // Relabel the table headers so they match the credential type on display.
-    if (thCredSite && thCredUsername && thCredPassword) {
-      const headerLabels = {
-        all: ['Website', 'Username', 'Password'],
-        login: ['Website', 'Username', 'Password'],
-        payment: ['Brand / Store', 'Cardholder', 'Card Number'],
-        'secure-note': ['Title', 'Note Preview', 'Note Content'],
-        trash: ['Website', 'Username', 'Password']
-      }
-      const labels = headerLabels[currentVaultFilter] || headerLabels.all
-      thCredSite.textContent = labels[0]
-      thCredUsername.textContent = labels[1]
-      thCredPassword.textContent = labels[2]
-    }
 
     // Toggle the "Empty trash" button: only in trash view when something is there
     if (btnEmptyVaultTrash) {

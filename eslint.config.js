@@ -20,7 +20,14 @@ module.exports = [
     },
     rules: {
       '@stylistic/indent': ['error', 2],
-      '@stylistic/max-len': ['warn', { code: 120 }],
+      '@stylistic/max-len': ['warn', {
+        code: 120,
+        ignoreComments: true,
+        ignoreStrings: true,
+        ignoreTemplateLiterals: true,
+        ignoreRegExpLiterals: true,
+        ignoreUrls: true
+      }],
       '@stylistic/member-delimiter-style': [
         'error',
         {
@@ -42,7 +49,7 @@ module.exports = [
       'no-throw-literal': 'warn',
       'no-undef': 'warn',
       'no-unreachable': 'warn',
-      'no-unused-vars': 'warn',
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
       'quote-props': ['error', 'as-needed'],
       'valid-typeof': 'warn',
       curly: ['error', 'multi-line'],

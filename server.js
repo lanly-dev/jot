@@ -438,7 +438,9 @@ app.put('/api/notes/:id', (req, res) => {
     pinned: req.body.pinned !== undefined ? !!req.body.pinned : notes[noteIndex].pinned,
     archived: req.body.archived !== undefined ? !!req.body.archived : notes[noteIndex].archived,
     type: req.body.type !== undefined ? normalizeNoteType(req.body.type) : (notes[noteIndex].type || 'standard'),
-    reminderAt: req.body.reminderAt !== undefined ? (req.body.reminderAt || null) : (notes[noteIndex].reminderAt || null),
+    reminderAt: req.body.reminderAt !== undefined
+      ? (req.body.reminderAt || null)
+      : (notes[noteIndex].reminderAt || null),
     spreadsheetData: req.body.spreadsheetData !== undefined
       ? normalizeSpreadsheetData(req.body.spreadsheetData)
       : (notes[noteIndex].spreadsheetData || null),
@@ -480,7 +482,12 @@ app.delete('/api/notes/:id', (req, res) => {
     return res.json({ success: true, message: 'Note deleted permanently 🌸' })
   }
 
-  notes[noteIndex] = { ...notes[noteIndex], deleted: true, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+  notes[noteIndex] = {
+    ...notes[noteIndex],
+    deleted: true,
+    deletedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
   writeNotes(notes)
   console.log(`Note moved to trash: (${id}) 🗑️`)
   res.json({ success: true, message: 'Note moved to trash 🌸' })
@@ -594,7 +601,12 @@ app.delete('/api/credentials/:id', async (req, res) => {
     return res.json({ success: true, message: 'Credential deleted permanently 🔐' })
   }
 
-  credentials[credIndex] = { ...credentials[credIndex], deleted: true, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+  credentials[credIndex] = {
+    ...credentials[credIndex],
+    deleted: true,
+    deletedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
   await writeCredentials(credentials)
   console.log(`Credential moved to trash: (${id}) 🗑️`)
   res.json({ success: true, message: 'Credential moved to trash 🔐' })
@@ -609,7 +621,12 @@ app.post('/api/credentials/:id/restore', async (req, res) => {
   if (credIndex === -1)
   {return res.status(404).json({ error: 'Credential not found 😿' })}
 
-  credentials[credIndex] = { ...credentials[credIndex], deleted: false, deletedAt: null, updatedAt: new Date().toISOString() }
+  credentials[credIndex] = {
+    ...credentials[credIndex],
+    deleted: false,
+    deletedAt: null,
+    updatedAt: new Date().toISOString()
+  }
   try {
     await writeCredentials(credentials)
   } catch {
@@ -898,7 +915,7 @@ app.post('/api/update', requireSelfUpdate, async (req, res) => {
     // just wrote — no dependence on origin/main being resolvable locally.
     try {
       await runGit(['fetch', '--depth', '1', 'origin', 'main'])
-    } catch (fetchErr) {
+    } catch {
       // A corrupted/shallow repo can reject even a depth-1 fetch (e.g. a
       // stale shallow boundary). Re-clone the git metadata in place as a
       // last resort: wipe .git and re-init from the remote. .env and data/
@@ -938,7 +955,7 @@ function scheduleServiceRestart() {
 // API errors as JSON (Express' default error page is HTML, which breaks
 // clients that call res.json() on error responses).
 // Registered after all routes; only handles errors passed via throw/next(err).
-app.use('/api', (err, req, res, next) => {
+app.use('/api', (err, req, res, _next) => {
   console.error('API error:', err.message)
   res.status(err.status || 500).json({ error: err.message || 'Internal server error 😿' })
 })

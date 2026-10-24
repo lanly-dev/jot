@@ -1336,9 +1336,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Shared per-credential-type rules: shows the tailored field group and sets
   // placeholders / required flags so only the visible fields are validated.
   const CRED_SITE_PLACEHOLDERS = {
-    login: 'Site / App name (e.g. GitHub, Netflix)',
-    payment: 'Card label (e.g. Personal Visa, Amayz Gold)',
-    'secure-note': 'Note title (e.g. Wi-Fi router admin)'
+    login: 'Site / App name ',
+    payment: 'Card label ',
+    'secure-note': 'Note title'
   }
 
   function applyCredentialTypeFieldRules(type, refs) {

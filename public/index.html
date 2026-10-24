@@ -354,8 +354,7 @@
               <div class="creator-expanded" id="vault-creator-expanded" style="display: none;">
                 <form id="credential-form" class="note-form">
                   <div class="creator-row-1">
-                    <input type="text" id="credential-site" placeholder="Site / App name (e.g. GitHub, Netflix)"
-                      maxlength="100" required>
+                    <input type="text" id="credential-site" placeholder="Site / App name " maxlength="100" required>
                   </div>
 
                   <div class="creator-row-2">
@@ -630,8 +629,16 @@
                 </svg>
                 <span class="status-text">Empty</span>
               </button>
-              <div class="header-stats-collapsed">
-                <span title="Total Saved Credentials">🔑 <span id="stat-total-credentials">0</span></span>
+              <div class="header-stats-collapsed" aria-label="Vault stats">
+                <span class="stat-pill" title="Total Saved Credentials">
+                  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path
+                      d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4">
+                    </path>
+                  </svg>
+                  <span id="stat-total-credentials">0</span>
+                </span>
               </div>
               <button type="button" class="btn-lock-vault-action" id="btn-lock-vault" title="Lock the Vault">
                 <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"
@@ -746,8 +753,7 @@
         </select>
 
         <div class="creator-row-1">
-          <input type="text" id="credential-edit-site" placeholder="Site / App name (e.g. GitHub, Netflix)"
-            maxlength="100" required>
+          <input type="text" id="credential-edit-site" placeholder="Site / App name " maxlength="100" required>
         </div>
 
         <div class="creator-row-2">

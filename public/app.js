@@ -21,6 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const reminderTimers = new Map()
   const VAULT_HASH_KEY = 'jot_vault_master_hash'
   const API_TOKEN_KEY = 'jot_api_token'
+  const VAULT_AUTO_LOCK_TIMEOUT_MS = 10 * 60 * 1000 // 10 minutes
+  let vaultAutoLockTimer = null
+  let vaultTabHiddenAt = null
+  let vaultLastActiveAt = Date.now()
 
   // API TOKEN — when the server is configured with JOT_API_TOKEN, every /api
   // route requires `Authorization: Bearer <token>`. The token lives only in
@@ -265,7 +269,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initSpreadsheetDraft(3, 3)
     setupEventListeners()
     fetchNotes()
-    fetchCredentials()
     updateLayoutToggleButton()
     updateTypeSpecificFields()
     updateCredentialTypeSpecificFields('login')
@@ -1167,7 +1170,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnToggleUnlockPassword.addEventListener('click', () => {
       togglePasswordVisibility(vaultUnlockPasswordInput, btnToggleUnlockPassword)
     })
-    btnLockVault.addEventListener('click', lockVault)
+    btnLockVault.addEventListener('click', () => lockVault('manual'))
 
     // Credential creator (inline card) password reveal toggle
     btnToggleFormPassword.addEventListener('click', () => {
@@ -1195,7 +1198,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (credentialCvvInput) {
       credentialCvvInput.addEventListener('input', () => {
-        credentialCvvInput.value = credentialCvvInput.value.replace(/\D/g, '').slice(0, 4)
+        credentialCvvInput.value = formatCvvInput(credentialCvvInput.value)
       })
     }
 
@@ -1245,7 +1248,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (credentialEditCvvInput) {
       credentialEditCvvInput.addEventListener('input', () => {
-        credentialEditCvvInput.value = credentialEditCvvInput.value.replace(/\D/g, '').slice(0, 4)
+        credentialEditCvvInput.value = formatCvvInput(credentialEditCvvInput.value)
       })
     }
 
@@ -1257,6 +1260,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Credential card action delegation
     credentialsGrid.addEventListener('click', handleCredentialCardActions)
+
+    // Vault Inactivity & Background Tab Auto-Lock
+    let lastActivityReset = 0
+    const onUserActivity = () => {
+      if (!vaultUnlocked) return
+      const now = Date.now()
+      if (now - vaultLastActiveAt >= VAULT_AUTO_LOCK_TIMEOUT_MS) {
+        lockVault('timeout')
+        return
+      }
+      if (now - lastActivityReset > 5000) {
+        lastActivityReset = now
+        resetVaultAutoLockTimer()
+      }
+    }
+    ;['mousedown', 'keydown', 'touchstart', 'scroll'].forEach((evt) => {
+      window.addEventListener(evt, onUserActivity, { passive: true })
+    })
+
+    document.addEventListener('visibilitychange', () => {
+      if (!vaultUnlocked) return
+      if (document.hidden) {
+        vaultTabHiddenAt = Date.now()
+      } else {
+        const now = Date.now()
+        if (
+          (vaultTabHiddenAt && now - vaultTabHiddenAt >= VAULT_AUTO_LOCK_TIMEOUT_MS) ||
+          (now - vaultLastActiveAt >= VAULT_AUTO_LOCK_TIMEOUT_MS)
+        ) {
+          vaultTabHiddenAt = null
+          lockVault('timeout')
+          return
+        }
+        vaultTabHiddenAt = null
+        resetVaultAutoLockTimer()
+      }
+    })
   }
 
   function closeAllPopovers() {
@@ -1490,7 +1530,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     vaultLockedState.classList.remove('hidden')
     vaultContent.classList.add('hidden')
-    vaultUnlockPasswordInput.focus()
+    if (currentMode === 'vault') {
+      vaultUnlockPasswordInput.focus()
+    }
   }
 
   async function handleVaultUnlockFormSubmit(e) {
@@ -1516,11 +1558,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const hash = await hashPassword(password)
       localStorage.setItem(VAULT_HASH_KEY, hash)
       vaultUnlocked = true
+      await fetchCredentials()
+      startVaultAutoLockTimer()
       showToast('Vault created! 🔐')
     } else {
       const hash = await hashPassword(password)
       if (hash === localStorage.getItem(VAULT_HASH_KEY)) {
         vaultUnlocked = true
+        await fetchCredentials()
+        startVaultAutoLockTimer()
         showToast('Vault unlocked! 🔓')
       } else {
         vaultUnlockError.textContent = 'Wrong master password 😿'
@@ -1532,8 +1578,37 @@ document.addEventListener('DOMContentLoaded', () => {
     if (vaultUnlocked) render()
   }
 
-  function lockVault() {
+  function resetVaultAutoLockTimer() {
+    if (!vaultUnlocked) return
+    if (vaultAutoLockTimer) clearTimeout(vaultAutoLockTimer)
+    vaultLastActiveAt = Date.now()
+    vaultAutoLockTimer = setTimeout(() => {
+      if (!vaultUnlocked) return
+      const elapsed = Date.now() - vaultLastActiveAt
+      if (elapsed >= VAULT_AUTO_LOCK_TIMEOUT_MS) {
+        lockVault('timeout')
+      } else {
+        resetVaultAutoLockTimer()
+      }
+    }, VAULT_AUTO_LOCK_TIMEOUT_MS)
+  }
+
+  function startVaultAutoLockTimer() {
+    resetVaultAutoLockTimer()
+  }
+
+  function stopVaultAutoLockTimer() {
+    if (vaultAutoLockTimer) {
+      clearTimeout(vaultAutoLockTimer)
+      vaultAutoLockTimer = null
+    }
+    vaultTabHiddenAt = null
+  }
+
+  function lockVault(reason) {
     vaultUnlocked = false
+    credentials = []
+    stopVaultAutoLockTimer()
     vaultSearchQuery = ''
     if (vaultSearchInput) {
       vaultSearchInput.value = ''
@@ -1541,12 +1616,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (container) container.classList.remove('active')
     }
     closeFocusedNote()
+    closeCredentialModal()
     closeCredentialEditModal()
     credentialsGrid.innerHTML = ''
     vaultEmptyState.style.display = 'none'
     vaultSetupMode = false
     showVaultLockedState()
-    showToast('Vault locked 🔒')
+    showToast(reason === 'timeout' ? 'Vault auto-locked due to inactivity 🔒' : 'Vault locked 🔒')
   }
 
   async function hashPassword(password) {

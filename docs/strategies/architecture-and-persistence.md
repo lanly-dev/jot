@@ -62,6 +62,11 @@ When reading JSON files from disk:
 - **Payload Format**: Ciphertext strings are stored with IV and authentication tag: `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`.
 - **Client Master Password**: The client browser verifies vault unlocks using a SHA-256 hash stored in `localStorage` under `jot_vault_master_hash`. Plaintext master passwords are never transmitted over HTTP.
 
+### 2.5 Client-Side Memory Lifecycle & Auto-Lock Security
+- **Zero-Retention on Boot & Lock**: The client `credentials` array must remain empty `[]` when the vault is locked. Credentials are only fetched JIT (`await fetchCredentials()`) upon successful master password unlock.
+- **Lock Memory Purge**: Calling `lockVault()` purges `credentials = []` from heap memory, closes active edit modals, and clears active timers.
+- **Inactivity & Visibility Detection**: The vault auto-locks after 10 minutes of inactivity (`VAULT_AUTO_LOCK_TIMEOUT_MS = 10 * 60 * 1000`) or immediately upon returning to a tab hidden for $\ge 10$ minutes (`visibilitychange`). Focus must not be stolen if the user is currently working in Notes mode.
+
 ## 3. API Contract & Soft-Delete Lifecycle
 
 - Every `/api` endpoint requires `Authorization: Bearer <token>` when `JOT_API_TOKEN` is configured.

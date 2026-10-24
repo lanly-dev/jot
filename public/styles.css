@@ -2488,7 +2488,9 @@ body.note-focus-open {
    editor modal and the new-credential creator form (#vault-creator-expanded).
    ========================================================================== */
 #credential-username,
-#credential-password {
+#credential-password,
+#credential-edit-username,
+#credential-edit-password {
   border: none;
   background: rgba(255, 255, 255, 0.9);
   box-shadow: none;
@@ -2499,15 +2501,25 @@ body.note-focus-open {
   line-height: 1.5;
   color: var(--text-main);
   outline: none;
-  padding: .5rem 0 0 0;
+  padding: 0.65rem 0.95rem;
 }
 
-/* Payment fields: borderless inputs */
+#credential-password,
+#credential-edit-password {
+  padding-right: 3rem;
+}
+
+/* Payment fields: borderless inputs with unified padding */
 .cred-fields-payment input,
 .cred-fields-payment .input-group input {
   border: none;
   box-shadow: none;
   outline: none;
+  padding: 0.65rem 0.95rem;
+}
+
+.cred-fields-payment .password-input-wrap input {
+  padding-right: 3rem;
 }
 
 .cred-fields-payment input:focus,
@@ -2964,6 +2976,7 @@ body.note-focus-open {
   font-weight: 700;
   font-size: 1.05rem;
   color: var(--text-main);
+  padding: 0.65rem 0.95rem;
   transition: all 0.2s ease;
 }
 

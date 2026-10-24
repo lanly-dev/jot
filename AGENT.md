@@ -16,8 +16,11 @@ This repository contains a lightweight full-stack note-taking app built with Nod
 
 ## Key files
 
-```
-
+- `docs/` — Compound Engineering documentation:
+  - `docs/solutions/` — Codified solutions, gotchas, and architectural invariants from completed tasks
+  - `docs/strategies/` — Core product, design system, and persistence strategies
+  - `docs/plans/` — Pre-implementation blueprints
+  - `docs/brainstorms/` — Architecture scoping and trade-off explorations
 - `data/` — Persistence directory for notes and credentials
 - `server.js` — Express API, persistence logic, encryption, file initialization
 - `public/app.js` — frontend state management, rendering, note/credential interactions, sync logic (attaches the API bearer token to every `/api` fetch)
@@ -102,3 +105,10 @@ npm run efix
 - Do not commit secrets or generated keys to source control.
 - Do not expose plaintext credential values in logs or responses unless explicitly required.
 - Avoid broad refactors without a concrete reason; this project is intentionally compact.
+
+## Compound Engineering workflow
+
+This repository follows the **Compound Engineering** framework (Plan $\rightarrow$ Work $\rightarrow$ Assess $\rightarrow$ Codify):
+- **Before coding**: Check existing solutions in `docs/solutions/` and strategies in `docs/strategies/` to understand historical gotchas and architectural patterns.
+- **When creating complex features**: Write an implementation plan in `docs/plans/` first.
+- **After non-trivial work or bug fixes**: Codify the lesson into `docs/solutions/<topic>.md` with YAML frontmatter so future agents never repeat the same mistake.

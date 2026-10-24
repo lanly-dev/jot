@@ -806,10 +806,10 @@ document.addEventListener('DOMContentLoaded', () => {
     noteForm.addEventListener('submit', handleFormSubmit)
 
     // Self-update panel
-    if (btnOpenUpdate) btnOpenUpdate.addEventListener('click', () => {
+    if (btnOpenUpdate) {btnOpenUpdate.addEventListener('click', () => {
       closeFooterDropdown()
       openUpdatePanel()
-    })
+    })}
     if (btnCloseUpdateModal) btnCloseUpdateModal.addEventListener('click', closeUpdatePanel)
     if (btnUpdateClose) btnUpdateClose.addEventListener('click', closeUpdatePanel)
     if (btnUpdateCheck) btnUpdateCheck.addEventListener('click', handleCheckForUpdates)

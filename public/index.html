@@ -640,6 +640,15 @@
                   <span id="stat-total-credentials">0</span>
                 </span>
               </div>
+              <button type="button" class="btn-import-vault-action" id="btn-import-vault-csv" title="Import passwords from Chrome, Edge, Safari, Firefox CSV">
+                <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Import CSV</span>
+              </button>
               <button type="button" class="btn-lock-vault-action" id="btn-lock-vault" title="Lock the Vault">
                 <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"
                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -655,7 +664,10 @@
           <div class="empty-state" id="vault-empty-state" style="display: none;">
             <div class="empty-mascot">🔐</div>
             <h3>Your vault is empty</h3>
-            <p>Add your first password, API key, or login so it is always one cute tap away!</p>
+            <p>Add your first password or import existing logins from your browser!</p>
+            <button type="button" class="btn-secondary" id="btn-empty-vault-import" style="margin-top: 0.8rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+              <span>📥 Import Passwords (CSV)</span>
+            </button>
           </div>
 
           <!-- Credentials Table Container -->
@@ -705,7 +717,8 @@
           </button>
         </div>
       </div>
-      <input type="file" id="import-file-input" accept=".json" style="display: none;">
+      <input type="file" id="import-file-input" accept=".json,.csv" style="display: none;">
+      <input type="file" id="import-csv-file-input" accept=".csv,text/csv" style="display: none;">
     </footer>
   </div>
 

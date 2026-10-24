@@ -203,6 +203,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const vaultEmptyState = document.getElementById('vault-empty-state')
   const statTotalCredentials = document.getElementById('stat-total-credentials')
   const btnLockVault = document.getElementById('btn-lock-vault')
+  const btnImportVaultCsv = document.getElementById('btn-import-vault-csv')
+  const btnEmptyVaultImport = document.getElementById('btn-empty-vault-import')
   const vaultContent = document.getElementById('vault-content')
   const vaultLockedState = document.getElementById('vault-locked-state')
   const vaultLockedTitle = document.getElementById('vault-locked-title')
@@ -232,6 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnExportData = document.getElementById('btn-export-data')
   const btnImportData = document.getElementById('btn-import-data')
   const importFileInput = document.getElementById('import-file-input')
+  const importCsvFileInput = document.getElementById('import-csv-file-input')
 
   // Popover selectors
   const btnColorPopup = document.getElementById('btn-color-popup')
@@ -720,6 +723,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const file = e.target.files[0]
     if (!file) return
 
+    if (file.name.toLowerCase().endsWith('.csv') || file.type === 'text/csv') {
+      handleCsvFileSelect(e)
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = (event) => {
       try {
@@ -734,6 +742,291 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Reset file input so same file can be selected again
     e.target.value = ''
+  }
+
+  // BROWSER PASSWORD MANAGER CSV IMPORT
+  function parseCSV(text) {
+    const rows = []
+    let currentRow = []
+    let currentVal = ''
+    let inQuotes = false
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i]
+      const nextChar = text[i + 1]
+
+      if (inQuotes) {
+        if (char === '"') {
+          if (nextChar === '"') {
+            currentVal += '"'
+            i++
+          } else {
+            inQuotes = false
+          }
+        } else {
+          currentVal += char
+        }
+      } else {
+        if (char === '"') {
+          inQuotes = true
+        } else if (char === ',') {
+          currentRow.push(currentVal.trim())
+          currentVal = ''
+        } else if (char === '\r') {
+          // Skip carriage return
+        } else if (char === '\n') {
+          currentRow.push(currentVal.trim())
+          if (currentRow.some(col => col.length > 0)) {
+            rows.push(currentRow)
+          }
+          currentRow = []
+          currentVal = ''
+        } else {
+          currentVal += char
+        }
+      }
+    }
+
+    if (currentVal.length > 0 || currentRow.length > 0) {
+      currentRow.push(currentVal.trim())
+      if (currentRow.some(col => col.length > 0)) {
+        rows.push(currentRow)
+      }
+    }
+
+    return rows
+  }
+
+  function mapCSVToCredentials(csvRows) {
+    if (!Array.isArray(csvRows) || csvRows.length < 2) return { credentials: [], source: 'Unknown' }
+
+    const headerRow = csvRows[0].map(h => String(h || '').toLowerCase().trim().replace(/^["']|["']$/g, ''))
+
+    const findCol = (candidates) => {
+      for (const candidate of candidates) {
+        const idx = headerRow.findIndex(h => h === candidate || h.includes(candidate))
+        if (idx !== -1) return idx
+      }
+      return -1
+    }
+
+    const nameIdx = findCol(['name', 'title', 'item', 'site'])
+    const urlIdx = findCol(['url', 'login_uri', 'website', 'uri'])
+    const userIdx = findCol(['username', 'login_username', 'login', 'user', 'email'])
+    const passIdx = findCol(['password', 'login_password', 'secret', 'pass'])
+    const noteIdx = findCol(['note', 'notes', 'comments', 'comment'])
+
+    let source = 'Browser CSV'
+    if (headerRow.includes('formactionorigin') || headerRow.includes('httprealm')) {
+      source = 'Mozilla Firefox'
+    } else if (headerRow.includes('otpauth') || (headerRow.includes('title') && headerRow.includes('url'))) {
+      source = 'Apple Safari'
+    } else if (headerRow.includes('login_uri') || headerRow.includes('login_username')) {
+      source = 'Bitwarden'
+    } else if (headerRow.includes('name') && headerRow.includes('url')) {
+      source = 'Chrome / Edge'
+    }
+
+    const credentials = []
+    const palette = ['#ffd1d9', '#e6e8fa', '#fff1ba', '#ffd9c5', '#bfe5f2']
+
+    for (let i = 1; i < csvRows.length; i++) {
+      const row = csvRows[i]
+      if (!row || row.length === 0) continue
+
+      const rawName = nameIdx !== -1 ? (row[nameIdx] || '') : ''
+      const rawUrl = urlIdx !== -1 ? (row[urlIdx] || '') : ''
+      const username = userIdx !== -1 ? (row[userIdx] || '') : ''
+      const password = passIdx !== -1 ? (row[passIdx] || '') : ''
+      const notes = noteIdx !== -1 ? (row[noteIdx] || '') : ''
+
+      let site = rawName
+      if (!site || site === rawUrl) {
+        if (rawUrl) {
+          try {
+            const parsed = new URL(rawUrl.startsWith('http') ? rawUrl : `https://${rawUrl}`)
+            site = parsed.hostname.replace(/^www\./i, '')
+          } catch {
+            site = rawUrl
+          }
+        }
+      }
+
+      if (!site && !username && !password) continue
+
+      const color = palette[credentials.length % palette.length]
+      const noteParts = []
+      if (notes) noteParts.push(notes)
+      if (rawUrl && !notes.includes(rawUrl)) noteParts.push(`URL: ${rawUrl}`)
+
+      credentials.push({
+        site: site || 'Imported Account',
+        username,
+        password,
+        notes: noteParts.join('\n'),
+        type: 'login',
+        color,
+        deleted: false,
+        deletedAt: null
+      })
+    }
+
+    return { credentials, source }
+  }
+
+  function handleCsvFileSelect(e) {
+    const file = e.target.files[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const text = event.target.result
+        const rows = parseCSV(text)
+        const { credentials: parsedCreds, source } = mapCSVToCredentials(rows)
+        if (parsedCreds.length === 0) {
+          showToast('No valid login credentials found in CSV file 😿', 'error')
+          return
+        }
+        showCsvImportConfirmModal(parsedCreds, source)
+      } catch (err) {
+        console.error('CSV parse error:', err)
+        showToast('Could not parse CSV file — check file format ⚠️', 'error')
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
+
+  function showCsvImportConfirmModal(credsToImport, source) {
+    const existing = document.getElementById('import-csv-modal')
+    if (existing) existing.remove()
+
+    // Identify duplicates by site and username
+    const existingKeySet = new Set(
+      credentials.map(c => `${(c.site || '').toLowerCase().trim()}|${(c.username || '').toLowerCase().trim()}`)
+    )
+
+    let duplicateCount = 0
+    let newCount = 0
+    credsToImport.forEach(c => {
+      const key = `${(c.site || '').toLowerCase().trim()}|${(c.username || '').toLowerCase().trim()}`
+      if (existingKeySet.has(key)) {
+        duplicateCount++
+      } else {
+        newCount++
+      }
+    })
+
+    const masterHash = localStorage.getItem(VAULT_HASH_KEY)
+    const requiresUnlock = !vaultUnlocked && !!masterHash
+
+    const previewRows = credsToImport.slice(0, 5).map(c => `
+      <tr>
+        <td><strong>${escapeHTML(c.site)}</strong></td>
+        <td>${escapeHTML(c.username || '—')}</td>
+        <td><code>••••••••</code></td>
+      </tr>
+    `).join('')
+
+    const modal = document.createElement('div')
+    modal.id = 'import-csv-modal'
+    modal.className = 'import-confirm-modal'
+    modal.innerHTML = `
+      <div class="import-confirm-backdrop"></div>
+      <div class="import-confirm-panel" style="width: min(540px, calc(100vw - 2rem));">
+        <div class="import-confirm-header">
+          <span class="import-confirm-icon">🔑</span>
+          <div>
+            <h3>Import Passwords</h3>
+            <p class="import-confirm-source">Detected source: <strong>${escapeHTML(source)}</strong></p>
+          </div>
+        </div>
+        <div class="import-confirm-body">
+          <p class="import-confirm-summary">Found <strong>${credsToImport.length}</strong> credential(s) ready to import into your vault:</p>
+          <div class="import-stats">
+            <div class="import-stat import-stat-new">
+              <span class="import-stat-number">${newCount}</span>
+              <span class="import-stat-label">New logins</span>
+            </div>
+            <div class="import-stat import-stat-duplicate">
+              <span class="import-stat-number">${duplicateCount}</span>
+              <span class="import-stat-label">Duplicates</span>
+            </div>
+          </div>
+          <div class="csv-preview-table-wrap">
+            <table class="csv-preview-table">
+              <thead>
+                <tr>
+                  <th>Site / App</th>
+                  <th>Username</th>
+                  <th>Password</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${previewRows}
+              </tbody>
+            </table>
+          </div>
+          ${credsToImport.length > 5 ? `<p style="font-size: 0.75rem; color: var(--text-muted); margin: 0.25rem 0 0.5rem;">...and ${credsToImport.length - 5} more</p>` : ''}
+          ${requiresUnlock ? `
+            <div class="import-vault-auth-box">
+              <label for="import-csv-vault-password">Enter Master Password to authorize vault import:</label>
+              <input type="password" id="import-csv-vault-password" placeholder="Master password" autocomplete="current-password">
+              <p class="import-vault-error" id="import-csv-vault-error"></p>
+            </div>
+          ` : ''}
+          <p class="import-confirm-warning">Passwords will be encrypted with AES-256-GCM before saving to disk.</p>
+        </div>
+        <div class="import-confirm-footer">
+          <button type="button" class="btn-secondary" id="btn-csv-import-cancel">Cancel</button>
+          <button type="button" class="btn-primary" id="btn-csv-import-confirm">Import ${newCount} Logins</button>
+        </div>
+      </div>
+    `
+
+    document.body.appendChild(modal)
+    requestAnimationFrame(() => modal.classList.add('active'))
+
+    const backdrop = modal.querySelector('.import-confirm-backdrop')
+    const cancelBtn = modal.querySelector('#btn-csv-import-cancel')
+    const confirmBtn = modal.querySelector('#btn-csv-import-confirm')
+    const passInput = modal.querySelector('#import-csv-vault-password')
+    const errorEl = modal.querySelector('#import-csv-vault-error')
+
+    const closeModal = () => {
+      modal.classList.remove('active')
+      setTimeout(() => modal.remove(), 250)
+    }
+
+    backdrop.addEventListener('click', closeModal)
+    cancelBtn.addEventListener('click', closeModal)
+
+    confirmBtn.addEventListener('click', async () => {
+      if (requiresUnlock) {
+        const pwd = passInput ? passInput.value : ''
+        if (!pwd) {
+          if (errorEl) errorEl.textContent = 'Please enter master password 😿'
+          return
+        }
+        const hash = await hashPassword(pwd)
+        if (hash !== masterHash) {
+          if (errorEl) errorEl.textContent = 'Wrong master password 😿'
+          return
+        }
+        vaultUnlocked = true
+        startVaultAutoLockTimer()
+      }
+
+      confirmBtn.disabled = true
+      confirmBtn.textContent = 'Importing...'
+
+      await performImport({ notes: [], credentials: credsToImport })
+      closeModal()
+      if (currentMode !== 'vault') {
+        switchMode('vault')
+      }
+    })
   }
 
   function showImportPreview(importData) {
@@ -988,6 +1281,24 @@ document.addEventListener('DOMContentLoaded', () => {
     // File input change handler
     if (importFileInput) {
       importFileInput.addEventListener('change', handleImportFileSelect)
+    }
+
+    const triggerCsvImport = () => {
+      if (importCsvFileInput) {
+        importCsvFileInput.click()
+      } else if (importFileInput) {
+        importFileInput.click()
+      }
+    }
+
+    if (btnImportVaultCsv) {
+      btnImportVaultCsv.addEventListener('click', triggerCsvImport)
+    }
+    if (btnEmptyVaultImport) {
+      btnEmptyVaultImport.addEventListener('click', triggerCsvImport)
+    }
+    if (importCsvFileInput) {
+      importCsvFileInput.addEventListener('change', handleCsvFileSelect)
     }
 
     // Editor Pin toggle

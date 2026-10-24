@@ -830,6 +830,40 @@ h4 {
   display: block;
 }
 
+/* Vault import CSV button */
+.btn-import-vault-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  border-radius: 20px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  outline: none;
+}
+
+.btn-import-vault-action:hover {
+  background: #f0f7ff;
+  color: #1976d2;
+  border-color: rgba(25, 118, 210, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.15);
+}
+
+.btn-import-vault-action:active {
+  transform: scale(0.96);
+}
+
+.btn-import-vault-action svg {
+  display: block;
+}
+
 /* ==========================================================================
    NOTES GRID & NOTE CARDS
    ========================================================================== */
@@ -1952,6 +1986,47 @@ body.note-focus-open {
   color: #d32f2f;
   min-height: 1rem;
   margin: 0;
+}
+
+.import-confirm-source {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0.15rem 0 0;
+}
+
+.csv-preview-table-wrap {
+  margin: 0.8rem 0;
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.csv-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  text-align: left;
+}
+
+.csv-preview-table th {
+  background: #f0f0f0;
+  padding: 0.45rem 0.65rem;
+  font-weight: 700;
+  color: var(--text-main);
+  position: sticky;
+  top: 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.csv-preview-table td {
+  padding: 0.4rem 0.65rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
 }
 
 

@@ -2692,82 +2692,164 @@ body.note-focus-open {
   color: #ff9f1c;
 }
 
-/* ---- Mobile: two-row credential cards (max-width: 600px) ---- */
+/* ---- Mobile: one-liner credential cards (max-width: 600px) matching note list view ---- */
 @media (max-width: 600px) {
+  .credentials-table-wrap {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+    overflow: visible;
+  }
+
   .credentials-table {
+    display: flex;
+    flex-direction: column;
     min-width: 0;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    gap: 0.15rem;
   }
 
   .credentials-table thead {
     display: none;
   }
 
+  .credentials-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    width: 100%;
+  }
+
   .credential-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      "site actions"
-      "username password";
-    column-gap: 0.4rem;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background-color: var(--cred-color, var(--pastel-pink));
+    border: 2px solid var(--border-color);
+    border-radius: 5px;
+    box-shadow: var(--card-shadow);
+    padding: 0.4rem 0.55rem;
+    gap: 0.4rem;
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .credential-row:active {
+    transform: scale(0.99);
   }
 
   .credential-row td {
-    padding: 0.6rem 0.85rem;
-    border-bottom: none;
+    padding: 0;
+    border: none !important;
     background: transparent;
   }
 
   .credential-row .col-site {
-    grid-area: site;
-  }
-
-  .credential-row .col-actions {
-    grid-area: actions;
-  }
-
-  .credential-row .col-username {
-    grid-area: username;
-  }
-
-  .credential-row .col-password {
-    grid-area: password;
-  }
-
-  .credential-row .col-site .credential-site {
     flex: 1;
     min-width: 0;
   }
 
-  /* Row 1 keeps open-link (when present) + delete; editing is done by tapping the card */
+  .credential-row .col-site .credential-site-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  .credential-row .col-site .credential-site-icon {
+    font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+
+  .credential-row .col-site .credential-site {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .credential-row .col-username {
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .credential-row .col-username .credential-username-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  .credential-row .col-username .credential-username {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90px;
+  }
+
+  .credential-row .col-username .credential-copy,
+  .credential-row .col-username .cred-expiry-tag {
+    display: none;
+  }
+
+  /* Password column on mobile: hide the masked dots and reveal eye, keep quick-copy button */
+  .credential-row .col-password {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .credential-row .col-password .credential-password-cell {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  .credential-row .col-password .credential-password,
+  .credential-row .col-password .credential-reveal {
+    display: none;
+  }
+
+  .credential-row .col-actions {
+    flex-shrink: 0;
+  }
+
   .credential-row .credential-row-actions {
+    display: flex;
+    align-items: center;
     justify-content: flex-end;
-    gap: 0.2rem;
+    gap: 0.15rem;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .credential-row .col-actions .action-edit {
-    display: none;
-  }
-
-  /* Row 2: hide the username copy button, keep password reveal + copy */
-  .credential-row .col-username .credential-copy {
-    display: none;
+    display: inline-flex;
   }
 
   .credential-row .credential-cell-btn,
   .credential-row .credential-row-actions .btn-icon {
-    width: 30px;
-    height: 30px;
+    width: 26px;
+    height: 26px;
+    padding: 3px;
   }
 
-  /* Single clean separator under each two-row card */
-  .credential-row .col-username,
-  .credential-row .col-password {
-    border-bottom: 1px solid var(--border-color);
-  }
-
-  .credential-row:last-child .col-username,
-  .credential-row:last-child .col-password {
-    border-bottom: none;
+  .credential-row .credential-cell-btn svg,
+  .credential-row .credential-row-actions .btn-icon svg {
+    width: 14px;
+    height: 14px;
   }
 }
 

@@ -85,6 +85,7 @@ jot/
 ├── .gitignore
 ├── .dockerignore
 ├── .env.example
+├── HOW-TO.md                 # User guide and browser import walkthrough
 └── README.md
 ```
 

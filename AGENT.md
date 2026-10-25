@@ -104,6 +104,7 @@ npm run efix
 
 - Do not commit secrets or generated keys to source control.
 - Do not expose plaintext credential values in logs or responses unless explicitly required.
+- Do not commit or write absolute file paths (e.g. `file:///c:/...`, `C:\Users\...`, `/home/...`) into any project files, code, or documentation. Always use workspace-relative paths (e.g. `scripts/`, `docs/plans/`, `public/app.js`).
 - Avoid broad refactors without a concrete reason; this project is intentionally compact.
 
 ## Compound Engineering workflow

@@ -649,6 +649,15 @@
                 </svg>
                 <span>Import CSV</span>
               </button>
+              <button type="button" class="btn-extension-vault-action" id="btn-vault-extension" title="Install Chrome / Edge Password Sync Extension">
+                <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                  <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+                <span>Extension</span>
+              </button>
               <button type="button" class="btn-lock-vault-action" id="btn-lock-vault" title="Lock the Vault">
                 <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"
                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -971,6 +980,81 @@
         <button type="button" class="btn-secondary" id="btn-update-close">Close</button>
         <button type="button" class="btn-secondary" id="btn-update-check">Check for updates</button>
         <button type="button" class="btn-primary" id="btn-do-update" disabled>Update now 🚀</button>
+      </footer>
+    </div>
+  </section>
+
+  <!-- BROWSER EXTENSION MODAL -->
+  <div class="extension-modal-backdrop" id="extension-modal-backdrop" aria-hidden="true" style="display: none;"></div>
+  <section class="extension-modal-panel" id="extension-modal-panel" role="dialog" aria-modal="true"
+    aria-labelledby="extension-modal-title" aria-hidden="true" style="display: none;">
+    <div class="extension-modal-inner">
+      <header class="extension-modal-header">
+        <div class="modal-title-group">
+          <span class="modal-title-icon">🧩</span>
+          <h2 id="extension-modal-title">Browser Extension Setup</h2>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-extension-modal" aria-label="Close extension modal">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </header>
+
+      <div class="extension-modal-body">
+        <p class="extension-lead-text">
+          Automatically detect login submissions on websites (GitHub, Google, etc.) and save passwords directly into your private Jot encrypted vault!
+        </p>
+
+        <div class="extension-download-card">
+          <div class="download-card-info">
+            <span class="download-badge">Manifest V3 &bull; Chrome / Edge</span>
+            <h3>Jot Password Sync</h3>
+            <p>Self-contained package served directly from your Jot server.</p>
+          </div>
+          <a href="/api/extension/download" class="btn btn-primary btn-download-ext" id="btn-download-ext-zip">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Download Extension (.zip)</span>
+          </a>
+        </div>
+
+        <div class="extension-steps-card">
+          <h4>3-Step Installation Guide (Takes 15 seconds)</h4>
+          <ol class="extension-steps-list">
+            <li>
+              <strong>1. Download & Extract:</strong>
+              <span>Click the download button above, then extract <code>jot-extension.zip</code> to a folder on your computer.</span>
+            </li>
+            <li>
+              <strong>2. Open Extensions Page:</strong>
+              <span>In Chrome or Edge, navigate to <code>chrome://extensions</code> (or <code>edge://extensions</code>).</span>
+              <div class="copy-url-wrap">
+                <button type="button" class="btn-copy-url" id="btn-copy-ext-url">Copy chrome://extensions URL</button>
+              </div>
+            </li>
+            <li>
+              <strong>3. Load Unpacked:</strong>
+              <span>Toggle <strong>Developer mode</strong> ON (top right corner), click <strong>Load unpacked</strong>, and select the extracted folder.</span>
+            </li>
+          </ol>
+        </div>
+
+        <div class="extension-status-card" id="ext-status-card">
+          <div class="ext-status-indicator">
+            <span class="ext-status-dot" id="ext-status-dot"></span>
+            <span class="ext-status-text" id="ext-status-text">Server Status: Ready for extension connections</span>
+          </div>
+        </div>
+      </div>
+
+      <footer class="extension-modal-footer">
+        <button type="button" class="btn btn-secondary" id="btn-extension-modal-done">Done</button>
       </footer>
     </div>
   </section>

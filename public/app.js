@@ -204,7 +204,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const statTotalCredentials = document.getElementById('stat-total-credentials')
   const btnLockVault = document.getElementById('btn-lock-vault')
   const btnImportVaultCsv = document.getElementById('btn-import-vault-csv')
+  const btnVaultExtension = document.getElementById('btn-vault-extension')
   const btnEmptyVaultImport = document.getElementById('btn-empty-vault-import')
+  const extensionModalBackdrop = document.getElementById('extension-modal-backdrop')
+  const extensionModalPanel = document.getElementById('extension-modal-panel')
+  const btnCloseExtensionModal = document.getElementById('btn-close-extension-modal')
+  const btnExtensionModalDone = document.getElementById('btn-extension-modal-done')
+  const btnCopyExtUrl = document.getElementById('btn-copy-ext-url')
+  const extStatusDot = document.getElementById('ext-status-dot')
+  const extStatusText = document.getElementById('ext-status-text')
   const vaultContent = document.getElementById('vault-content')
   const vaultLockedState = document.getElementById('vault-locked-state')
   const vaultLockedTitle = document.getElementById('vault-locked-title')
@@ -1299,6 +1307,70 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (importCsvFileInput) {
       importCsvFileInput.addEventListener('change', handleCsvFileSelect)
+    }
+
+    // Browser Extension Modal logic
+    function openExtensionModal() {
+      if (extensionModalBackdrop && extensionModalPanel) {
+        extensionModalBackdrop.style.display = 'block'
+        extensionModalPanel.style.display = 'block'
+        extensionModalBackdrop.removeAttribute('aria-hidden')
+        extensionModalPanel.removeAttribute('aria-hidden')
+        checkExtensionServerStatus()
+      }
+    }
+
+    function closeExtensionModal() {
+      if (extensionModalBackdrop && extensionModalPanel) {
+        extensionModalBackdrop.style.display = 'none'
+        extensionModalPanel.style.display = 'none'
+        extensionModalBackdrop.setAttribute('aria-hidden', 'true')
+        extensionModalPanel.setAttribute('aria-hidden', 'true')
+      }
+    }
+
+    async function checkExtensionServerStatus() {
+      if (!extStatusText) return
+      try {
+        const res = await fetch('/api/extension/status')
+        if (res.ok) {
+          const data = await res.json()
+          if (extStatusDot) extStatusDot.style.background = '#22c55e'
+          extStatusText.textContent = `Server Status: Ready for extension connections (${data.app} v${data.version})`
+        } else {
+          if (extStatusDot) extStatusDot.style.background = '#eab308'
+          extStatusText.textContent = `Server responded with status ${res.status}`
+        }
+      } catch (err) {
+        if (extStatusDot) extStatusDot.style.background = '#ef4444'
+        extStatusText.textContent = `Server status error: ${err.message}`
+      }
+    }
+
+    if (btnVaultExtension) {
+      btnVaultExtension.addEventListener('click', openExtensionModal)
+    }
+    if (btnCloseExtensionModal) {
+      btnCloseExtensionModal.addEventListener('click', closeExtensionModal)
+    }
+    if (btnExtensionModalDone) {
+      btnExtensionModalDone.addEventListener('click', closeExtensionModal)
+    }
+    if (extensionModalBackdrop) {
+      extensionModalBackdrop.addEventListener('click', closeExtensionModal)
+    }
+    if (btnCopyExtUrl) {
+      btnCopyExtUrl.addEventListener('click', () => {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText('chrome://extensions').then(() => {
+            showToast('Copied chrome://extensions to clipboard! 📋')
+          }).catch(() => {
+            showToast('Please open chrome://extensions in your address bar', 'warn')
+          })
+        } else {
+          showToast('Please open chrome://extensions in your address bar', 'warn')
+        }
+      })
     }
 
     // Editor Pin toggle

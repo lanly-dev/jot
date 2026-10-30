@@ -15,7 +15,8 @@ module.exports = [
       sourceType: 'script',
       globals: {
         ...globals.browser,
-        ...globals.node
+        ...globals.node,
+        ...globals.webextensions
       }
     },
     rules: {

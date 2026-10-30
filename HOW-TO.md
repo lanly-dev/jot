@@ -211,3 +211,29 @@ Optional arguments for remote instances or token-protected servers:
 node scripts/import-csv.js <path-to-csv> [server-url] [api-token]
 ```
 
+---
+
+## 7. Jot Chrome & Edge Browser Extension (Auto-Capture on Login)
+
+Jot includes a lightweight, self-hosted **Manifest V3 Browser Extension** that automatically prompts you to save passwords whenever you log into any website (e.g. GitHub, Google, Amazon).
+
+### Installing the Extension (15 Seconds)
+
+1. Open Jot and go to the **🔒 Vault** tab.
+2. Click the **🧩 Extension** button in the vault action bar.
+3. Click **📥 Download Extension (.zip)**.
+4. Extract the downloaded `jot-extension.zip` into a folder on your computer.
+5. In Google Chrome or Microsoft Edge, navigate to `chrome://extensions` (or `edge://extensions`).
+6. Turn on **Developer mode** in the top-right corner.
+7. Click **Load unpacked** and select the unzipped `extension` folder.
+
+### How to Use
+
+- Whenever you enter credentials on any website and submit the form, a floating Jot card slides in:
+  - **Website**: `example.com`
+  - **Username**: `your-user`
+  - **Password**: `••••••••`
+- Click **Save to Jot** to immediately store it in your encrypted vault, or **Ignore** to dismiss.
+- Click the Jot icon in your browser toolbar anytime to check server connection or configure a remote Jot server URL.
+
+

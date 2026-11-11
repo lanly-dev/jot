@@ -213,6 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnCopyExtUrl = document.getElementById('btn-copy-ext-url')
   const extStatusDot = document.getElementById('ext-status-dot')
   const extStatusText = document.getElementById('ext-status-text')
+  const btnDownloadExtZip = document.getElementById('btn-download-ext-zip')
   const vaultContent = document.getElementById('vault-content')
   const vaultLockedState = document.getElementById('vault-locked-state')
   const vaultLockedTitle = document.getElementById('vault-locked-title')
@@ -1359,6 +1360,31 @@ document.addEventListener('DOMContentLoaded', () => {
     if (extensionModalBackdrop) {
       extensionModalBackdrop.addEventListener('click', closeExtensionModal)
     }
+    if (btnDownloadExtZip) {
+      btnDownloadExtZip.addEventListener('click', async (e) => {
+        // The anchor's href stays as a fallback for no-token setups, but a
+        // plain navigation can't send the API token — when JOT_API_TOKEN is
+        // enabled the download endpoint would 401. Fetch it instead (the
+        // global fetch wrapper attaches the token) and save the blob.
+        e.preventDefault()
+        try {
+          const res = await fetch('/api/extension/download')
+          if (!res.ok) throw new Error(`Server responded with status ${res.status}`)
+          const blob = await res.blob()
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = 'jot-extension.zip'
+          document.body.appendChild(a)
+          a.click()
+          a.remove()
+          setTimeout(() => URL.revokeObjectURL(url), 5000)
+        } catch (err) {
+          showToast(`Extension download failed: ${err.message}`, 'warn')
+        }
+      })
+    }
+
     if (btnCopyExtUrl) {
       btnCopyExtUrl.addEventListener('click', () => {
         if (navigator.clipboard && navigator.clipboard.writeText) {

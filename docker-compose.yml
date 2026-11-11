@@ -4,7 +4,7 @@
 # Usage:
 #   1. Edit .env (copy from .env.example first)            <- optional
 #   2. docker compose up -d
-#   3. Open http://<host-ip>:3000
+#   3. Open http://<host-ip>:8000
 #
 # The `data` volume persists notes, credentials, and the encryption key
 # across container restarts and upgrades.
@@ -19,7 +19,7 @@ services:
     container_name: jot
     restart: unless-stopped
     ports:
-      - "${PORT:-3000}:3000"
+      - "${PORT:-8000}:3000"
     environment:
       NODE_ENV: production
       # Set JOT_SECRET_KEY to a base64-encoded 32-byte key to make your

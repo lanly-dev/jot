@@ -222,7 +222,7 @@ docker compose ps
 docker compose logs -f
 ```
 
-The application is exposed on port 3000 by default; this can be adjusted in `docker-compose.yml`.
+The application is exposed on port 8000 by default (the container still serves on 3000 internally); this can be adjusted in `docker-compose.yml`.
 
 ### Persistent data
 
@@ -236,7 +236,7 @@ If you already have a `jot` container (for example one started with a bare `dock
 bash update-jot-docker.sh
 ```
 
-The script backs up `/app/data` first, carries over the `JOT_*` environment, pulls the latest image, and recreates the container with port 3000 published and the data volume attached. The old container is kept, stopped, as a one-command rollback.
+The script backs up `/app/data` first, carries over the `JOT_*` environment, pulls the latest image, and recreates the container with port 8000 published and the data volume attached. The old container is kept, stopped, as a one-command rollback.
 
 ### Proxmox deployment
 

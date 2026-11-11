@@ -8,9 +8,9 @@
 #      the encryption key file all live there) to ./jot-backups/<timestamp>/
 #   2. Carries over JOT_API_TOKEN / JOT_SECRET_KEY if the current container
 #      was started with them, so the new container unlocks the same vault.
-#   3. Recreates the container WITH port 3000 published to the host and a
+#   3. Recreates the container WITH a host port (default 8000) published and a
 #      persistent data volume — containers started by a bare `docker run`
-#      often have neither, which is why http://localhost:3000 refuses the
+#      often have neither, which is why http://localhost:<port> refuses the
 #      connection even though the container looks healthy.
 #   4. Keeps the old container, stopped and renamed to
 #      jot-backup-<timestamp>, as a one-command rollback.
@@ -29,7 +29,7 @@ function msg_error() { echo -e "\e[1;31m[ERROR]\e[0m $*"; }
 
 NAME="${1:-jot}"
 IMAGE="ghcr.io/lanly-dev/jot:latest"
-HOST_PORT="${HOST_PORT:-3000}"
+HOST_PORT="${HOST_PORT:-8000}"
 DEFAULT_VOLUME="jot-data"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 BACKUP_DIR="./jot-backups/$STAMP"
@@ -113,7 +113,7 @@ if ! docker exec "$NAME" test -f /app/data/notes.json 2>/dev/null; then
 fi
 
 # --- 4. Verify it actually serves ---------------------------------------------
-msg_info "Waiting for Jot to answer on port 3000 ..."
+msg_info "Waiting for Jot to answer (host port $HOST_PORT) ..."
 HEALTHY=0
 for _ in $(seq 1 30); do
   if docker exec "$NAME" node -e "require('http').get('http://127.0.0.1:3000/', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))" 2>/dev/null; then

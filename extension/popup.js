@@ -14,9 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load current settings
   chrome.runtime.sendMessage({ action: 'get_settings' }, settings => {
     if (settings) {
-      serverUrlInput.value = settings.serverUrl || 'http://localhost:3000'
+      serverUrlInput.value = settings.serverUrl || 'http://localhost:8000'
       apiTokenInput.value = settings.apiToken || ''
-      openJotBtn.href = settings.serverUrl || 'http://localhost:3000'
+      openJotBtn.href = settings.serverUrl || 'http://localhost:8000'
     }
     testConnection()
   })
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     statusBadge.className = 'status-badge'
     statusText.textContent = 'Checking connection...'
 
-    const targetUrl = serverUrlInput.value.trim() || 'http://localhost:3000'
+    const targetUrl = serverUrlInput.value.trim() || 'http://localhost:8000'
     const targetToken = apiTokenInput.value.trim()
 
     chrome.runtime.sendMessage({
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     msgDiv.className = 'status-msg'
     msgDiv.textContent = ''
 
-    const serverUrl = serverUrlInput.value.trim() || 'http://localhost:3000'
+    const serverUrl = serverUrlInput.value.trim() || 'http://localhost:8000'
     const apiToken = apiTokenInput.value.trim()
 
     chrome.runtime.sendMessage({

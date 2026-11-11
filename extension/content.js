@@ -5,7 +5,7 @@
 
 (() => {
   // Do not run inside Jot's own interface or on chrome:// internal pages
-  if (window.location.hostname === 'localhost' && window.location.port === '3000') {
+  if (window.location.hostname === 'localhost' && window.location.port === '8000') {
     return
   }
 

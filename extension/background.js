@@ -3,7 +3,7 @@
  * Handles communication with the local or self-hosted Jot backend server.
  */
 
-const DEFAULT_SERVER_URL = 'http://localhost:3000'
+const DEFAULT_SERVER_URL = 'http://localhost:8000'
 
 // Get configured settings from storage
 async function getSettings() {

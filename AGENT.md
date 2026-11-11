@@ -89,7 +89,7 @@ npm run efix
 
 ## Deployment notes
 
-- Default app port is `3000`.
+- Default app port is `8000`.
 - Docker Compose uses a named volume mounted at `/app/data` for persistence.
 - `NODE_ENV=production` disables dev-only live reload features.
 

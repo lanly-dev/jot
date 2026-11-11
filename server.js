@@ -9,7 +9,7 @@ const path = require('path')
 const { execFile } = require('child_process')
 
 const app = express()
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 8000
 
 // Enable CORS and JSON parsing
 app.use(cors())

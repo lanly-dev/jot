@@ -34,7 +34,7 @@ The backend serves the static frontend and exposes the following API surface:
 - npm
 - Optional: Docker + Docker Compose for containerized deployment
 
-The app uses the Web Crypto API for encryption and the Express server listens on port 3000 by default.
+The app uses the Web Crypto API for encryption and the Express server listens on port 8000 by default.
 
 ---
 
@@ -58,7 +58,7 @@ Run the app in production mode:
 npm start
 ```
 
-The server binds to `http://localhost:3000` unless `PORT` is overridden.
+The server binds to `http://localhost:8000` unless `PORT` is overridden.
 
 When `NODE_ENV` is not set to `production`, the server enables `livereload` and `connect-livereload` for browser refresh during local development.
 
@@ -147,7 +147,7 @@ Behavior:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `PORT` | `3000` | Express listen port |
+| `PORT` | `8000` | Express listen port |
 | `NODE_ENV` | unset | Controls dev-only behavior such as live reload |
 | `JOT_SECRET_KEY` | unset | Base64-encoded 32-byte AES key for portable credential encryption |
 | `JOT_API_TOKEN` | unset | Bearer token required by every `/api` route when set; the web UI prompts for it once and stores it in the browser's localStorage |

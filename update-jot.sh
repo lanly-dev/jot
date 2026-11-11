@@ -77,5 +77,5 @@ fi
 IP="$(pct exec "$CTID" -- sh -c "hostname -I 2>/dev/null | awk '{print \$1}'" 2>/dev/null || true)"
 [ -n "$IP" ] || IP="<check: pct exec $CTID -- ip a>"
 msg_ok "Jot updated and running in container $CTID"
-msg_info "Open Jot at:  http://${IP}:3000"
+msg_info "Open Jot at:  http://${IP}:8000"
 msg_info "Shell access:  pct enter $CTID"

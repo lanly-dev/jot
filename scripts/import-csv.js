@@ -9,14 +9,14 @@
  *
  * Example:
  *   node scripts/import-csv.js data/samples/chrome-passwords.csv
- *   node scripts/import-csv.js data/samples/chrome-passwords.csv http://localhost:3000 my-token
+ *   node scripts/import-csv.js data/samples/chrome-passwords.csv http://localhost:8000 my-token
  */
 
 const fs = require('fs')
 const path = require('path')
 
 const filePath = process.argv[2]
-const serverUrl = process.argv[3] || process.env.JOT_SERVER_URL || 'http://localhost:3000'
+const serverUrl = process.argv[3] || process.env.JOT_SERVER_URL || 'http://localhost:8000'
 const apiToken = process.argv[4] || process.env.JOT_API_TOKEN || ''
 
 if (!filePath) {

@@ -252,7 +252,7 @@ SECRET_KEY="$(openssl rand -base64 32)"
 echo " >> Generating JOT_API_TOKEN ..."
 API_TOKEN="$(openssl rand -base64 32)"
 cat > /opt/jot/.env <<EOF
-PORT=3000
+PORT=8000
 NODE_ENV=production
 JOT_SECRET_KEY=${SECRET_KEY}
 JOT_API_TOKEN=${API_TOKEN}
@@ -304,7 +304,7 @@ pct exec "$CT_ID" -- rm -f /root/jot-setup.sh
 # ---------------------------------------------------------------------------
 IP_INFO="$(pct exec "$CT_ID" -- sh -c "hostname -I 2>/dev/null | awk '{print \$1}'" 2>/dev/null || true)"
 [ -z "$IP_INFO" ] && IP_INFO="<run: pct exec $CT_ID -- ip a>"
-PORT="${PORT:-3000}"
+PORT="${PORT:-8000}"
 
 msg_ok "Jot is installed and running!"
 msg_info "Manage the container with:  pct enter $CT_ID"

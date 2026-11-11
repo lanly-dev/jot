@@ -63,7 +63,7 @@ ENV NODE_ENV=production \
 
 # Healthcheck: probe the /api/notes endpoint every 30 s.
 HEALTHCHECK --interval=30s --timeout=2s --start-period=5s --retries=3 \
-  CMD node -e "const http=require('http');const {PORT=3000}=process.env;const s=http.get('http://127.0.0.1:'+PORT+'/api/notes',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1));s.setTimeout(2000,()=>{s.destroy();process.exit(1)})"
+  CMD node -e "const http=require('http');const {PORT=8000}=process.env;const s=http.get('http://127.0.0.1:'+PORT+'/api/notes',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1));s.setTimeout(2000,()=>{s.destroy();process.exit(1)})"
 
 # Start the Express server.
 CMD ["node", "server.js"]

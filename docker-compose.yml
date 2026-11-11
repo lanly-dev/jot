@@ -23,7 +23,7 @@ services:
     environment:
       NODE_ENV: production
       # The app listens on 8000 inside the container too, so the mapping
-      # is a straight 8000:8000 (server.js defaults to 3000 otherwise).
+      # is a straight 8000:8000 (server.js defaults to 8000 otherwise).
       PORT: 8000
       # Set JOT_SECRET_KEY to a base64-encoded 32-byte key to make your
       # encrypted vault portable across machines (see .env.example).

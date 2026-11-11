@@ -222,7 +222,7 @@ docker compose ps
 docker compose logs -f
 ```
 
-The application is exposed on port 8000 by default (the container still serves on 3000 internally); this can be adjusted in `docker-compose.yml`.
+The application is exposed on port 8000 by default; this can be adjusted in `docker-compose.yml`.
 
 ### Persistent data
 

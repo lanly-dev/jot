@@ -19,9 +19,12 @@ services:
     container_name: jot
     restart: unless-stopped
     ports:
-      - "${PORT:-8000}:3000"
+      - "8000:8000"
     environment:
       NODE_ENV: production
+      # The app listens on 8000 inside the container too, so the mapping
+      # is a straight 8000:8000 (server.js defaults to 3000 otherwise).
+      PORT: 8000
       # Set JOT_SECRET_KEY to a base64-encoded 32-byte key to make your
       # encrypted vault portable across machines (see .env.example).
       JOT_SECRET_KEY: "${JOT_SECRET_KEY:-}"
@@ -31,7 +34,7 @@ services:
     volumes:
       - jot-data:/app/data
     healthcheck:
-      test: ["CMD", "node", "-e", "const http=require('http');const s=http.get('http://127.0.0.1:3000/api/notes',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1));s.setTimeout(5000,()=>{s.destroy();process.exit(1)})"]
+      test: ["CMD", "node", "-e", "const http=require('http');const s=http.get('http://127.0.0.1:8000/api/notes',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1));s.setTimeout(5000,()=>{s.destroy();process.exit(1)})"]
       interval: 30s
       timeout: 5s
       retries: 3

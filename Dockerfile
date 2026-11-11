@@ -49,7 +49,7 @@ RUN mkdir -p /app/data \
  && chown -R appuser:appgroup /app
 
 # Expose the default Express port (overridable via PORT env var).
-EXPOSE 3000
+EXPOSE 8000
 
 # Switch to the non-root user.
 USER appuser
@@ -59,7 +59,7 @@ USER appuser
 # without it, server.js auto-generates a random key for AES-256-GCM encryption.
 # Set it at runtime for portability across machines:  docker run -e JOT_SECRET_KEY=...
 ENV NODE_ENV=production \
-    PORT=3000
+    PORT=8000
 
 # Healthcheck: probe the /api/notes endpoint every 30 s.
 HEALTHCHECK --interval=30s --timeout=2s --start-period=5s --retries=3 \

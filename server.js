@@ -777,6 +777,38 @@ app.get('/api/export', async (req, res) => {
   }
 })
 
+// GET: Browser extension status check
+app.get('/api/extension/status', (req, res) => {
+  res.json({
+    success: true,
+    app: 'Jot',
+    version: '1.0.0',
+    timestamp: new Date().toISOString()
+  })
+})
+
+// GET: Download packaged Chrome/Edge extension zip
+app.get('/api/extension/download', (req, res) => {
+  const zipPath = path.join(__dirname, 'public', 'downloads', 'jot-extension.zip')
+  if (!fs.existsSync(zipPath)) {
+    try {
+      const { createZipArchive } = require('./scripts/package-extension')
+      const extensionDir = path.join(__dirname, 'extension')
+      const zipBuffer = createZipArchive(extensionDir)
+      fs.mkdirSync(path.dirname(zipPath), { recursive: true })
+      fs.writeFileSync(zipPath, zipBuffer)
+    } catch (err) {
+      console.error('Failed to package extension:', err)
+      return res.status(500).json({ error: 'Failed to package extension' })
+    }
+  }
+
+  res.setHeader('Content-Type', 'application/zip')
+  res.setHeader('Content-Disposition', 'attachment; filename="jot-extension.zip"')
+  res.sendFile(zipPath)
+})
+
+
 
 /* ==========================================================================
    SELF-UPDATE (UI-triggered)

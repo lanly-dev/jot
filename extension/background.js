@@ -63,13 +63,17 @@ async function saveCredential(payload) {
     headers.Authorization = `Bearer ${apiToken}`
   }
 
+  // Match the server's /api/credentials contract (see normalizeCredential in
+  // server.js): the POST handler only reads site/username/password/notes/
+  // type/color — the old category/name/url fields were silently dropped,
+  // which stored entries with an empty site.
   const credentialBody = {
-    category: 'login',
-    name: payload.name || payload.domain || 'Saved Login',
-    url: payload.url || '',
+    site: payload.domain || payload.url || 'Saved Login',
     username: payload.username || '',
     password: payload.password || '',
-    notes: payload.notes || `Saved automatically via Jot browser extension on ${new Date().toLocaleDateString()}`
+    notes: payload.notes || `Saved automatically via Jot browser extension on ${new Date().toISOString()}`,
+    type: 'login',
+    color: '#ffd1d9'
   }
 
   try {

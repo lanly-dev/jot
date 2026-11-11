@@ -228,16 +228,6 @@ The application is exposed on port 8000 by default (the container still serves o
 
 The Compose configuration mounts a named Docker volume at `/app/data` so that the JSON database and encryption key survive container restarts.
 
-### Updating an existing container
-
-If you already have a `jot` container (for example one started with a bare `docker run`), update it in place:
-
-```bash
-bash update-jot-docker.sh
-```
-
-The script backs up `/app/data` first, carries over the `JOT_*` environment, pulls the latest image, and recreates the container with port 8000 published and the data volume attached. The old container is kept, stopped, as a one-command rollback.
-
 ### Proxmox deployment
 
 The project also includes `install-jot-ve.sh`, a helper script designed to bootstrap an unprivileged LXC container on Proxmox and run the app via Node directly instead of Docker. This keeps the runtime environment light and avoids a Docker daemon dependency.

@@ -228,6 +228,17 @@ The application is exposed on port 8000 by default; this can be adjusted in `doc
 
 The Compose configuration mounts a named Docker volume at `/app/data` so that the JSON database and encryption key survive container restarts.
 
+### Updating
+
+A Docker install is updated by replacing the container, never from inside it — the image deliberately ships without git, bash, or curl, so the in-app updater only applies to Proxmox installs. On the host, from your clone:
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+This rebuilds the image from the new code and recreates the container on it. Your notes, credentials, and encryption key live in the `jot-data` volume and survive the swap. If you ever suspect stale build layers, rebuild from scratch with `docker compose build --no-cache` first.
+
 ### Proxmox deployment
 
 The project also includes `install-jot-ve.sh`, a helper script designed to bootstrap an unprivileged LXC container on Proxmox and run the app via Node directly instead of Docker. This keeps the runtime environment light and avoids a Docker daemon dependency.

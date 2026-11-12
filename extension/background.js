@@ -52,6 +52,18 @@ async function checkConnection(customUrl, customToken) {
 }
 
 // Save captured credential to Jot
+// Pick the value stored as the credential's `site`. For a normal public
+// domain the bare domain is the cleanest label, and the vault turns it
+// into a link. For localhost, IPs, and other single-label hosts the bare
+// hostname is meaningless (it drops the port, and the vault can't link
+// it), so keep the full page URL the content script captured instead.
+function siteForPayload(payload) {
+  const domain = (payload.domain || '').trim()
+  const isPublicDomain = /^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(domain)
+  if (isPublicDomain) return domain
+  return payload.url || payload.domain || 'Saved Login'
+}
+
 async function saveCredential(payload) {
   const { serverUrl, apiToken } = await getSettings()
   const endpoint = `${serverUrl}/api/credentials`
@@ -68,7 +80,7 @@ async function saveCredential(payload) {
   // type/color — the old category/name/url fields were silently dropped,
   // which stored entries with an empty site.
   const credentialBody = {
-    site: payload.domain || payload.url || 'Saved Login',
+    site: siteForPayload(payload),
     username: payload.username || '',
     password: payload.password || '',
     notes: payload.notes || `Saved automatically via Jot browser extension on ${new Date().toISOString()}`,

@@ -14,6 +14,18 @@ async function getSettings() {
   }
 }
 
+// Numeric dotted-version compare: is `a` an older version than `b`?
+function isOlderVersion(a, b) {
+  if (!a || !b) return false
+  const pa = String(a).split('.').map(n => parseInt(n, 10) || 0)
+  const pb = String(b).split('.').map(n => parseInt(n, 10) || 0)
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    if ((pa[i] || 0) < (pb[i] || 0)) return true
+    if ((pa[i] || 0) > (pb[i] || 0)) return false
+  }
+  return false
+}
+
 // Test connection to Jot server
 async function checkConnection(customUrl, customToken) {
   const settings = await getSettings()
@@ -38,7 +50,16 @@ async function checkConnection(customUrl, customToken) {
 
     if (res.ok) {
       const data = await res.json().catch(() => ({}))
-      return { success: true, serverVersion: data.version || '1.0', url: targetUrl }
+      const installedVersion = chrome.runtime.getManifest().version
+      const servedVersion = data.extensionVersion || null
+      return {
+        success: true,
+        serverVersion: data.version || '1.0',
+        url: targetUrl,
+        installedVersion,
+        servedVersion,
+        updateAvailable: isOlderVersion(installedVersion, servedVersion)
+      }
     }
 
     if (res.status === 401 || res.status === 403) {

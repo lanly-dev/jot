@@ -10,6 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const statusBadge = document.getElementById('status-badge')
   const statusText = document.getElementById('status-text')
   const msgDiv = document.getElementById('msg')
+  const extVersionDiv = document.getElementById('ext-version')
+  if (extVersionDiv) {
+    extVersionDiv.textContent = `Jot Extension v${chrome.runtime.getManifest().version}`
+  }
 
   // Load current settings
   chrome.runtime.sendMessage({ action: 'get_settings' }, settings => {
@@ -39,7 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
       apiToken: targetToken
     }, res => {
       if (res && res.success) {
-        updateStatus(true, `Connected to Jot (${res.serverVersion})`)
+        if (res.updateAvailable) {
+          updateStatus(true, `Connected to Jot (${res.serverVersion}) — extension update available: v${res.servedVersion} (you have v${res.installedVersion}). Download the new ZIP from the Jot app and reload the extension.`)
+        } else {
+          updateStatus(true, `Connected to Jot (${res.serverVersion})`)
+        }
         openJotBtn.href = targetUrl
       } else {
         updateStatus(false, (res && res.error) || 'Disconnected')

@@ -797,11 +797,53 @@ app.get('/api/export', async (req, res) => {
 })
 
 // GET: Browser extension status check
+// Version of the extension this server ships, so an installed extension
+// can tell whether a newer one is available for download. Read from the
+// extension sources when present (repo / Proxmox installs); Docker images
+// only carry public/, so fall back to the manifest inside the packaged zip.
+const zlib = require('zlib')
+
+function readZipEntry(zipBuffer, entryName) {
+  let offset = 0
+  while (offset + 30 <= zipBuffer.length && zipBuffer.readUInt32LE(offset) === 0x04034b50) {
+    const method = zipBuffer.readUInt16LE(offset + 8)
+    const compressedSize = zipBuffer.readUInt32LE(offset + 18)
+    const nameLen = zipBuffer.readUInt16LE(offset + 26)
+    const extraLen = zipBuffer.readUInt16LE(offset + 28)
+    const name = zipBuffer.toString('utf8', offset + 30, offset + 30 + nameLen)
+    const dataStart = offset + 30 + nameLen + extraLen
+    if (name === entryName) {
+      const raw = zipBuffer.subarray(dataStart, dataStart + compressedSize)
+      if (method === 8) return zlib.inflateRawSync(raw).toString('utf8')
+      if (method === 0) return raw.toString('utf8')
+      return null
+    }
+    offset = dataStart + compressedSize
+  }
+  return null
+}
+
+function readServedExtensionVersion() {
+  try {
+    const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, 'extension', 'manifest.json'), 'utf8'))
+    if (manifest.version) return manifest.version
+  } catch { /* not a full-tree install — try the packaged zip */ }
+  try {
+    const zip = fs.readFileSync(path.join(__dirname, 'public', 'downloads', 'jot-extension.zip'))
+    const manifestJson = readZipEntry(zip, 'manifest.json')
+    if (manifestJson) return JSON.parse(manifestJson).version || null
+  } catch { /* no zip packaged yet */ }
+  return null
+}
+
+const SERVED_EXTENSION_VERSION = readServedExtensionVersion()
+
 app.get('/api/extension/status', (req, res) => {
   res.json({
     success: true,
     app: 'Jot',
     version: '1.0.0',
+    extensionVersion: SERVED_EXTENSION_VERSION,
     timestamp: new Date().toISOString()
   })
 })

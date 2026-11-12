@@ -49,6 +49,7 @@ async function checkConnection(customUrl, customToken) {
     clearTimeout(timeoutId)
 
     if (res.ok) {
+      setAttentionBadge(false)
       const data = await res.json().catch(() => ({}))
       const installedVersion = chrome.runtime.getManifest().version
       const servedVersion = data.extensionVersion || null
@@ -62,14 +63,36 @@ async function checkConnection(customUrl, customToken) {
       }
     }
 
+    setAttentionBadge(true)
     if (res.status === 401 || res.status === 403) {
       return { success: false, error: 'Authorization required. Check your API token.' }
     }
 
     return { success: false, error: `Server responded with status ${res.status}` }
   } catch (err) {
+    setAttentionBadge(true)
     return { success: false, error: `Could not connect to Jot at ${targetUrl}: ${err.message}` }
   }
+}
+
+// A failed save has to reach the user outside the page: the save prompt
+// lives in the page, and a login form usually navigates away on submit,
+// destroying the prompt before its error can be read — the password would
+// be lost silently. A system notification survives navigation, and the
+// toolbar badge stays flagged until the next successful save or check.
+function notifySaveFailure(message) {
+  const p = chrome.notifications.create('jot-save-failed', {
+    type: 'basic',
+    iconUrl: 'icons/icon-128.png',
+    title: 'Jot \u2014 password not saved',
+    message
+  })
+  if (p && p.catch) p.catch(() => {})
+}
+
+function setAttentionBadge(on) {
+  chrome.action.setBadgeText({ text: on ? '!' : '' })
+  if (on) chrome.action.setBadgeBackgroundColor({ color: '#dc2626' })
 }
 
 // Save captured credential to Jot
@@ -118,13 +141,20 @@ async function saveCredential(payload) {
 
     if (!res.ok) {
       const errText = await res.text()
-      return { success: false, error: `Save failed (HTTP ${res.status}): ${errText}` }
+      const error = `Save failed (HTTP ${res.status}): ${errText}`
+      notifySaveFailure(`${error} \u2014 open the Jot extension to check the server URL and API token.`)
+      setAttentionBadge(true)
+      return { success: false, error }
     }
 
     const saved = await res.json()
+    setAttentionBadge(false)
     return { success: true, credential: saved }
   } catch (err) {
-    return { success: false, error: `Network error connecting to Jot: ${err.message}` }
+    const error = `Network error connecting to Jot: ${err.message}`
+    notifySaveFailure(`Can't connect to Jot at ${serverUrl}. The password was not saved \u2014 check that Jot is running, then try again.`)
+    setAttentionBadge(true)
+    return { success: false, error }
   }
 }
 

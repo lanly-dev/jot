@@ -1,11 +1,12 @@
 {
   "manifest_version": 3,
   "name": "Jot — Password Manager & Vault Sync",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Auto-detect login forms on websites and save passwords directly into your private Jot encrypted vault.",
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "notifications"
   ],
   "host_permissions": [
     "*://*/*",

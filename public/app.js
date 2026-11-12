@@ -1374,7 +1374,11 @@ document.addEventListener('DOMContentLoaded', () => {
           const url = URL.createObjectURL(blob)
           const a = document.createElement('a')
           a.href = url
-          a.download = 'jot-extension.zip'
+          // Use the server's Content-Disposition filename (it carries the
+          // extension version); fall back to the plain name.
+          const disposition = res.headers.get('Content-Disposition') || ''
+          const nameMatch = disposition.match(/filename="([^"]+)"/)
+          a.download = nameMatch ? nameMatch[1] : 'jot-extension.zip'
           document.body.appendChild(a)
           a.click()
           a.remove()

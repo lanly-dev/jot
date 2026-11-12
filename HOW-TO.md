@@ -222,7 +222,7 @@ Jot includes a lightweight, self-hosted **Manifest V3 Browser Extension** that a
 1. Open Jot and go to the **🔒 Vault** tab.
 2. Click the **🧩 Extension** button in the vault action bar.
 3. Click **📥 Download Extension (.zip)**.
-4. Extract the downloaded `jot-extension.zip` into a folder on your computer.
+4. Extract the downloaded ZIP (`jot-extension-v<version>.zip`) into a folder on your computer.
 5. In Google Chrome or Microsoft Edge, navigate to `chrome://extensions` (or `edge://extensions`).
 6. Turn on **Developer mode** in the top-right corner.
 7. Click **Load unpacked** and select the unzipped `extension` folder.

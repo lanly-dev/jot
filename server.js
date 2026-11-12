@@ -865,7 +865,10 @@ app.get('/api/extension/download', (req, res) => {
   }
 
   res.setHeader('Content-Type', 'application/zip')
-  res.setHeader('Content-Disposition', 'attachment; filename="jot-extension.zip"')
+  // The downloaded file carries the extension version (the stored artifact
+  // keeps its stable name so the server can always find it).
+  const downloadName = SERVED_EXTENSION_VERSION ? `jot-extension-v${SERVED_EXTENSION_VERSION}.zip` : 'jot-extension.zip'
+  res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`)
   res.sendFile(zipPath)
 })
 

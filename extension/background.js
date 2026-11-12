@@ -80,11 +80,11 @@ async function checkConnection(customUrl, customToken) {
 // destroying the prompt before its error can be read — the password would
 // be lost silently. A system notification survives navigation, and the
 // toolbar badge stays flagged until the next successful save or check.
-function notifySaveFailure(message) {
+function notifySaveFailure(message, title = 'Jot \u2014 password not saved') {
   const p = chrome.notifications.create('jot-save-failed', {
     type: 'basic',
     iconUrl: 'icons/icon-128.png',
-    title: 'Jot \u2014 password not saved',
+    title,
     message
   })
   if (p && p.catch) p.catch(() => {})
@@ -159,6 +159,83 @@ async function saveCredential(payload) {
 }
 
 // Handle runtime messages from content scripts and popup
+// Host key for comparing a stored credential's `site` with the page a
+// login was captured on. Stored sites may be a bare domain (github.com)
+// or a full URL (http://localhost:8000/...) \u2014 normalize both sides to
+// hostname, keeping a non-standard port (localhost apps differ by port).
+function hostKey(value) {
+  if (!value) return ''
+  let host = ''
+  let port = ''
+  try {
+    const u = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`)
+    host = u.hostname
+    port = u.port
+  } catch {
+    host = String(value).split('/')[0].split(':')[0]
+  }
+  host = host.replace(/^www\./i, '').toLowerCase()
+  if (port && port !== '80' && port !== '443') return `${host}:${port}`
+  return host
+}
+
+// Look up whether the vault already holds this login, so the content
+// script can stay quiet on an exact match or offer an update when only
+// the password changed. Any failure answers 'unknown' and the caller
+// falls back to the plain save prompt.
+async function checkExistingCredential(payload) {
+  const { serverUrl, apiToken } = await getSettings()
+  const headers = {}
+  if (apiToken) headers.Authorization = `Bearer ${apiToken}`
+  try {
+    const res = await fetch(`${serverUrl}/api/credentials`, { headers })
+    if (!res.ok) return { status: 'unknown' }
+    const credentials = await res.json()
+    const pageHost = hostKey(payload.url) || hostKey(payload.domain)
+    const username = (payload.username || '').toLowerCase()
+    const match = (Array.isArray(credentials) ? credentials : []).find(c =>
+      !c.deleted &&
+      hostKey(c.site) === pageHost &&
+      (c.username || '').toLowerCase() === username
+    )
+    if (!match) return { status: 'none' }
+    if (match.password === payload.password) return { status: 'exact', id: match.id }
+    return { status: 'update', id: match.id }
+  } catch {
+    return { status: 'unknown' }
+  }
+}
+
+// Replace the password of an existing vault entry (the server's PUT is a
+// partial update \u2014 omitted fields keep their stored values).
+async function updateCredential(id, payload) {
+  const { serverUrl, apiToken } = await getSettings()
+  const headers = { 'Content-Type': 'application/json' }
+  if (apiToken) headers.Authorization = `Bearer ${apiToken}`
+  try {
+    const res = await fetch(`${serverUrl}/api/credentials/${id}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ password: payload.password || '' })
+    })
+    if (!res.ok) {
+      const errText = await res.text()
+      const error = `Update failed (HTTP ${res.status}): ${errText}`
+      notifySaveFailure(`${error} \u2014 open the Jot extension to check the server URL and API token.`, 'Jot \u2014 password not updated')
+      setAttentionBadge(true)
+      return { success: false, error }
+    }
+    const saved = await res.json()
+    setAttentionBadge(false)
+    return { success: true, credential: saved }
+  } catch (err) {
+    const error = `Network error connecting to Jot: ${err.message}`
+    notifySaveFailure(`Can't connect to Jot at ${serverUrl}. The password was not updated \u2014 check that Jot is running, then try again.`, 'Jot \u2014 password not updated')
+    setAttentionBadge(true)
+    return { success: false, error }
+  }
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'check_connection') {
     checkConnection(request.serverUrl, request.apiToken).then(sendResponse)
@@ -167,6 +244,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.action === 'save_credential') {
     saveCredential(request.credential).then(sendResponse)
+    return true
+  }
+
+  if (request.action === 'check_existing') {
+    checkExistingCredential(request.credential).then(sendResponse)
+    return true
+  }
+
+  if (request.action === 'update_credential') {
+    updateCredential(request.id, request.credential).then(sendResponse)
     return true
   }
 

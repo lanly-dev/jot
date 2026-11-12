@@ -58,7 +58,7 @@
   /**
    * Render a sleek, isolated Shadow DOM prompt in the top-right corner
    */
-  function showSavePrompt(creds) {
+  function showSavePrompt(creds, existingId) {
     if (activePromptContainer) {
       activePromptContainer.remove()
       activePromptContainer = null
@@ -222,7 +222,7 @@
       <div class="jot-prompt-header">
         <div class="jot-header-title">
           <span>🔒</span>
-          <span>Save password to Jot?</span>
+          <span>${existingId ? 'Update password in Jot?' : 'Save password to Jot?'}</span>
         </div>
         <button class="jot-close-btn" title="Close">✕</button>
       </div>
@@ -232,6 +232,12 @@
           <div class="jot-field-label">Website</div>
           <div class="jot-field-value">${escapeHtml(creds.domain)}</div>
         </div>
+        ${existingId ? `
+        <div class="jot-field-row">
+          <div class="jot-field-label">Status</div>
+          <div class="jot-field-value">Already in your vault \u2014 the password changed</div>
+        </div>
+        ` : ''}
         ${creds.username ? `
         <div class="jot-field-row">
           <div class="jot-field-label">Username</div>
@@ -243,7 +249,7 @@
           <div class="jot-field-value jot-masked-pass">${maskedPassword}</div>
         </div>
         <div class="jot-actions">
-          <button id="jot-save-btn" class="jot-btn jot-btn-primary">Save to Jot</button>
+          <button id="jot-save-btn" class="jot-btn jot-btn-primary">${existingId ? 'Update Password' : 'Save to Jot'}</button>
           <button id="jot-ignore-btn" class="jot-btn jot-btn-secondary">Ignore</button>
         </div>
       </div>
@@ -271,15 +277,16 @@
 
     saveBtn.addEventListener('click', () => {
       saveBtn.disabled = true
-      saveBtn.textContent = 'Saving...'
+      saveBtn.textContent = existingId ? 'Updating...' : 'Saving...'
 
       chrome.runtime.sendMessage({
-        action: 'save_credential',
+        action: existingId ? 'update_credential' : 'save_credential',
+        id: existingId || undefined,
         credential: creds
       }, response => {
         if (response && response.success) {
           statusMsg.className = 'jot-status-msg success'
-          statusMsg.textContent = 'Saved to Jot Vault! 🔒'
+          statusMsg.textContent = existingId ? 'Password updated in Jot Vault! 🔒' : 'Saved to Jot Vault! 🔒'
           saveBtn.style.display = 'none'
           ignoreBtn.style.display = 'none'
 
@@ -315,7 +322,17 @@
     if (creds && creds.password) {
       capturedCredentials = creds
       setTimeout(() => {
-        showSavePrompt(capturedCredentials)
+        // Ask the vault first: stay quiet on an exact match, offer an
+        // update when the password changed, and fall back to the plain
+        // save prompt whenever the check can't be completed.
+        chrome.runtime.sendMessage({ action: 'check_existing', credential: capturedCredentials }, res => {
+          if (chrome.runtime.lastError || !res || res.status === 'unknown' || res.status === 'none') {
+            showSavePrompt(capturedCredentials)
+          } else if (res.status === 'update') {
+            showSavePrompt(capturedCredentials, res.id)
+          }
+          // res.status === 'exact' \u2014 already saved, nothing to do.
+        })
       }, 300)
     }
   }, true)

@@ -719,9 +719,28 @@ app.post('/api/import', async (req, res) => {
       })
 
       importCreds.forEach(rawCred => {
+        // Importers may send the browser-export shape { name, url } instead
+        // of the canonical `site` (scripts/import-csv.js does). Alias it
+        // here so those entries don't land with an empty site, and keep the
+        // full URL in notes like the in-app importer does.
+        const cred = { ...rawCred }
+        if (!cred.site) {
+          if (cred.url) {
+            try {
+              cred.site = new URL(cred.url.startsWith('http') ? cred.url : `https://${cred.url}`).hostname.replace(/^www\./i, '')
+            } catch {
+              cred.site = cred.url
+            }
+            if (!(cred.notes || '').includes(cred.url)) {
+              cred.notes = cred.notes ? `${cred.notes}\nURL: ${cred.url}` : `URL: ${cred.url}`
+            }
+          } else if (cred.name) {
+            cred.site = cred.name
+          }
+        }
         const normalized = normalizeCredential({
-          ...rawCred,
-          id: rawCred.id || newId('cred')
+          ...cred,
+          id: cred.id || newId('cred')
         })
 
         if (existingCredIds.has(normalized.id)) {

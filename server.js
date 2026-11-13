@@ -31,6 +31,18 @@ function newId(prefix) {
   return `${prefix}-${crypto.randomUUID()}`
 }
 
+// Client-supplied ids are only kept when they are plain, attribute-safe
+// tokens (letters, digits, '-' and '_': UUIDs, sample ids, and the
+// client's timestamp fallback all match). Anything else — quotes, angle
+// brackets, spaces — is replaced with a fresh server id. Ids land in
+// HTML attributes in the UI (data-id, radio names), so an id like
+// `x"><svg onload=…>` stored verbatim was a stored-XSS vector even
+// though every text field is escaped.
+const SAFE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/
+function safeId(id, prefix) {
+  return typeof id === 'string' && SAFE_ID_PATTERN.test(id) ? id : newId(prefix)
+}
+
 function normalizeColor(color, fallback = '#ffd1dc') {
   const c = String(color || '')
   return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c) ? c : fallback
@@ -77,6 +89,16 @@ function requireApiToken(req, res, next) {
   return res.status(401).json({ error: 'Unauthorized — a valid API token is required 🔒' })
 }
 
+// Liveness probe for Docker/compose healthchecks and uptime monitors.
+// Deliberately OUTSIDE /api and unauthenticated: the healthchecks run
+// inside the container without the API token, and probing an /api route
+// made them fail with 401 forever whenever JOT_API_TOKEN was set — a
+// secured deployment reported permanently unhealthy. Reveals nothing
+// beyond "the process is up".
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() })
+})
+
 app.use('/api', requireApiToken)
 
 // File path for database storage
@@ -112,7 +134,14 @@ function loadEncryptionKey() {
       )
     }
   } else if (fs.existsSync(SECRET_FILE)) {
-    credentialKey = new Uint8Array(Buffer.from(fs.readFileSync(SECRET_FILE, 'utf-8').trim(), 'base64'))
+    const fileKey = new Uint8Array(Buffer.from(fs.readFileSync(SECRET_FILE, 'utf-8').trim(), 'base64'))
+    if (fileKey.length !== 32) {
+      throw new Error(
+        `The stored encryption key file (data/.jot-secret.key) must decode to exactly 32 bytes ` +
+        `(got ${fileKey.length}). Refusing to start with an unusable key.`
+      )
+    }
+    credentialKey = fileKey
   } else {
     credentialKey = new Uint8Array(32)
     crypto.getRandomValues(credentialKey)
@@ -158,8 +187,21 @@ async function decryptCredentialValue(value) {
     const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext)
     return new TextDecoder().decode(decrypted)
   } catch (err) {
+    // Fail closed, exactly like encryption does. Returning the raw ENC:
+    // blob here would hand ciphertext to callers as if it were the secret:
+    // the UI would display it, and — worse — the next save would encrypt
+    // the blob itself, permanently destroying the original value even if
+    // the correct key is restored later (e.g. after booting once with a
+    // wrong/rotated JOT_SECRET_KEY). Throwing makes reads answer 500 and
+    // blocks every write path (they all read first), so a bad key can
+    // never corrupt the vault.
     console.error('Credential decryption failed:', err)
-    return value
+    throw new Error(
+      'Credential decryption failed — the encryption key does not match this vault ' +
+      '(check JOT_SECRET_KEY / data/.jot-secret.key) or the data is corrupt. ' +
+      'Refusing to return or re-save ciphertext as if it were plaintext.',
+      { cause: err }
+    )
   }
 }
 
@@ -191,7 +233,7 @@ function normalizeCredential(cred) {
   const allowedTypes = ['login', 'payment', 'secure-note']
   const createdAt = cred.createdAt || new Date().toISOString()
   return {
-    id: cred.id,
+    id: safeId(cred.id, 'cred'),
     site: String(cred.site || ''),
     username: String(cred.username || ''),
     password: String(cred.password || ''),
@@ -392,7 +434,7 @@ app.get('/api/notes', (req, res) => {
 app.post('/api/notes', (req, res) => {
   const notes = readNotes()
   const newNote = {
-    id: req.body.id || newId('note'),
+    id: safeId(req.body.id, 'note'),
     title: req.body.title || '',
     content: req.body.content || '',
     color: normalizeColor(req.body.color),
@@ -650,7 +692,7 @@ function normalizeNoteServer(note) {
     ? note.tags
     : extractHashtagsServer(title + ' ' + content)
   return {
-    id: note.id || newId('note'),
+    id: safeId(note.id, 'note'),
     title,
     content,
     color: normalizeColor(note.color),

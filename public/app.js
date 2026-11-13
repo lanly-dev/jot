@@ -2900,10 +2900,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Note colors land in a style attribute, so keep only plain hex values
+  // (same rule the server enforces) — anything else falls back to pink.
+  function safeNoteColor(color) {
+    return /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(String(color || '')) ? String(color) : '#ffd1dc'
+  }
+
   function normalizeNote(note, fallback = {}) {
     const merged = { ...fallback, ...(note || {}) }
     return {
       ...merged,
+      color: safeNoteColor(merged.color),
       type: merged.type || 'standard',
       reminderAt: merged.reminderAt || null,
       spreadsheetData: Array.isArray(merged.spreadsheetData) ? merged.spreadsheetData : null,
@@ -3477,7 +3484,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const typeLabel = typeLabelMap[noteType] || (renderFormat === 'markdown' ? 'Markdown' : renderFormat === 'checkbox' ? 'Checklist' : renderFormat === 'table' ? 'Table' : 'Text')
 
     return `
-      <article class="note-focus-article" style="--note-color: ${note.color};" data-id="${note.id}">
+      <article class="note-focus-article" style="--note-color: ${note.color};" data-id="${escapeHTML(note.id)}">
         <div class="note-focus-meta-row">
           <span class="note-type-badge type-${noteType}">${typeLabel}</span>
           <span class="note-focus-meta">${escapeHTML(formatDate(note.updatedAt || note.createdAt))}</span>
@@ -3598,7 +3605,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </span>`
 
     return `
-      <tr class="credential-row ${isTrashCred ? 'trashed-credential' : ''}" data-id="${cred.id}" data-type="${credType}" style="--cred-color: ${rowColor};">
+      <tr class="credential-row ${isTrashCred ? 'trashed-credential' : ''}" data-id="${escapeHTML(cred.id)}" data-type="${credType}" style="--cred-color: ${rowColor};">
         <td class="col-site">
           <span class="credential-site-cell">
             <span class="credential-site-icon" aria-hidden="true">${typeIcon}</span>
@@ -3793,8 +3800,8 @@ document.addEventListener('DOMContentLoaded', () => {
       checkbox: '<svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>',
       table: '<svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"></path><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M3 9h18"></path><path d="M3 15h18"></path></svg>'
     }
-    const formatMenuMarkup = `<div class="note-format-menu" data-note-id="${note.id}">
-      ${['text', 'markdown', 'checkbox', 'table'].map(f => `<label class="note-format-option"><input type="radio" name="note-fmt-${note.id}" value="${f}" ${f === renderFormat ? 'checked' : ''}><span class="fmt-option-icon">${formatIconSVG[f]}</span><span>${formatLabelMap[f]}</span></label>`).join('')}
+    const formatMenuMarkup = `<div class="note-format-menu" data-note-id="${escapeHTML(note.id)}">
+      ${['text', 'markdown', 'checkbox', 'table'].map(f => `<label class="note-format-option"><input type="radio" name="note-fmt-${escapeHTML(note.id)}" value="${f}" ${f === renderFormat ? 'checked' : ''}><span class="fmt-option-icon">${formatIconSVG[f]}</span><span>${formatLabelMap[f]}</span></label>`).join('')}
     </div>`
     const formatTriggerMarkup = `<div class="note-format-wrap"><button type="button" class="btn-icon action-format" title="Render format: ${formatLabelMap[renderFormat]}">${formatIconSVG[renderFormat]}</button>${formatMenuMarkup}</div>`
 
@@ -3843,7 +3850,7 @@ document.addEventListener('DOMContentLoaded', () => {
       : ''
 
     return `
-      <article class="note-card ${note.pinned ? 'pinned-card' : ''} ${isTrashNote ? 'trashed-note' : ''}" data-id="${note.id}" style="--note-color: ${note.color};">
+      <article class="note-card ${note.pinned ? 'pinned-card' : ''} ${isTrashNote ? 'trashed-note' : ''}" data-id="${escapeHTML(note.id)}" style="--note-color: ${note.color};">
 
         <div class="note-header">
           <h3 class="note-title">${escapedTitle}</h3>

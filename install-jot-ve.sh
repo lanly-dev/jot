@@ -256,6 +256,7 @@ PORT=8000
 NODE_ENV=production
 JOT_SECRET_KEY=${SECRET_KEY}
 JOT_API_TOKEN=${API_TOKEN}
+JOT_ALLOW_SELF_UPDATE=1
 EOF
 chmod 600 /opt/jot/.env
 chown jot:jot /opt/jot/.env

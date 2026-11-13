@@ -11,9 +11,11 @@ const { execFile } = require('child_process')
 const app = express()
 const PORT = process.env.PORT || 8000
 
-// Enable CORS and JSON parsing
+// Enable CORS and JSON parsing. The JSON limit is raised from the
+// 100 KB default: a full backup import (notes + credentials) routinely
+// exceeds that and previously failed with HTTP 413.
 app.use(cors())
-app.use(express.json())
+app.use(express.json({ limit: '10mb' }))
 
 // Basic security headers. (No Content-Security-Policy: the UI relies on
 // inline style attributes, so a strict style-src would break rendering;
@@ -82,10 +84,19 @@ app.use(express.static(path.join(__dirname, 'public')))
 // ---------------------------------------------------------------------------
 const API_TOKEN = process.env.JOT_API_TOKEN || ''
 
+// Constant-time token comparison: hash both sides to fixed-length
+// digests first so timingSafeEqual never throws on length mismatch and
+// the comparison leaks neither the token nor its length.
+const nodeCrypto = require('crypto')
+function tokenMatches(provided) {
+  const a = nodeCrypto.createHash('sha256').update(String(provided || '')).digest()
+  const b = nodeCrypto.createHash('sha256').update(`Bearer ${API_TOKEN}`).digest()
+  return nodeCrypto.timingSafeEqual(a, b)
+}
+
 function requireApiToken(req, res, next) {
   if (!API_TOKEN) return next()
-  const auth = req.headers.authorization || ''
-  if (auth === `Bearer ${API_TOKEN}`) return next()
+  if (tokenMatches(req.headers.authorization || '')) return next()
   return res.status(401).json({ error: 'Unauthorized — a valid API token is required 🔒' })
 }
 
@@ -100,6 +111,29 @@ app.get('/health', (req, res) => {
 })
 
 app.use('/api', requireApiToken)
+
+// Serialize credential-touching requests. Credential handlers do a
+// whole-file read-modify-write with awaits in between (decrypt/encrypt),
+// so two concurrent requests — the web UI and the browser extension are
+// the usual pair — could interleave and silently drop each other's
+// changes (last writer wins on a stale copy). Note handlers don't need
+// this: they are fully synchronous, so they can't interleave. Queuing
+// is one-at-a-time in arrival order; each request releases the queue
+// when its response finishes or the connection closes.
+let credentialChain = Promise.resolve()
+function credentialSerializer(req, res, next) {
+  let release
+  const current = new Promise(resolve => { release = resolve })
+  const previous = credentialChain
+  credentialChain = current
+  previous.then(() => {
+    res.on('finish', release)
+    res.on('close', release)
+    next()
+  })
+}
+app.use('/api/credentials', credentialSerializer)
+app.use('/api/import', credentialSerializer)
 
 // File path for database storage
 const DATA_DIR = path.join(__dirname, 'data')
@@ -142,11 +176,14 @@ function loadEncryptionKey() {
       )
     }
     credentialKey = fileKey
+    // The key file is the vault's master secret: tighten its permissions
+    // on every boot in case it was created with a permissive umask.
+    try { fs.chmodSync(SECRET_FILE, 0o600) } catch { /* best effort (e.g. Windows) */ }
   } else {
     credentialKey = new Uint8Array(32)
     crypto.getRandomValues(credentialKey)
     fs.mkdirSync(DATA_DIR, { recursive: true })
-    fs.writeFileSync(SECRET_FILE, Buffer.from(credentialKey).toString('base64'), 'utf-8')
+    fs.writeFileSync(SECRET_FILE, Buffer.from(credentialKey).toString('base64'), { encoding: 'utf-8', mode: 0o600 })
     console.log('Generated credential encryption key 🔑')
   }
   return credentialKey
@@ -409,7 +446,7 @@ async function secureExistingCredentials() {
     const parsed = JSON.parse(fs.readFileSync(CREDENTIALS_FILE, 'utf-8'))
     if (!Array.isArray(parsed)) return
     const needsEncryption = parsed.some(cred =>
-      SENSITIVE_FIELDS.some(field => typeof cred[field] === 'string' && !cred[field].startsWith(ENC_PREFIX))
+      SENSITIVE_FIELDS.some(field => typeof cred[field] === 'string' && cred[field] !== '' && !cred[field].startsWith(ENC_PREFIX))
     )
     if (needsEncryption) {
       await writeCredentials(await readCredentials())
@@ -554,6 +591,48 @@ app.post('/api/notes/:id/restore', (req, res) => {
   }
   console.log(`Note restored: (${id}) 🌱`)
   res.json(notes[noteIndex])
+})
+
+// Host key for comparing a stored credential's `site` with the page a
+// login was captured on. Stored sites may be a bare domain (github.com)
+// or a full URL (http://localhost:8000/...) — normalize both sides to
+// hostname, keeping a non-standard port (localhost apps differ by port).
+function hostKey(value) {
+  if (!value) return ''
+  let host
+  let port = ''
+  try {
+    const u = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`)
+    host = u.hostname
+    port = u.port
+  } catch {
+    host = String(value).split('/')[0].split(':')[0]
+  }
+  host = host.replace(/^www\./i, '').toLowerCase()
+  if (port && port !== '80' && port !== '443') return `${host}:${port}`
+  return host
+}
+
+// POST: Look up whether the vault already holds a login, WITHOUT handing
+// the whole decrypted vault to the caller. The browser extension uses
+// this before prompting: exact match = stay silent, password changed =
+// offer an update, no match = offer a save. Previously the extension
+// downloaded every credential (all passwords, decrypted) just to
+// compare one login.
+// Body: { url, domain, username, password }
+// Returns: { status: 'none' | 'exact' | 'update', id? }
+app.post('/api/credentials/lookup', async (req, res) => {
+  const credentials = await readCredentials()
+  const pageHost = hostKey(req.body.url) || hostKey(req.body.domain)
+  const username = String(req.body.username || '').toLowerCase()
+  const match = credentials.find(c =>
+    !c.deleted &&
+    hostKey(c.site) === pageHost &&
+    String(c.username || '').toLowerCase() === username
+  )
+  if (!match) return res.json({ status: 'none' })
+  if (match.password === String(req.body.password || '')) return res.json({ status: 'exact', id: match.id })
+  return res.json({ status: 'update', id: match.id })
 })
 
 // GET: Retrieve all credentials (sensitive fields decrypted)
@@ -988,14 +1067,17 @@ function friendlyGitError(rawError) {
   return msg
 }
 
-// Kill-switch for the self-updater: set JOT_ALLOW_SELF_UPDATE=0 to disable the
-// /api/update/* endpoints entirely (they run git + npm install as the service
-// user, so some deployments may prefer updates to happen only from the host).
-const ALLOW_SELF_UPDATE = process.env.JOT_ALLOW_SELF_UPDATE !== '0'
+// The self-updater is OPT-IN: it runs git + npm install as the service
+// user, so it stays off unless the deployment explicitly sets
+// JOT_ALLOW_SELF_UPDATE=1 (the Proxmox installer does — its installs are
+// expected to update in-app; everywhere else updates happen from the
+// host shell via update-jot.sh). When off, the /api/update/* endpoints
+// answer 403.
+const ALLOW_SELF_UPDATE = process.env.JOT_ALLOW_SELF_UPDATE === '1'
 
 function requireSelfUpdate(req, res, next) {
   if (!ALLOW_SELF_UPDATE) {
-    return res.status(403).json({ error: 'Self-update is disabled on this deployment (JOT_ALLOW_SELF_UPDATE=0).' })
+    return res.status(403).json({ error: 'Self-update is disabled on this deployment (set JOT_ALLOW_SELF_UPDATE=1 to enable it).' })
   }
   next()
 }

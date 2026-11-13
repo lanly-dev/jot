@@ -97,7 +97,7 @@ Jot features a zero-knowledge, zero-retention client-encrypted vault. Sensitive 
 4. Confirm your password and submit.
 
 > [!IMPORTANT]
-> Your Master Password is used directly to derive cryptographic keys. Jot does not store your master password in plain text. If you lose your Master Password, there is no reset mechanism.
+> Your Master Password is a screen lock for the vault in this browser. Jot stores only a salted, slow-to-crack verifier (PBKDF2) for it on this device — never the password itself — and if you lose it there is no reset mechanism. It does not encrypt the vault by itself: your credentials are encrypted on the server with the server key, and the API token (`JOT_API_TOKEN`) is what controls access to them.
 
 ### Adding Credentials
 Click **+ New Item** in the vault header to store:

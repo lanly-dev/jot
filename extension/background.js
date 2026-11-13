@@ -159,48 +159,31 @@ async function saveCredential(payload) {
 }
 
 // Handle runtime messages from content scripts and popup
-// Host key for comparing a stored credential's `site` with the page a
-// login was captured on. Stored sites may be a bare domain (github.com)
-// or a full URL (http://localhost:8000/...) \u2014 normalize both sides to
-// hostname, keeping a non-standard port (localhost apps differ by port).
-function hostKey(value) {
-  if (!value) return ''
-  let host = ''
-  let port = ''
-  try {
-    const u = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`)
-    host = u.hostname
-    port = u.port
-  } catch {
-    host = String(value).split('/')[0].split(':')[0]
-  }
-  host = host.replace(/^www\./i, '').toLowerCase()
-  if (port && port !== '80' && port !== '443') return `${host}:${port}`
-  return host
-}
-
 // Look up whether the vault already holds this login, so the content
 // script can stay quiet on an exact match or offer an update when only
-// the password changed. Any failure answers 'unknown' and the caller
-// falls back to the plain save prompt.
+// the password changed. The comparison happens server-side
+// (POST /api/credentials/lookup): the extension no longer downloads the
+// entire decrypted vault just to check one login. Any failure answers
+// 'unknown' and the caller falls back to the plain save prompt.
 async function checkExistingCredential(payload) {
   const { serverUrl, apiToken } = await getSettings()
-  const headers = {}
+  const headers = { 'Content-Type': 'application/json' }
   if (apiToken) headers.Authorization = `Bearer ${apiToken}`
   try {
-    const res = await fetch(`${serverUrl}/api/credentials`, { headers })
+    const res = await fetch(`${serverUrl}/api/credentials/lookup`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        url: payload.url || '',
+        domain: payload.domain || '',
+        username: payload.username || '',
+        password: payload.password || ''
+      })
+    })
     if (!res.ok) return { status: 'unknown' }
-    const credentials = await res.json()
-    const pageHost = hostKey(payload.url) || hostKey(payload.domain)
-    const username = (payload.username || '').toLowerCase()
-    const match = (Array.isArray(credentials) ? credentials : []).find(c =>
-      !c.deleted &&
-      hostKey(c.site) === pageHost &&
-      (c.username || '').toLowerCase() === username
-    )
-    if (!match) return { status: 'none' }
-    if (match.password === payload.password) return { status: 'exact', id: match.id }
-    return { status: 'update', id: match.id }
+    const data = await res.json()
+    if (!data || !['none', 'exact', 'update'].includes(data.status)) return { status: 'unknown' }
+    return data
   } catch {
     return { status: 'unknown' }
   }

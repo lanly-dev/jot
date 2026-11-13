@@ -2684,6 +2684,18 @@ body.note-focus-open {
   background-color: var(--color-primary-light);
 }
 
+.password-generate-btn {
+  position: absolute;
+  right: 2.75rem;
+  width: 32px;
+  height: 32px;
+  font-size: 15px;
+}
+
+.password-input-wrap:has(.password-generate-btn) input {
+  padding-right: 5.25rem;
+}
+
 /* ==========================================================================
    CREDENTIAL - match Username/Email & Password fields to the
    Notes/content field style (softer body-style input).

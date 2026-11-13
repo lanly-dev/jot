@@ -11,10 +11,6 @@ const extensionDir = path.join(__dirname, '..', 'extension')
 const downloadsDir = path.join(__dirname, '..', 'public', 'downloads')
 const outputZip = path.join(downloadsDir, 'jot-extension.zip')
 
-if (!fs.existsSync(downloadsDir)) {
-  fs.mkdirSync(downloadsDir, { recursive: true })
-}
-
 function crc32(buf) {
   let c = 0xffffffff
   for (let i = 0; i < buf.length; i++) {
@@ -114,8 +110,16 @@ function createZipArchive(sourceDir) {
   return Buffer.concat([...localHeaders, centralDirBuffer, eocd])
 }
 
-const zipBuffer = createZipArchive(extensionDir)
-fs.writeFileSync(outputZip, zipBuffer)
-console.log(`Successfully created: ${outputZip} (${zipBuffer.length} bytes)`)
+// Only write the zip when run directly (node scripts/package-extension.js).
+// server.js require()s this module for createZipArchive when packaging on
+// demand — importing it must not write files as a side effect.
+if (require.main === module) {
+  if (!fs.existsSync(downloadsDir)) {
+    fs.mkdirSync(downloadsDir, { recursive: true })
+  }
+  const zipBuffer = createZipArchive(extensionDir)
+  fs.writeFileSync(outputZip, zipBuffer)
+  console.log(`Successfully created: ${outputZip} (${zipBuffer.length} bytes)`)
+}
 
 module.exports = { createZipArchive }

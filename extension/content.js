@@ -3,7 +3,7 @@
  * Detects login form submissions and renders a secure Shadow DOM prompt to save credentials to Jot.
  */
 
-(() => {
+function jotCaptureMain() {
   // Do not run inside Jot's own interface or on chrome:// internal pages
   if (window.location.hostname === 'localhost' && window.location.port === '8000') {
     return
@@ -350,4 +350,22 @@
       }
     }
   }, true)
-})()
+}
+
+// Bootstrap: never run on Jot's own pages — the vault UI contains
+// password fields (the credential forms, the master-password prompt)
+// that must not be "captured" like a website login. Jot can live at any
+// configured origin (LAN IP, hostname, custom port), not just
+// localhost:8000, so compare against the configured server origin.
+try {
+  chrome.storage.local.get(['jotServerUrl'], result => {
+    let serverOrigin = 'http://localhost:8000'
+    try {
+      if (result && result.jotServerUrl) serverOrigin = new URL(result.jotServerUrl).origin
+    } catch { /* keep the default */ }
+    if (window.location.origin === serverOrigin) return
+    jotCaptureMain()
+  })
+} catch {
+  jotCaptureMain()
+}

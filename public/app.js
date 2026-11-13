@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let vaultSearchQuery = ''
   const reminderTimers = new Map()
   const VAULT_HASH_KEY = 'jot_vault_master_hash'
+  const VAULT_KDF_KEY = 'jot_vault_master_kdf'
   const API_TOKEN_KEY = 'jot_api_token'
   const VAULT_AUTO_LOCK_TIMEOUT_MS = 10 * 60 * 1000 // 10 minutes
   let vaultAutoLockTimer = null
@@ -164,6 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const credentialContentInput = document.getElementById('credential-content')
   const credentialNotesInput = document.getElementById('credential-notes')
   const btnToggleFormPassword = document.getElementById('btn-toggle-form-password')
+  const btnGenerateFormPassword = document.getElementById('btn-generate-form-password')
   const btnToggleFormCvv = document.getElementById('btn-toggle-form-cvv')
   const credFieldsLogin = document.querySelector('#credential-form .cred-fields-login')
   const credFieldsPayment = document.querySelector('#credential-form .cred-fields-payment')
@@ -190,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const credentialEditNotesInput = document.getElementById('credential-edit-notes')
   const credentialEditTypeSelect = document.getElementById('credential-edit-type')
   const btnToggleEditPassword = document.getElementById('btn-toggle-edit-password')
+  const btnGenerateEditPassword = document.getElementById('btn-generate-edit-password')
   const btnToggleEditCvv = document.getElementById('btn-toggle-edit-cvv')
   const credEditFieldsLogin = document.querySelector('#credential-edit-form .cred-fields-login')
   const credEditFieldsPayment = document.querySelector('#credential-edit-form .cred-fields-payment')
@@ -704,8 +707,7 @@ document.addEventListener('DOMContentLoaded', () => {
           errorEl.textContent = 'Please enter your master password 😿'
           return
         }
-        const hash = await hashPassword(pwd)
-        if (hash !== localStorage.getItem(VAULT_HASH_KEY)) {
+        if (!(await verifyMasterPassword(pwd))) {
           errorEl.textContent = 'Wrong master password 😿'
           return
         }
@@ -1018,8 +1020,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (errorEl) errorEl.textContent = 'Please enter master password 😿'
           return
         }
-        const hash = await hashPassword(pwd)
-        if (hash !== masterHash) {
+        if (!(await verifyMasterPassword(pwd))) {
           if (errorEl) errorEl.textContent = 'Wrong master password 😿'
           return
         }
@@ -1164,8 +1165,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (errorEl) errorEl.textContent = 'Please enter master password 😿'
           return
         }
-        const hash = await hashPassword(pwd)
-        if (hash !== masterHash) {
+        if (!(await verifyMasterPassword(pwd))) {
           if (errorEl) errorEl.textContent = 'Wrong master password 😿'
           return
         }
@@ -1721,6 +1721,25 @@ document.addEventListener('DOMContentLoaded', () => {
       togglePasswordVisibility(credentialPasswordInput, btnToggleFormPassword)
     })
 
+    // Password generator (creator + edit modal): fill the field with a
+    // fresh 20-character password; saving the entry stores it in the vault.
+    if (btnGenerateFormPassword) {
+      btnGenerateFormPassword.addEventListener('click', () => {
+        credentialPasswordInput.value = generateStrongPassword()
+        credentialPasswordInput.dispatchEvent(new Event('input', { bubbles: true }))
+        showToast('Strong password generated 🎲')
+        credentialPasswordInput.focus()
+      })
+    }
+    if (btnGenerateEditPassword) {
+      btnGenerateEditPassword.addEventListener('click', () => {
+        credentialEditPasswordInput.value = generateStrongPassword()
+        credentialEditPasswordInput.dispatchEvent(new Event('input', { bubbles: true }))
+        showToast('Strong password generated 🎲')
+        credentialEditPasswordInput.focus()
+      })
+    }
+
     // CVV reveal toggle (creator)
     if (btnToggleFormCvv) {
       btnToggleFormCvv.addEventListener('click', () => {
@@ -2051,7 +2070,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (vaultSetupMode) {
       vaultLockedTitle.textContent = 'Create a Master Password'
-      vaultLockedHint.textContent = 'This locks your vault. It is stored only on this device (hashed) and cannot be recovered if forgotten.'
+      vaultLockedHint.textContent = 'This is a screen lock for this browser only: it cannot be recovered if forgotten, and it does not replace your server API token, which is what actually protects the vault data.'
       vaultConfirmWrap.style.display = 'flex'
       btnVaultUnlock.innerHTML = 'Create Vault ✨'
     } else {
@@ -2080,23 +2099,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (vaultSetupMode) {
       const confirm = vaultUnlockConfirmInput.value
-      if (password.length < 4) {
-        vaultUnlockError.textContent = 'Master password should be at least 4 characters 🌸'
+      if (password.length < 8) {
+        vaultUnlockError.textContent = 'Master password should be at least 8 characters 🌸'
         return
       }
       if (password !== confirm) {
         vaultUnlockError.textContent = 'Passwords do not match 😿'
         return
       }
-      const hash = await hashPassword(password)
-      localStorage.setItem(VAULT_HASH_KEY, hash)
+      await setMasterPassword(password)
       vaultUnlocked = true
       await fetchCredentials()
       startVaultAutoLockTimer()
       showToast('Vault created! 🔐')
     } else {
-      const hash = await hashPassword(password)
-      if (hash === localStorage.getItem(VAULT_HASH_KEY)) {
+      if (await verifyAndUpgradeMasterPassword(password)) {
         vaultUnlocked = true
         await fetchCredentials()
         startVaultAutoLockTimer()
@@ -2158,16 +2175,30 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast(reason === 'timeout' ? 'Vault auto-locked due to inactivity 🔒' : 'Vault locked 🔒')
   }
 
-  async function hashPassword(password) {
-    if (window.crypto && crypto.subtle) {
-      try {
-        const data = new TextEncoder().encode(password)
-        const digest = await crypto.subtle.digest('SHA-256', data)
-        return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('')
-      } catch (err) {
-        console.error('crypto.subtle unavailable, using fallback hash:', err)
-      }
-    }
+  // ---------------------------------------------------------------------
+  // Master-password hashing. The master password is a screen lock for
+  // this browser (the data itself is protected server-side by the API
+  // token + at-rest encryption), but its stored verifier still has to
+  // resist offline cracking if localStorage leaks: current vaults use
+  // PBKDF2-SHA256 (310k iterations, per-vault random salt). Vaults
+  // created before that stored a single unsalted SHA-256 — those keep
+  // verifying through the legacy path and are transparently upgraded
+  // to PBKDF2 on the next successful unlock.
+  // ---------------------------------------------------------------------
+  const PBKDF2_ITERATIONS = 310000
+
+  function bytesToHex(bytes) {
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
+  }
+
+  function hexToBytes(hex) {
+    const out = new Uint8Array(hex.length / 2)
+    for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16)
+    return out
+  }
+
+  // Legacy fallback hash (insecure contexts without crypto.subtle only).
+  function fallbackHash(password) {
     let h1 = 0xdeadbeef
     let h2 = 0x41c6ce57
     for (let i = 0; i < password.length; i++) {
@@ -2178,6 +2209,108 @@ document.addEventListener('DOMContentLoaded', () => {
     h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909)
     h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909)
     return (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0')
+  }
+
+  // Legacy verifier hash: one unsalted SHA-256 (or the fallback when
+  // subtle is unavailable). Only used to verify pre-PBKDF2 vaults.
+  async function hashPassword(password) {
+    if (window.crypto && crypto.subtle) {
+      try {
+        const data = new TextEncoder().encode(password)
+        const digest = await crypto.subtle.digest('SHA-256', data)
+        return bytesToHex(new Uint8Array(digest))
+      } catch (err) {
+        console.error('crypto.subtle unavailable, using fallback hash:', err)
+      }
+    }
+    return fallbackHash(password)
+  }
+
+  async function deriveMasterHash(password, saltHex, iterations) {
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']
+    )
+    const bits = await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', hash: 'SHA-256', salt: hexToBytes(saltHex), iterations },
+      keyMaterial, 256
+    )
+    return bytesToHex(new Uint8Array(bits))
+  }
+
+  function readVaultKdf() {
+    try {
+      const raw = localStorage.getItem(VAULT_KDF_KEY)
+      return raw ? JSON.parse(raw) : null
+    } catch {
+      return null
+    }
+  }
+
+  // Store a fresh verifier for a new (or upgraded) master password.
+  async function setMasterPassword(password) {
+    if (window.crypto && crypto.subtle) {
+      const salt = bytesToHex(crypto.getRandomValues(new Uint8Array(16)))
+      const hash = await deriveMasterHash(password, salt, PBKDF2_ITERATIONS)
+      localStorage.setItem(VAULT_HASH_KEY, hash)
+      localStorage.setItem(VAULT_KDF_KEY, JSON.stringify({ algo: 'pbkdf2-sha256', salt, iterations: PBKDF2_ITERATIONS }))
+    } else {
+      localStorage.setItem(VAULT_HASH_KEY, fallbackHash(password))
+      localStorage.setItem(VAULT_KDF_KEY, JSON.stringify({ algo: 'fallback' }))
+    }
+  }
+
+  async function verifyMasterPassword(password) {
+    const stored = localStorage.getItem(VAULT_HASH_KEY)
+    if (!stored) return false
+    const kdf = readVaultKdf()
+    if (kdf && kdf.algo === 'pbkdf2-sha256' && window.crypto && crypto.subtle) {
+      return await deriveMasterHash(password, kdf.salt, kdf.iterations || PBKDF2_ITERATIONS) === stored
+    }
+    if (kdf && kdf.algo === 'fallback') {
+      return fallbackHash(password) === stored
+    }
+    // No KDF record: a pre-upgrade vault, verified the legacy way.
+    return await hashPassword(password) === stored
+  }
+
+  // Verify, and on success transparently upgrade a legacy verifier to
+  // PBKDF2 so the weak hash doesn't stay stored any longer than needed.
+  async function verifyAndUpgradeMasterPassword(password) {
+    const ok = await verifyMasterPassword(password)
+    if (!ok) return false
+    const kdf = readVaultKdf()
+    if ((!kdf || kdf.algo !== 'pbkdf2-sha256') && window.crypto && crypto.subtle) {
+      await setMasterPassword(password)
+    }
+    return true
+  }
+
+  // 20 characters with at least one of each class (ambiguous glyphs
+  // like O/0/l/1 excluded), drawn with crypto.getRandomValues and
+  // Fisher-Yates shuffled so the guaranteed characters aren't always
+  // at the front.
+  function generateStrongPassword(length = 20) {
+    const sets = [
+      'abcdefghijkmnopqrstuvwxyz',
+      'ABCDEFGHJKLMNPQRSTUVWXYZ',
+      '23456789',
+      '!@#$%^&*()-_=+'
+    ]
+    const all = sets.join('')
+    const randBelow = (max) => {
+      const buf = new Uint32Array(1)
+      crypto.getRandomValues(buf)
+      return buf[0] % max
+    }
+    const chars = sets.map(set => set[randBelow(set.length)])
+    while (chars.length < length) chars.push(all[randBelow(all.length)])
+    for (let i = chars.length - 1; i > 0; i--) {
+      const j = randBelow(i + 1)
+      const tmp = chars[i]
+      chars[i] = chars[j]
+      chars[j] = tmp
+    }
+    return chars.join('')
   }
 
   function togglePasswordVisibility(input, toggleBtn) {

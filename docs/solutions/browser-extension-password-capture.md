@@ -64,3 +64,12 @@ Due to the web browser's **Same-Origin Policy**, web pages running inside a brow
 4. **Code Quality**:
    - Configured `globals.webextensions` in `eslint.config.js`.
    - Ran `npx eslint .` with **0 errors and 0 warnings**.
+
+---
+
+## 4. Updates (2026-11-12)
+
+- **Duplicate handling (extension v1.1.0)**: before prompting, the extension asks the server whether the login already exists. Exact match → stay silent; password changed → offer an update of the existing entry; no match → normal save prompt.
+- **Server-side lookup (v1.1.1)**: the check moved to `POST /api/credentials/lookup`, which compares server-side and answers only `{ status, id? }`. Earlier the extension downloaded the entire decrypted vault (`GET /api/credentials`) just to compare one login — never do that again.
+- **Versioned download name**: `GET /api/extension/download` serves the file as `jot-extension-v<version>.zip`, with the version read **from the served zip's own `manifest.json` at request time** (`getServedExtensionVersion()` in `server.js`), not from the source tree or a boot-time constant. The stored artifact keeps the stable name `jot-extension.zip`. Invariant: bump `extension/manifest.json` and repackage in the same change, or the filename will (honestly) report the older zipped version. Verified with a doctored zip (manifest 9.9.9 vs source 1.1.1): status and filename both reported 9.9.9.
+- **Self-skip**: the content script no longer runs on Jot's own pages at *any* configured server origin (read from `chrome.storage.local`), not just `localhost:8000`.

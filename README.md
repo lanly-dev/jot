@@ -23,8 +23,10 @@ The backend serves the static frontend and exposes the following API surface:
 - `DELETE /api/notes/:id`
 - `GET /api/credentials`
 - `POST /api/credentials`
+- `POST /api/credentials/lookup`
 - `PUT /api/credentials/:id`
 - `DELETE /api/credentials/:id`
+- `GET /health`
 
 ---
 
@@ -151,7 +153,7 @@ Behavior:
 | `NODE_ENV` | unset | Controls dev-only behavior such as live reload |
 | `JOT_SECRET_KEY` | unset | Base64-encoded 32-byte AES key for portable credential encryption |
 | `JOT_API_TOKEN` | unset | Bearer token required by every `/api` route when set; the web UI prompts for it once and stores it in the browser's localStorage |
-| `JOT_ALLOW_SELF_UPDATE` | `1` | Set to `0` to disable the in-app self-updater (`/api/update/*`), which runs git + npm install as the service user |
+| `JOT_ALLOW_SELF_UPDATE` | `0` | Opt-in: set to `1` to enable the in-app self-updater (`/api/update/*`), which runs git + npm install as the service user. The Proxmox installer sets this to `1` |
 
 Important operational note: if the key file is lost and `JOT_SECRET_KEY` is not configured, encrypted credential data cannot be recovered.
 
@@ -190,6 +192,13 @@ Important operational note: if the key file is lost and `JOT_SECRET_KEY` is not 
 `POST /api/credentials`
 - Stores a new credential with encrypted sensitive fields
 
+`POST /api/credentials/lookup`
+- Body: `{ url, domain, username, password }`
+- Answers `{ status: 'none' | 'exact' | 'update', id? }` — whether the vault already holds that login, compared server-side. The browser extension uses this before prompting, so it never has to download the whole decrypted vault to check one login; the response never contains any stored secret
+
+`GET /health`
+- Unauthenticated liveness probe returning `{ status: 'ok', timestamp }` — this is what the Docker and Compose healthchecks use (the API itself requires the token)
+
 `PUT /api/credentials/:id`
 - Updates the credential record and re-encrypts stored sensitive fields
 
@@ -220,6 +229,7 @@ Check service health:
 ```bash
 docker compose ps
 docker compose logs -f
+curl http://localhost:8000/health
 ```
 
 The application is exposed on port 8000 by default; this can be adjusted in `docker-compose.yml`.
@@ -304,13 +314,13 @@ prefer updating from SSH instead.
 
 ## Security considerations
 
-- Credential secrets are encrypted at rest using AES-256-GCM. Encryption failures are fatal to the write — the server never persists a plaintext secret when encryption breaks, and a misconfigured `JOT_SECRET_KEY` (not 32 bytes) refuses to boot.
+- Credential secrets are encrypted at rest using AES-256-GCM. Encryption failures are fatal to the write — the server never persists a plaintext secret when encryption breaks, and a misconfigured `JOT_SECRET_KEY` (not 32 bytes) refuses to boot. Reads fail closed too: with a mismatched key the API answers 500 instead of returning the encrypted blob, so a wrong key can never corrupt the vault through a later edit.
 - The encryption key is stored outside the repository in `data/.jot-secret.key` unless `JOT_SECRET_KEY` is explicitly set.
 - Every `/api` route requires `Authorization: Bearer <JOT_API_TOKEN>` when the token is set. The Proxmox installer generates one into `/opt/jot/.env`; the web UI prompts for it once and keeps it in the browser's localStorage. Running without the token leaves the API (including decrypted credentials) open to anyone who can reach the port — the server logs a warning at startup in that case.
 - Only `public/` is served over HTTP; `server.js`, `data/`, and `.env` are never exposed, even though they live next to the frontend sources.
-- The in-app vault master password is a UI-level privacy screen (a hash in localStorage gating rendering), not access control — the API token is the real gate.
+- The in-app vault master password is a UI-level privacy screen (a verifier in localStorage gating rendering), not access control — the API token is the real gate. The verifier is a salted PBKDF2-SHA256 hash (310,000 iterations); vaults created with the older unsalted SHA-256 verifier upgrade in place on the next successful unlock.
 - Storage is crash-safe: writes go to a temp file and are atomically renamed, and a corrupt JSON file is quarantined aside (`data/*.corrupt-<timestamp>`) instead of being silently overwritten — the API answers 500 until you restore or remove the backup.
-- The self-updater (`/api/update/*`) is API-token-gated like everything else, and can be switched off entirely with `JOT_ALLOW_SELF_UPDATE=0`.
+- The self-updater (`/api/update/*`) is off unless `JOT_ALLOW_SELF_UPDATE=1` is set (the Proxmox installer enables it); when enabled it is API-token-gated like everything else.
 - The app is not a production-grade identity system; it is a local filesystem-backed tool intended for personal or low-risk usage.
 - Back up the data directory and key file before changing deployment environments.
 

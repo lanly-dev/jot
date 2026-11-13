@@ -59,3 +59,9 @@ Cleaned up inline regex replacements in `credentialCvvInput` and `credentialEdit
 - **Auto-Lock Notification**: Verified that timeout locks trigger `showToast('Vault auto-locked due to inactivity 🔒')`.
 - **Manual Lock**: Verified that manual lock triggers `showToast('Vault locked 🔒')`.
 - **Linter**: Ran `npm run efix` — 0 errors, no lint regressions.
+
+---
+
+## 5. Update (2026-11-12)
+
+The master-password verifier described in this doc (a hash in localStorage) has been upgraded: it is now a salted PBKDF2-SHA256 verifier (310,000 iterations), and vaults created with the older unsalted SHA-256 verifier are upgraded in place on their next successful unlock. The lock/auto-lock behavior in this doc is unchanged. See `security-review-hardening-2026-11-12.md`, section 2.3.

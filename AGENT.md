@@ -56,9 +56,11 @@ npm run efix
 - Notes are stored in `data/notes.json`.
 - Credentials are stored in `data/credentials.json` and sensitive values are encrypted before write.
 - Writes are atomic (temp file + rename); reads never fall back to `[]` on corruption — a corrupt file is quarantined to `data/<name>.corrupt-<timestamp>` and the API answers 500 until it is restored or removed.
-- If `JOT_SECRET_KEY` is absent, the app generates a key in `data/.jot-secret.key` on first run.
+- If `JOT_SECRET_KEY` is absent, the app generates a key in `data/.jot-secret.key` (written with 0600 permissions, re-tightened on boot when the file already exists).
 - Losing that key without a backup can make stored credentials unrecoverable.
-- IDs are `prefix-<uuid>`; note/credential colors are hex-validated server-side; credentials carry `updatedAt` like notes.
+- IDs are `prefix-<uuid>`; client-supplied record IDs that don't match the safe ID pattern are replaced with fresh UUIDs server-side; note/credential colors are hex-validated server-side; credentials carry `updatedAt` like notes.
+- Decryption failure is fatal, never a fallback: reads answer 500 and writes are blocked, so a wrong key can't turn stored ciphertext into the "password" via a later edit.
+- The committed `package-lock.json` is part of the repo (not gitignored) — the Dockerfile's `npm ci` depends on it.
 
 ## API contract
 
@@ -75,23 +77,30 @@ npm run efix
 
 - `GET /api/credentials`
 - `POST /api/credentials`
+- `POST /api/credentials/lookup` — body `{ url, domain, username, password }`; answers `{ status: 'none' | 'exact' | 'update', id? }`, compared server-side so the extension never downloads the whole vault to check one login
 - `PUT /api/credentials/:id`
 - `DELETE /api/credentials/:id` — soft-delete (to vault trash); `?permanent=1` hard-deletes
 - `POST /api/credentials/:id/restore` — restore a trashed credential
 - `DELETE /api/credentials/trash` — empty the trash (hard-delete all trashed credentials)
+- Credential and import requests are serialized server-side (whole-file read-modify-write must not interleave between the UI and the extension)
+
+### Health
+
+- `GET /health` — unauthenticated liveness probe (`{ status: 'ok', timestamp }`); used by the Docker/Compose healthchecks
 
 ### Updates (self-update, git installs only)
 
 - `GET /api/update/status` — reports whether in-app updates are supported and the current commit
 - `POST /api/update/check` — fetches remote refs and compares against the local commit
 - `POST /api/update` — fetches latest code, resets to remote, reinstalls production deps, restarts the service
-- All three update endpoints are disabled when `JOT_ALLOW_SELF_UPDATE=0`
+- All three update endpoints answer 403 unless `JOT_ALLOW_SELF_UPDATE=1` (opt-in; the Proxmox installer sets it in the generated `.env`)
 
 ## Deployment notes
 
 - Default app port is `8000`.
 - Docker Compose uses a named volume mounted at `/app/data` for persistence.
 - `NODE_ENV=production` disables dev-only live reload features.
+- The extension download (`/api/extension/download`) is named `jot-extension-v<version>.zip`, with the version read from the served zip's own `manifest.json` at request time — so when bumping the extension, update `extension/manifest.json` AND repackage (`node scripts/package-extension.js`) together, or the filename will honestly report the older zipped version.
 
 ## Editing guidance
 

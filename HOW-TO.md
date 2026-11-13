@@ -93,7 +93,7 @@ Jot features a zero-knowledge, zero-retention client-encrypted vault. Sensitive 
 ### Setting Up a Master Password
 1. Navigate to the **🔒 Vault** tab.
 2. If this is your first time, click **Set Up Vault**.
-3. Choose a strong Master Password. 
+3. Choose a strong Master Password (at least 8 characters). 
 4. Confirm your password and submit.
 
 > [!IMPORTANT]
@@ -104,6 +104,8 @@ Click **+ New Item** in the vault header to store:
 - **Login**: Website name, URL, username/email, password, and private notes.
 - **Credit Card**: Cardholder name, card number, expiration date, CVV, and notes.
 - **Secure Note**: Encrypted title and multi-line private notes.
+
+For a login's password field (in both the creator and the edit dialog), the 🎲 button generates a strong 20-character password on the spot — mixed case, digits, and symbols, with look-alike characters (O, 0, l, 1) left out — and fills it in ready to save.
 
 ### Unlocking and Locking the Vault
 - **Unlocking**: Enter your Master Password on the lock screen.
@@ -222,7 +224,7 @@ Jot includes a lightweight, self-hosted **Manifest V3 Browser Extension** that a
 1. Open Jot and go to the **🔒 Vault** tab.
 2. Click the **🧩 Extension** button in the vault action bar.
 3. Click **📥 Download Extension (.zip)**.
-4. Extract the downloaded ZIP (`jot-extension-v<version>.zip`) into a folder on your computer.
+4. Extract the downloaded ZIP (`jot-extension-v<version>.zip`) into a folder on your computer. The version in the filename is read from the extension inside the ZIP itself, so it always matches what you're about to install.
 5. In Google Chrome or Microsoft Edge, navigate to `chrome://extensions` (or `edge://extensions`).
 6. Turn on **Developer mode** in the top-right corner.
 7. Click **Load unpacked** and select the unzipped `extension` folder.
@@ -234,6 +236,7 @@ Jot includes a lightweight, self-hosted **Manifest V3 Browser Extension** that a
   - **Username**: `your-user`
   - **Password**: `••••••••`
 - Click **Save to Jot** to immediately store it in your encrypted vault, or **Ignore** to dismiss.
+- If that exact login is already in your vault, no card appears at all. If only the password changed, the card instead offers to update the existing entry. The check runs on the server — the extension never downloads your vault to compare.
 - Click the Jot icon in your browser toolbar anytime to check server connection or configure a remote Jot server URL.
 
 

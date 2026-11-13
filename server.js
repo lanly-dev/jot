@@ -944,27 +944,33 @@ function readZipEntry(zipBuffer, entryName) {
   return null
 }
 
-function readServedExtensionVersion() {
-  try {
-    const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, 'extension', 'manifest.json'), 'utf8'))
-    if (manifest.version) return manifest.version
-  } catch { /* not a full-tree install — try the packaged zip */ }
+// The version of the extension users actually receive. Read it from the
+// packaged zip's own manifest.json first, so the reported version (and
+// the download filename below) always reflect what's INSIDE the zip —
+// never the source tree, which may have been bumped without repackaging
+// (or, in Docker, isn't shipped at all). Falls back to the source
+// manifest only when no zip exists yet (it is packaged from that tree
+// on demand, so the versions agree). Resolved per request, not once at
+// boot, so replacing the zip takes effect without a restart.
+function getServedExtensionVersion() {
   try {
     const zip = fs.readFileSync(path.join(__dirname, 'public', 'downloads', 'jot-extension.zip'))
     const manifestJson = readZipEntry(zip, 'manifest.json')
     if (manifestJson) return JSON.parse(manifestJson).version || null
-  } catch { /* no zip packaged yet */ }
+  } catch { /* no zip packaged yet — try the source tree */ }
+  try {
+    const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, 'extension', 'manifest.json'), 'utf8'))
+    if (manifest.version) return manifest.version
+  } catch { /* extension not available in this install */ }
   return null
 }
-
-const SERVED_EXTENSION_VERSION = readServedExtensionVersion()
 
 app.get('/api/extension/status', (req, res) => {
   res.json({
     success: true,
     app: 'Jot',
     version: '1.0.0',
-    extensionVersion: SERVED_EXTENSION_VERSION,
+    extensionVersion: getServedExtensionVersion(),
     timestamp: new Date().toISOString()
   })
 })
@@ -986,9 +992,12 @@ app.get('/api/extension/download', (req, res) => {
   }
 
   res.setHeader('Content-Type', 'application/zip')
-  // The downloaded file carries the extension version (the stored artifact
-  // keeps its stable name so the server can always find it).
-  const downloadName = SERVED_EXTENSION_VERSION ? `jot-extension-v${SERVED_EXTENSION_VERSION}.zip` : 'jot-extension.zip'
+  // The downloaded file is named for the version inside the zip being
+  // served (read from its manifest at request time), so the filename
+  // always reflects the extension the user is about to install. The
+  // stored artifact keeps its stable name so the server can find it.
+  const servedVersion = getServedExtensionVersion()
+  const downloadName = servedVersion ? `jot-extension-v${servedVersion}.zip` : 'jot-extension.zip'
   res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`)
   res.sendFile(zipPath)
 })
